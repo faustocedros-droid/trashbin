@@ -1,0 +1,24 @@
+# Excel temporary files
+~$*.xls*
+~$*.xlsm
+*.xlk
+
+# Excel backup files
+*.xlsb.bak
+*.xlsm.bak
+
+# Office temporary files
+~*.tmp
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Temporary folders
+tmp/
+temp/

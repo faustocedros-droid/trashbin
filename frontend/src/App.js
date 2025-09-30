@@ -4,6 +4,7 @@ import './App.css';
 import Dashboard from './pages/Dashboard';
 import Events from './pages/Events';
 import EventDetail from './pages/EventDetail';
+import EventFullDemo from './pages/EventFullDemo';
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
               <ul className="nav-links">
                 <li><Link to="/">Dashboard</Link></li>
                 <li><Link to="/events">Eventi</Link></li>
+                <li><Link to="/demo">Demo</Link></li>
               </ul>
             </div>
           </nav>
@@ -26,6 +28,7 @@ function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/events" element={<Events />} />
             <Route path="/events/:id" element={<EventDetail />} />
+            <Route path="/demo" element={<EventFullDemo />} />
           </Routes>
         </main>
         

@@ -22,6 +22,7 @@ import {
   generateId,
   calculateBestLapTime,
   calculateTotalFuelConsumed,
+  calculateLapTimeFromSectors,
 } from '../eventUtils';
 
 const EventFullDemo: React.FC = () => {
@@ -48,6 +49,10 @@ const EventFullDemo: React.FC = () => {
   const [lapFormData, setLapFormData] = useState<LapFormData>({
     lapNumber: 1,
     lapTime: '',
+    sector1: '',
+    sector2: '',
+    sector3: '',
+    sector4: '',
     fuelConsumed: 0,
     tireSet: '',
     notes: '',
@@ -168,6 +173,10 @@ const EventFullDemo: React.FC = () => {
     setLapFormData({
       lapNumber: selectedSession.laps.length + 1,
       lapTime: '',
+      sector1: '',
+      sector2: '',
+      sector3: '',
+      sector4: '',
       fuelConsumed: 0,
       tireSet: selectedSession.tire_set || '',
       notes: '',
@@ -183,6 +192,10 @@ const EventFullDemo: React.FC = () => {
     setLapFormData({
       lapNumber: lap.lapNumber,
       lapTime: lap.lapTime,
+      sector1: lap.sector1 || '',
+      sector2: lap.sector2 || '',
+      sector3: lap.sector3 || '',
+      sector4: lap.sector4 || '',
       fuelConsumed: lap.fuelConsumed || 0,
       tireSet: lap.tireSet || '',
       notes: lap.notes || '',
@@ -198,10 +211,22 @@ const EventFullDemo: React.FC = () => {
     e.preventDefault();
     if (!event || !selectedSession) return;
 
+    // Calcola il tempo totale dalla somma dei settori
+    const totalTime = calculateLapTimeFromSectors(
+      lapFormData.sector1,
+      lapFormData.sector2,
+      lapFormData.sector3,
+      lapFormData.sector4
+    );
+
     const lapData: Lap = {
       id: editingLap?.id || generateId(),
       lapNumber: lapFormData.lapNumber,
-      lapTime: lapFormData.lapTime,
+      lapTime: totalTime,
+      sector1: lapFormData.sector1,
+      sector2: lapFormData.sector2,
+      sector3: lapFormData.sector3,
+      sector4: lapFormData.sector4,
       fuelConsumed: lapFormData.fuelConsumed,
       tireSet: lapFormData.tireSet,
       notes: lapFormData.notes,
@@ -416,29 +441,93 @@ const EventFullDemo: React.FC = () => {
             <form onSubmit={handleSaveLap} style={{ background: '#f5f5f5', padding: '20px', borderRadius: '8px', marginBottom: '20px' }}>
               <h3>{editingLap ? 'Modifica Giro' : 'Nuovo Giro'}</h3>
               
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', marginBottom: '15px' }}>
-                <div className="form-group">
-                  <label>Numero Giro</label>
-                  <input
-                    type="number"
-                    value={lapFormData.lapNumber}
-                    onChange={(e) => setLapFormData({ ...lapFormData, lapNumber: parseInt(e.target.value) })}
-                    min="1"
-                    required
-                  />
-                </div>
+              {/* Riga 1: Numero giro */}
+              <div className="form-group" style={{ marginBottom: '15px' }}>
+                <label>Numero Giro</label>
+                <input
+                  type="number"
+                  value={lapFormData.lapNumber}
+                  onChange={(e) => setLapFormData({ ...lapFormData, lapNumber: parseInt(e.target.value) })}
+                  min="1"
+                  required
+                  style={{ maxWidth: '150px' }}
+                />
+              </div>
 
-                <div className="form-group">
-                  <label>Tempo Giro (MM:SS.mmm)</label>
-                  <input
-                    type="text"
-                    value={lapFormData.lapTime}
-                    onChange={(e) => setLapFormData({ ...lapFormData, lapTime: e.target.value })}
-                    placeholder="01:45.234"
-                    required
-                  />
-                </div>
+              {/* Riga 2: Intertempi (Settori) disposti orizzontalmente */}
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: '#333' }}>
+                  Intertempi Settori (secondi.millisecondi)
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr) auto', gap: '10px', alignItems: 'end' }}>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label style={{ fontSize: '13px', color: '#666' }}>Settore 1</label>
+                    <input
+                      type="text"
+                      value={lapFormData.sector1}
+                      onChange={(e) => setLapFormData({ ...lapFormData, sector1: e.target.value })}
+                      placeholder="25.123"
+                      required
+                    />
+                  </div>
 
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label style={{ fontSize: '13px', color: '#666' }}>Settore 2</label>
+                    <input
+                      type="text"
+                      value={lapFormData.sector2}
+                      onChange={(e) => setLapFormData({ ...lapFormData, sector2: e.target.value })}
+                      placeholder="28.456"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label style={{ fontSize: '13px', color: '#666' }}>Settore 3</label>
+                    <input
+                      type="text"
+                      value={lapFormData.sector3}
+                      onChange={(e) => setLapFormData({ ...lapFormData, sector3: e.target.value })}
+                      placeholder="30.789"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label style={{ fontSize: '13px', color: '#666' }}>Settore 4</label>
+                    <input
+                      type="text"
+                      value={lapFormData.sector4}
+                      onChange={(e) => setLapFormData({ ...lapFormData, sector4: e.target.value })}
+                      placeholder="22.012"
+                      required
+                    />
+                  </div>
+
+                  {/* Tempo Totale calcolato */}
+                  <div style={{ 
+                    padding: '8px 15px', 
+                    background: '#1976d2', 
+                    color: 'white', 
+                    borderRadius: '4px',
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    textAlign: 'center',
+                    minWidth: '120px'
+                  }}>
+                    <div style={{ fontSize: '11px', fontWeight: 'normal', marginBottom: '2px' }}>Tempo Totale</div>
+                    <div>{calculateLapTimeFromSectors(
+                      lapFormData.sector1,
+                      lapFormData.sector2,
+                      lapFormData.sector3,
+                      lapFormData.sector4
+                    ) || '--:--.---'}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Riga 3: Altri campi */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
                 <div className="form-group">
                   <label>Carburante Consumato (L)</label>
                   <input
@@ -493,7 +582,11 @@ const EventFullDemo: React.FC = () => {
                 <thead>
                   <tr>
                     <th>Giro</th>
-                    <th>Tempo</th>
+                    <th>Tempo Totale</th>
+                    <th>Settore 1</th>
+                    <th>Settore 2</th>
+                    <th>Settore 3</th>
+                    <th>Settore 4</th>
                     <th>Carburante (L)</th>
                     <th>Set Gomme</th>
                     <th>Note</th>
@@ -506,7 +599,11 @@ const EventFullDemo: React.FC = () => {
                     .map(lap => (
                       <tr key={lap.id}>
                         <td>{lap.lapNumber}</td>
-                        <td><strong>{lap.lapTime}</strong></td>
+                        <td><strong style={{ color: '#1976d2' }}>{lap.lapTime}</strong></td>
+                        <td>{lap.sector1 || '-'}</td>
+                        <td>{lap.sector2 || '-'}</td>
+                        <td>{lap.sector3 || '-'}</td>
+                        <td>{lap.sector4 || '-'}</td>
                         <td>{lap.fuelConsumed?.toFixed(2) || '-'}</td>
                         <td>{lap.tireSet || '-'}</td>
                         <td>{lap.notes || '-'}</td>

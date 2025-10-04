@@ -27,6 +27,15 @@ export const sessionAPI = {
   delete: (id) => apiClient.delete(`/sessions/${id}`),
   getTireData: (id) => apiClient.get(`/sessions/${id}/tires`),
   addTireData: (id, data) => apiClient.post(`/sessions/${id}/tires`, data),
+  getLaps: (id) => apiClient.get(`/sessions/${id}/laps`),
+  createLap: (id, data) => apiClient.post(`/sessions/${id}/laps`, data),
+};
+
+// Lap API
+export const lapAPI = {
+  get: (id) => apiClient.get(`/laps/${id}`),
+  update: (id, data) => apiClient.put(`/laps/${id}`, data),
+  delete: (id) => apiClient.delete(`/laps/${id}`),
 };
 
 // Archive API

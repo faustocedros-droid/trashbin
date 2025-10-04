@@ -43,9 +43,11 @@ class Session(db.Model):
     session_number = db.Column(db.Integer, default=1)
     duration = db.Column(db.Integer)  # Duration in minutes
     fuel_start = db.Column(db.Float)  # Starting fuel in liters
+    fuel_per_lap = db.Column(db.Float)  # Fuel consumed per lap in liters
     fuel_consumed = db.Column(db.Float)  # Fuel consumed in liters
     tire_set = db.Column(db.String(50))  # Tire set identifier
     best_lap_time = db.Column(db.String(20))  # Best lap time
+    session_status = db.Column(db.String(10))  # RF, FCY, SC, TFC
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -54,6 +56,7 @@ class Session(db.Model):
     tire_data = db.relationship('TireData', backref='session', lazy=True, cascade='all, delete-orphan')
     engine_data = db.relationship('EngineData', backref='session', lazy=True, cascade='all, delete-orphan')
     setup_data = db.relationship('SetupData', backref='session', lazy=True, cascade='all, delete-orphan')
+    laps = db.relationship('Lap', backref='session', lazy=True, cascade='all, delete-orphan')
     
     def to_dict(self):
         return {
@@ -63,12 +66,49 @@ class Session(db.Model):
             'session_number': self.session_number,
             'duration': self.duration,
             'fuel_start': self.fuel_start,
+            'fuel_per_lap': self.fuel_per_lap,
             'fuel_consumed': self.fuel_consumed,
             'tire_set': self.tire_set,
             'best_lap_time': self.best_lap_time,
+            'session_status': self.session_status,
             'notes': self.notes,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
+        }
+
+class Lap(db.Model):
+    """Model for individual laps"""
+    __tablename__ = 'laps'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(db.Integer, db.ForeignKey('sessions.id'), nullable=False)
+    lap_number = db.Column(db.Integer, nullable=False)
+    lap_time = db.Column(db.String(20))  # Total lap time in format MM:SS.mmm
+    sector1 = db.Column(db.String(20))  # Sector 1 time in format SS.mmm
+    sector2 = db.Column(db.String(20))  # Sector 2 time in format SS.mmm
+    sector3 = db.Column(db.String(20))  # Sector 3 time in format SS.mmm
+    sector4 = db.Column(db.String(20))  # Sector 4 time in format SS.mmm
+    fuel_consumed = db.Column(db.Float)  # Fuel consumed in this lap
+    tire_set = db.Column(db.String(50))  # Tire set identifier
+    lap_status = db.Column(db.String(10))  # RF, FCY, SC, TFC, or null for normal
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'session_id': self.session_id,
+            'lap_number': self.lap_number,
+            'lap_time': self.lap_time,
+            'sector1': self.sector1,
+            'sector2': self.sector2,
+            'sector3': self.sector3,
+            'sector4': self.sector4,
+            'fuel_consumed': self.fuel_consumed,
+            'tire_set': self.tire_set,
+            'lap_status': self.lap_status,
+            'notes': self.notes,
+            'created_at': self.created_at.isoformat()
         }
 
 class TireData(db.Model):

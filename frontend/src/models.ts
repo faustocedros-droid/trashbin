@@ -5,7 +5,7 @@
 
 // Tipo per un giro (lap)
 export interface Lap {
-  id: string;
+  id: string | number; // string for localStorage, number for backend
   lapNumber: number;
   lapTime: string; // formato MM:SS.mmm (calcolato automaticamente dalla somma dei settori)
   sector1?: string; // tempo settore 1 in formato SS.mmm
@@ -14,6 +14,7 @@ export interface Lap {
   sector4?: string; // tempo settore 4 in formato SS.mmm
   fuelConsumed?: number; // litri consumati in questo giro
   tireSet?: string;
+  lapStatus?: 'RF' | 'FCY' | 'SC' | 'TFC' | null; // stato del giro
   notes?: string;
 }
 
@@ -67,5 +68,6 @@ export interface LapFormData {
   sector4: string;
   fuelConsumed: number;
   tireSet: string;
+  lapStatus: 'RF' | 'FCY' | 'SC' | 'TFC' | null;
   notes: string;
 }

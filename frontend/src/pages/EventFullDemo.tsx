@@ -23,6 +23,8 @@ import {
   calculateBestLapTime,
   calculateTotalFuelConsumed,
   calculateLapTimeFromSectors,
+  calculateRemainingFuel,
+  calculateTheoreticalBestLap,
 } from '../eventUtils';
 
 const EventFullDemo: React.FC = () => {
@@ -39,7 +41,9 @@ const EventFullDemo: React.FC = () => {
     session_number: 1,
     duration: 60,
     fuel_start: 0,
+    fuel_per_lap: 0,
     tire_set: '',
+    session_status: null,
     notes: '',
   });
   
@@ -57,6 +61,10 @@ const EventFullDemo: React.FC = () => {
     tireSet: '',
     notes: '',
   });
+
+  // State per mostrare il dialog del carburante residuo dopo ogni giro
+  const [showFuelDialog, setShowFuelDialog] = useState(false);
+  const [fuelDialogMessage, setFuelDialogMessage] = useState('');
 
   /**
    * Effetto iniziale: carica o crea un evento demo dal localStorage
@@ -141,7 +149,9 @@ const EventFullDemo: React.FC = () => {
       session_number: selectedSession.session_number,
       duration: selectedSession.duration || 60,
       fuel_start: selectedSession.fuel_start || 0,
+      fuel_per_lap: selectedSession.fuel_per_lap || 0,
       tire_set: selectedSession.tire_set || '',
+      session_status: selectedSession.session_status || null,
       notes: selectedSession.notes || '',
     });
     setEditingSession(true);
@@ -238,6 +248,17 @@ const EventFullDemo: React.FC = () => {
     } else {
       // Aggiungi nuovo giro
       addLapToSession(event.id, selectedSession.id, lapData);
+      
+      // Mostra il dialog del carburante residuo solo per nuovi giri
+      if (selectedSession.fuel_start && selectedSession.fuel_per_lap) {
+        const remainingFuel = calculateRemainingFuel(
+          selectedSession.fuel_start,
+          selectedSession.fuel_per_lap,
+          selectedSession.laps.length + 1
+        );
+        setFuelDialogMessage(`Carburante residuo dopo il giro ${lapFormData.lapNumber}: ${remainingFuel.toFixed(2)} L`);
+        setShowFuelDialog(true);
+      }
     }
 
     reloadEvent();
@@ -382,6 +403,17 @@ const EventFullDemo: React.FC = () => {
                 </div>
 
                 <div className="form-group">
+                  <label>Consumo Carburante per Giro (litri)</label>
+                  <input
+                    type="number"
+                    value={sessionFormData.fuel_per_lap}
+                    onChange={(e) => setSessionFormData({ ...sessionFormData, fuel_per_lap: parseFloat(e.target.value) })}
+                    step="0.01"
+                    min="0"
+                  />
+                </div>
+
+                <div className="form-group">
                   <label>Set Gomme</label>
                   <input
                     type="text"
@@ -389,6 +421,20 @@ const EventFullDemo: React.FC = () => {
                     onChange={(e) => setSessionFormData({ ...sessionFormData, tire_set: e.target.value })}
                     placeholder="es. Set#1"
                   />
+                </div>
+
+                <div className="form-group">
+                  <label>Stato Sessione</label>
+                  <select
+                    value={sessionFormData.session_status || ''}
+                    onChange={(e) => setSessionFormData({ ...sessionFormData, session_status: (e.target.value || null) as any })}
+                  >
+                    <option value="">Nessuno</option>
+                    <option value="RF">RF (Red Flag)</option>
+                    <option value="FCY">FCY (Full Course Yellow)</option>
+                    <option value="SC">SC (Safety Car)</option>
+                    <option value="TFC">TFC (Track Conditions)</option>
+                  </select>
                 </div>
               </div>
 
@@ -411,16 +457,43 @@ const EventFullDemo: React.FC = () => {
             </form>
           ) : (
             /* Visualizzazione dati sessione */
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-              <p><strong>Durata:</strong> {selectedSession.duration || '-'} min</p>
-              <p><strong>Carburante iniziale:</strong> {selectedSession.fuel_start || '-'} L</p>
-              <p><strong>Set gomme:</strong> {selectedSession.tire_set || '-'}</p>
-              <p><strong>Miglior giro:</strong> {calculateBestLapTime(selectedSession.laps) || '-'}</p>
-              <p><strong>Carburante consumato:</strong> {calculateTotalFuelConsumed(selectedSession.laps).toFixed(2)} L</p>
-              <p><strong>Numero giri:</strong> {selectedSession.laps.length}</p>
-              {selectedSession.notes && (
-                <p style={{ gridColumn: '1 / -1' }}><strong>Note:</strong> {selectedSession.notes}</p>
+            <div>
+              {/* Stato Sessione - Widget colorato */}
+              {selectedSession.session_status && (
+                <div style={{ 
+                  marginBottom: '15px',
+                  padding: '10px 20px',
+                  borderRadius: '6px',
+                  textAlign: 'center',
+                  fontWeight: 'bold',
+                  fontSize: '16px',
+                  color: 'black',
+                  background: 
+                    selectedSession.session_status === 'RF' ? 'red' :
+                    selectedSession.session_status === 'FCY' ? 'yellow' :
+                    selectedSession.session_status === 'SC' ? 'yellow' :
+                    selectedSession.session_status === 'TFC' ? 'orange' : 'transparent'
+                }}>
+                  {selectedSession.session_status}
+                  {selectedSession.session_status === 'RF' && ' - Red Flag'}
+                  {selectedSession.session_status === 'FCY' && ' - Full Course Yellow'}
+                  {selectedSession.session_status === 'SC' && ' - Safety Car'}
+                  {selectedSession.session_status === 'TFC' && ' - Track Conditions'}
+                </div>
               )}
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <p><strong>Durata:</strong> {selectedSession.duration || '-'} min</p>
+                <p><strong>Carburante iniziale:</strong> {selectedSession.fuel_start || '-'} L</p>
+                <p><strong>Consumo per giro:</strong> {selectedSession.fuel_per_lap || '-'} L</p>
+                <p><strong>Set gomme:</strong> {selectedSession.tire_set || '-'}</p>
+                <p><strong>Miglior giro:</strong> {calculateBestLapTime(selectedSession.laps) || '-'}</p>
+                <p><strong>Carburante consumato:</strong> {calculateTotalFuelConsumed(selectedSession.laps).toFixed(2)} L</p>
+                <p><strong>Numero giri:</strong> {selectedSession.laps.length}</p>
+                {selectedSession.notes && (
+                  <p style={{ gridColumn: '1 / -1' }}><strong>Note:</strong> {selectedSession.notes}</p>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -434,6 +507,67 @@ const EventFullDemo: React.FC = () => {
             <button className="btn btn-primary" onClick={handleAddLap}>
               + Aggiungi Giro
             </button>
+          </div>
+
+          {/* Informazioni sopra la lista giri */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
+            {/* Carburante Residuo */}
+            {selectedSession.fuel_start !== undefined && selectedSession.fuel_per_lap !== undefined && selectedSession.fuel_per_lap > 0 && (
+              <div style={{ 
+                padding: '15px',
+                borderRadius: '6px',
+                textAlign: 'center',
+                fontWeight: 'bold',
+                fontSize: '18px',
+                background: (() => {
+                  const remaining = calculateRemainingFuel(
+                    selectedSession.fuel_start,
+                    selectedSession.fuel_per_lap,
+                    selectedSession.laps.length
+                  );
+                  return remaining < 15 ? 'orange' : '#e3f2fd';
+                })(),
+                color: (() => {
+                  const remaining = calculateRemainingFuel(
+                    selectedSession.fuel_start,
+                    selectedSession.fuel_per_lap,
+                    selectedSession.laps.length
+                  );
+                  return remaining < 15 ? 'white' : '#333';
+                })()
+              }}>
+                <div style={{ fontSize: '14px', fontWeight: 'normal', marginBottom: '5px' }}>
+                  Carburante Residuo
+                </div>
+                <div>
+                  {calculateRemainingFuel(
+                    selectedSession.fuel_start,
+                    selectedSession.fuel_per_lap,
+                    selectedSession.laps.length
+                  ).toFixed(2)} L
+                </div>
+              </div>
+            )}
+
+            {/* Miglior Tempo Teorico */}
+            {selectedSession.laps.length > 0 && calculateTheoreticalBestLap(selectedSession.laps) && (
+              <div style={{ 
+                padding: '15px',
+                borderRadius: '6px',
+                textAlign: 'center',
+                fontWeight: 'bold',
+                fontSize: '18px',
+                background: '#e8f5e9',
+                color: '#333'
+              }}>
+                <div style={{ fontSize: '14px', fontWeight: 'normal', marginBottom: '5px' }}>
+                  Miglior Tempo Teorico
+                </div>
+                <div style={{ color: '#2e7d32' }}>
+                  {calculateTheoreticalBestLap(selectedSession.laps)}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Form aggiunta/modifica giro */}
@@ -639,6 +773,41 @@ const EventFullDemo: React.FC = () => {
         <p><strong>ℹ️ Persistenza Dati:</strong> Tutti i dati sono salvati automaticamente nel localStorage del browser. 
         I dati rimangono disponibili anche dopo il refresh della pagina.</p>
       </div>
+
+      {/* Dialog Carburante Residuo */}
+      {showFuelDialog && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: 'white',
+            padding: '30px',
+            borderRadius: '8px',
+            maxWidth: '400px',
+            textAlign: 'center',
+            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+          }}>
+            <h3 style={{ marginBottom: '20px', color: '#1976d2' }}>✓ Giro Completato</h3>
+            <p style={{ fontSize: '16px', marginBottom: '25px' }}>{fuelDialogMessage}</p>
+            <button 
+              className="btn btn-primary" 
+              onClick={() => setShowFuelDialog(false)}
+              style={{ minWidth: '120px' }}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

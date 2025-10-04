@@ -24,9 +24,11 @@ export interface Session {
   session_number: number;
   duration?: number; // minuti
   fuel_start?: number; // litri
+  fuel_per_lap?: number; // litri consumati per giro
   fuel_consumed?: number; // litri totali consumati
   tire_set?: string;
   best_lap_time?: string;
+  session_status?: 'RF' | 'FCY' | 'SC' | 'TFC' | null; // stato della sessione
   notes?: string;
   laps: Lap[]; // array di giri
 }
@@ -49,7 +51,9 @@ export interface SessionFormData {
   session_number: number;
   duration: number;
   fuel_start: number;
+  fuel_per_lap: number;
   tire_set: string;
+  session_status: Session['session_status'];
   notes: string;
 }
 

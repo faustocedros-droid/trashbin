@@ -14,7 +14,9 @@ function EventDetail() {
     session_number: 1,
     duration: 60,
     fuel_start: 0,
+    fuel_per_lap: 0,
     tire_set: '',
+    session_status: null,
     notes: '',
   });
 
@@ -47,7 +49,9 @@ function EventDetail() {
         session_number: 1,
         duration: 60,
         fuel_start: 0,
+        fuel_per_lap: 0,
         tire_set: '',
+        session_status: null,
         notes: '',
       });
       loadEventData();
@@ -182,6 +186,18 @@ function EventDetail() {
               </div>
 
               <div className="form-group">
+                <label>Consumo Carburante per Giro (litri)</label>
+                <input
+                  type="number"
+                  name="fuel_per_lap"
+                  value={sessionFormData.fuel_per_lap}
+                  onChange={handleSessionChange}
+                  step="0.01"
+                  min="0"
+                />
+              </div>
+
+              <div className="form-group">
                 <label>Set Gomme</label>
                 <input
                   type="text"
@@ -190,6 +206,21 @@ function EventDetail() {
                   onChange={handleSessionChange}
                   placeholder="es. Set#1"
                 />
+              </div>
+
+              <div className="form-group">
+                <label>Stato Sessione</label>
+                <select
+                  name="session_status"
+                  value={sessionFormData.session_status || ''}
+                  onChange={handleSessionChange}
+                >
+                  <option value="">Nessuno</option>
+                  <option value="RF">RF (Red Flag)</option>
+                  <option value="FCY">FCY (Full Course Yellow)</option>
+                  <option value="SC">SC (Safety Car)</option>
+                  <option value="TFC">TFC (Track Conditions)</option>
+                </select>
               </div>
             </div>
 

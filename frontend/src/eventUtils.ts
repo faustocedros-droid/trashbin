@@ -150,3 +150,41 @@ export const calculateBestLapTime = (laps: Lap[]): string | undefined => {
 export const calculateTotalFuelConsumed = (laps: Lap[]): number => {
   return laps.reduce((total, lap) => total + (lap.fuelConsumed || 0), 0);
 };
+
+/**
+ * Calcola il tempo totale del giro dalla somma dei settori
+ * @param sector1 - Tempo settore 1 in formato SS.mmm
+ * @param sector2 - Tempo settore 2 in formato SS.mmm
+ * @param sector3 - Tempo settore 3 in formato SS.mmm
+ * @param sector4 - Tempo settore 4 in formato SS.mmm
+ * @returns Tempo totale in formato MM:SS.mmm
+ */
+export const calculateLapTimeFromSectors = (
+  sector1: string,
+  sector2: string,
+  sector3: string,
+  sector4: string
+): string => {
+  // Converte un tempo settore (SS.mmm) in secondi
+  const sectorToSeconds = (sector: string): number => {
+    if (!sector || sector.trim() === '') return 0;
+    const parsed = parseFloat(sector);
+    return isNaN(parsed) ? 0 : parsed;
+  };
+
+  const totalSeconds = 
+    sectorToSeconds(sector1) + 
+    sectorToSeconds(sector2) + 
+    sectorToSeconds(sector3) + 
+    sectorToSeconds(sector4);
+
+  if (totalSeconds === 0) return '';
+
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = (totalSeconds % 60).toFixed(3);
+  
+  // Assicura che i secondi siano sempre con 2 cifre prima del punto decimale
+  const paddedSeconds = parseFloat(seconds) < 10 ? `0${seconds}` : seconds;
+  
+  return `${minutes}:${paddedSeconds}`;
+};

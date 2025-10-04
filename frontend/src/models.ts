@@ -7,7 +7,11 @@
 export interface Lap {
   id: string;
   lapNumber: number;
-  lapTime: string; // formato MM:SS.mmm
+  lapTime: string; // formato MM:SS.mmm (calcolato automaticamente dalla somma dei settori)
+  sector1?: string; // tempo settore 1 in formato SS.mmm
+  sector2?: string; // tempo settore 2 in formato SS.mmm
+  sector3?: string; // tempo settore 3 in formato SS.mmm
+  sector4?: string; // tempo settore 4 in formato SS.mmm
   fuelConsumed?: number; // litri consumati in questo giro
   tireSet?: string;
   notes?: string;
@@ -53,6 +57,10 @@ export interface SessionFormData {
 export interface LapFormData {
   lapNumber: number;
   lapTime: string;
+  sector1: string;
+  sector2: string;
+  sector3: string;
+  sector4: string;
   fuelConsumed: number;
   tireSet: string;
   notes: string;

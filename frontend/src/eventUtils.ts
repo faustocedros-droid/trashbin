@@ -152,6 +152,51 @@ export const calculateTotalFuelConsumed = (laps: Lap[]): number => {
 };
 
 /**
+ * Calcola il carburante residuo basato sul carburante iniziale e i giri completati
+ * @param fuelStart - Carburante iniziale in litri
+ * @param fuelPerLap - Consumo carburante per giro in litri
+ * @param completedLaps - Numero di giri completati
+ * @returns Carburante residuo in litri
+ */
+export const calculateRemainingFuel = (fuelStart: number, fuelPerLap: number, completedLaps: number): number => {
+  return fuelStart - (fuelPerLap * completedLaps);
+};
+
+/**
+ * Calcola il miglior tempo teorico dalla somma dei migliori settori
+ * @param laps - Array di giri
+ * @returns Tempo teorico in formato MM:SS.mmm o undefined se non ci sono dati
+ */
+export const calculateTheoreticalBestLap = (laps: Lap[]): string | undefined => {
+  if (laps.length === 0) return undefined;
+  
+  // Trova i migliori tempi per ciascun settore
+  const bestSectors = [1, 2, 3, 4].map(sectorNum => {
+    const sectorKey = `sector${sectorNum}` as keyof Lap;
+    const sectorTimes = laps
+      .map(lap => lap[sectorKey] as string | undefined)
+      .filter(time => time && time.trim() !== '')
+      .map(time => parseFloat(time as string))
+      .filter(time => !isNaN(time));
+    
+    if (sectorTimes.length === 0) return 0;
+    return Math.min(...sectorTimes);
+  });
+  
+  // Se non ci sono dati per tutti i settori, ritorna undefined
+  if (bestSectors.some(sector => sector === 0)) return undefined;
+  
+  // Calcola il tempo totale
+  const totalSeconds = bestSectors.reduce((sum, sector) => sum + sector, 0);
+  
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = (totalSeconds % 60).toFixed(3);
+  const paddedSeconds = parseFloat(seconds) < 10 ? `0${seconds}` : seconds;
+  
+  return `${minutes}:${paddedSeconds}`;
+};
+
+/**
  * Calcola il tempo totale del giro dalla somma dei settori
  * @param sector1 - Tempo settore 1 in formato SS.mmm
  * @param sector2 - Tempo settore 2 in formato SS.mmm

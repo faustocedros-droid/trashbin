@@ -102,7 +102,7 @@ export const updateLapInSession = (eventId: string, sessionId: string, lap: Lap)
 /**
  * Elimina un giro da una sessione
  */
-export const deleteLapFromSession = (eventId: string, sessionId: string, lapId: string): void => {
+export const deleteLapFromSession = (eventId: string, sessionId: string, lapId: string | number): void => {
   const event = loadEventFromStorage(eventId);
   if (!event) return;
   

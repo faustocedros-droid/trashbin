@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { eventAPI, sessionAPI, lapAPI, archiveAPI } from '../services/api';
 import {
   calculateBestLapTime,
-  calculateTotalFuelConsumed,
   calculateLapTimeFromSectors,
   calculateRemainingFuel,
   calculateTheoreticalBestLap,
@@ -51,6 +50,7 @@ function EventDetail() {
 
   useEffect(() => {
     loadEventData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const loadEventData = async () => {

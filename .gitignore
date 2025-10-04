@@ -38,3 +38,10 @@ yarn-error.log*
 /tmp/
 *.tmp
 *.log
+
+# TypeScript
+dist/
+*.tsbuildinfo
+test_eventUtils.ts
+/package.json
+/package-lock.json

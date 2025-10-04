@@ -59,6 +59,7 @@ const EventFullDemo: React.FC = () => {
     sector4: '',
     fuelConsumed: 0,
     tireSet: '',
+    lapStatus: null,
     notes: '',
   });
 
@@ -189,6 +190,7 @@ const EventFullDemo: React.FC = () => {
       sector4: '',
       fuelConsumed: 0,
       tireSet: selectedSession.tire_set || '',
+      lapStatus: null,
       notes: '',
     });
     setEditingLap(null);
@@ -208,6 +210,7 @@ const EventFullDemo: React.FC = () => {
       sector4: lap.sector4 || '',
       fuelConsumed: lap.fuelConsumed || 0,
       tireSet: lap.tireSet || '',
+      lapStatus: lap.lapStatus || null,
       notes: lap.notes || '',
     });
     setEditingLap(lap);
@@ -239,6 +242,7 @@ const EventFullDemo: React.FC = () => {
       sector4: lapFormData.sector4,
       fuelConsumed: lapFormData.fuelConsumed,
       tireSet: lapFormData.tireSet,
+      lapStatus: lapFormData.lapStatus,
       notes: lapFormData.notes,
     };
 
@@ -661,7 +665,7 @@ const EventFullDemo: React.FC = () => {
               </div>
 
               {/* Riga 3: Altri campi */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', marginBottom: '15px' }}>
                 <div className="form-group">
                   <label>Carburante Consumato (L)</label>
                   <input
@@ -681,6 +685,20 @@ const EventFullDemo: React.FC = () => {
                     onChange={(e) => setLapFormData({ ...lapFormData, tireSet: e.target.value })}
                     placeholder="Set#1"
                   />
+                </div>
+
+                <div className="form-group">
+                  <label>Stato Giro</label>
+                  <select
+                    value={lapFormData.lapStatus || ''}
+                    onChange={(e) => setLapFormData({ ...lapFormData, lapStatus: (e.target.value || null) as any })}
+                  >
+                    <option value="">Normale</option>
+                    <option value="RF">RF (Red Flag)</option>
+                    <option value="FCY">FCY (Full Course Yellow)</option>
+                    <option value="SC">SC (Safety Car)</option>
+                    <option value="TFC">TFC (Track Conditions)</option>
+                  </select>
                 </div>
               </div>
 
@@ -716,6 +734,7 @@ const EventFullDemo: React.FC = () => {
                 <thead>
                   <tr>
                     <th>Giro</th>
+                    <th>Stato</th>
                     <th>Tempo Totale</th>
                     <th>Settore 1</th>
                     <th>Settore 2</th>
@@ -733,6 +752,25 @@ const EventFullDemo: React.FC = () => {
                     .map(lap => (
                       <tr key={lap.id}>
                         <td>{lap.lapNumber}</td>
+                        <td>
+                          {lap.lapStatus ? (
+                            <div style={{
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              fontSize: '12px',
+                              fontWeight: 'bold',
+                              textAlign: 'center',
+                              color: 'black',
+                              background: 
+                                lap.lapStatus === 'RF' ? 'red' :
+                                lap.lapStatus === 'FCY' ? 'yellow' :
+                                lap.lapStatus === 'SC' ? 'yellow' :
+                                lap.lapStatus === 'TFC' ? 'orange' : 'transparent'
+                            }}>
+                              {lap.lapStatus}
+                            </div>
+                          ) : '-'}
+                        </td>
                         <td><strong style={{ color: '#1976d2' }}>{lap.lapTime}</strong></td>
                         <td>{lap.sector1 || '-'}</td>
                         <td>{lap.sector2 || '-'}</td>

@@ -13,7 +13,7 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-i
 CORS(app)
 
 # Import and initialize database
-from models import db, RaceEvent, Session, TireData, EngineData, SetupData
+from models import db, RaceEvent, Session, Lap, TireData, EngineData, SetupData
 db.init_app(app)
 
 # Create tables
@@ -93,7 +93,9 @@ def handle_sessions(event_id):
             session_number=data.get('session_number', 1),
             duration=data.get('duration'),
             fuel_start=data.get('fuel_start'),
+            fuel_per_lap=data.get('fuel_per_lap'),
             tire_set=data.get('tire_set'),
+            session_status=data.get('session_status'),
             notes=data.get('notes')
         )
         db.session.add(session)
@@ -114,13 +116,71 @@ def handle_session(session_id):
         session.session_number = data.get('session_number', session.session_number)
         session.duration = data.get('duration', session.duration)
         session.fuel_start = data.get('fuel_start', session.fuel_start)
+        session.fuel_per_lap = data.get('fuel_per_lap', session.fuel_per_lap)
         session.tire_set = data.get('tire_set', session.tire_set)
+        session.session_status = data.get('session_status', session.session_status)
         session.notes = data.get('notes', session.notes)
         db.session.commit()
         return jsonify(session.to_dict())
     
     elif request.method == 'DELETE':
         db.session.delete(session)
+        db.session.commit()
+        return '', 204
+
+@app.route('/api/sessions/<int:session_id>/laps', methods=['GET', 'POST'])
+def handle_laps(session_id):
+    """Get all laps for a session or create a new lap"""
+    session = Session.query.get_or_404(session_id)
+    
+    if request.method == 'GET':
+        laps = Lap.query.filter_by(session_id=session_id).order_by(Lap.lap_number).all()
+        return jsonify([lap.to_dict() for lap in laps])
+    
+    elif request.method == 'POST':
+        data = request.json
+        lap = Lap(
+            session_id=session_id,
+            lap_number=data['lap_number'],
+            lap_time=data.get('lap_time'),
+            sector1=data.get('sector1'),
+            sector2=data.get('sector2'),
+            sector3=data.get('sector3'),
+            sector4=data.get('sector4'),
+            fuel_consumed=data.get('fuel_consumed'),
+            tire_set=data.get('tire_set'),
+            lap_status=data.get('lap_status'),
+            notes=data.get('notes')
+        )
+        db.session.add(lap)
+        db.session.commit()
+        return jsonify(lap.to_dict()), 201
+
+@app.route('/api/laps/<int:lap_id>', methods=['GET', 'PUT', 'DELETE'])
+def handle_lap(lap_id):
+    """Get, update or delete a specific lap"""
+    lap = Lap.query.get_or_404(lap_id)
+    
+    if request.method == 'GET':
+        return jsonify(lap.to_dict())
+    
+    elif request.method == 'PUT':
+        data = request.json
+        lap.lap_number = data.get('lap_number', lap.lap_number)
+        lap.lap_time = data.get('lap_time', lap.lap_time)
+        lap.sector1 = data.get('sector1', lap.sector1)
+        lap.sector2 = data.get('sector2', lap.sector2)
+        lap.sector3 = data.get('sector3', lap.sector3)
+        lap.sector4 = data.get('sector4', lap.sector4)
+        lap.fuel_consumed = data.get('fuel_consumed', lap.fuel_consumed)
+        lap.tire_set = data.get('tire_set', lap.tire_set)
+        lap.lap_status = data.get('lap_status', lap.lap_status)
+        lap.notes = data.get('notes', lap.notes)
+        db.session.commit()
+        return jsonify(lap.to_dict())
+    
+    elif request.method == 'DELETE':
+        db.session.delete(lap)
         db.session.commit()
         return '', 204
 

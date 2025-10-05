@@ -62,3 +62,53 @@
 .App-footer p {
   margin: 0;
 }
+
+.hamburger-menu {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 28px;
+  cursor: pointer;
+  padding: 5px 10px;
+  line-height: 1;
+  transition: color 0.3s;
+}
+
+.hamburger-menu:hover {
+  color: #1976d2;
+}
+
+.hamburger-dropdown {
+  background-color: #2a2a2a;
+  border-top: 1px solid #444;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.hamburger-dropdown ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.hamburger-dropdown li {
+  border-bottom: 1px solid #444;
+}
+
+.hamburger-dropdown li:last-child {
+  border-bottom: none;
+}
+
+.hamburger-dropdown a {
+  display: block;
+  color: white;
+  text-decoration: none;
+  padding: 15px 20px;
+  font-weight: 500;
+  transition: background-color 0.3s;
+}
+
+.hamburger-dropdown a:hover {
+  background-color: #1976d2;
+}

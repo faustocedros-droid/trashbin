@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import './App.css';
 import Dashboard from './pages/Dashboard';
@@ -9,22 +9,47 @@ import TirePressure from './pages/TirePressure';
 import Settings from './pages/Settings';
 
 function App() {
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const toggleMenu = () => {
+    setMenuOpen(!menuOpen);
+  };
+
   return (
     <Router>
       <div className="App">
         <header className="App-header">
           <nav className="navbar">
             <div className="container">
-              <h1 className="logo">🏎️ Racing Car Manager</h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                <button 
+                  className="hamburger-menu" 
+                  onClick={toggleMenu}
+                  aria-label="Toggle menu"
+                >
+                  ☰
+                </button>
+                <h1 className="logo">🏎️ Racing Car Manager</h1>
+              </div>
               <ul className="nav-links">
                 <li><Link to="/">Dashboard</Link></li>
                 <li><Link to="/events">Eventi</Link></li>
-                <li><Link to="/tire-pressure">Pressioni</Link></li>
                 <li><Link to="/demo">Demo</Link></li>
                 <li><Link to="/settings">Impostazioni</Link></li>
               </ul>
             </div>
           </nav>
+          {menuOpen && (
+            <div className="hamburger-dropdown">
+              <ul>
+                <li>
+                  <Link to="/tire-pressure" onClick={() => setMenuOpen(false)}>
+                    Tire pressure management
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          )}
         </header>
         
         <main className="App-main">

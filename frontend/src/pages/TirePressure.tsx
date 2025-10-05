@@ -2,484 +2,582 @@ import React, { useState } from 'react';
 
 /**
  * Tire Pressure Management Page
- * Replica del worksheet Excel "Pressioni" con le formule estratte
+ * Completamente ricostruita seguendo il layout Excel
  */
 
-interface TireData {
-  // Temperatura ambiente e target
-  tempAmbient: number;  // E3/F3
-  tempTarget: number;   // F3
-  
-  // Pressioni fredde e calde (bar)
-  pressureColdFL: number;  // F7 Front Left
-  pressureColdFR: number;  // G7 Front Right
-  pressureHotFL: number;   // F8 Front Left
-  pressureHotFR: number;   // G8 Front Right
-  
-  // Pressioni in psi (calcolate)
-  // Le formule usano conversione: bar * 14.504 = psi
-  
-  // Incrementi temperatura
-  tempIncrementFL: number;  // H22
-  tempIncrementFR: number;  // H23
-  
-  // Coefficienti di correzione
-  coeffK22: number;  // K22
-  coeffK23: number;  // K23
+interface InputData {
+  E3: number;  // Temperatura Ambiente
+  E4: number;  // Temperatura Ambiente
+  F3: number;  // Pressione Fredda
+  F4: number;  // Pressione Fredda
+  G3: number;  // Pressione Calda FL
+  G4: number;  // Pressione Calda FL
+  H3: number;  // Pressione Calda FR
+  H4: number;  // Pressione Calda FR
 }
 
-interface CalculatedResults {
-  // Incrementi di pressione (I3, J3, I4, J4)
-  pressureIncFL_I3: number;
-  pressureIncFR_J3: number;
-  pressureIncFL_I4: number;
-  pressureIncFR_J4: number;
-  
-  // Conversioni bar -> psi
-  psiColdFL_D7: number;
-  psiColdFR_E7: number;
-  psiHotFL_D8: number;
-  psiHotFR_E8: number;
-  
-  // Rapporti pressione
-  ratioFL_D19: number;
-  ratioFR_E19: number;
-  
-  // Pressioni corrette
-  correctedPsiFL_D22: number;
-  correctedPsiFR_E22: number;
-  correctedBarFL_F22: number;
-  correctedBarFR_G22: number;
+interface OutputData {
+  I3: number;
+  J3: number;
+  I4: number;
+  J4: number;
 }
 
 function TirePressure() {
-  const [tireData, setTireData] = useState<TireData>({
-    tempAmbient: 20,
-    tempTarget: 25,
-    pressureColdFL: 2.0,
-    pressureColdFR: 2.0,
-    pressureHotFL: 2.3,
-    pressureHotFR: 2.3,
-    tempIncrementFL: 5,
-    tempIncrementFR: 5,
-    coeffK22: 0.02,
-    coeffK23: 0.015,
+  const [inputs, setInputs] = useState<InputData>({
+    E3: 20,
+    E4: 20,
+    F3: 25,
+    F4: 2.0,
+    G3: 2.3,
+    G4: 2.3,
+    H3: 2.3,
+    H4: 2.3,
   });
 
-  const [results, setResults] = useState<CalculatedResults | null>(null);
+  const [outputs, setOutputs] = useState<OutputData | null>(null);
 
-  // Funzioni di calcolo basate sulle formule Excel estratte
-
-  /**
-   * Formula: =(G3+F4*(F3+273.15)/(E3+273.15))-F4
-   * Calcola l'incremento di pressione in base alla temperatura
-   */
-  const calculatePressureIncrement = (
-    pressureHot: number,
-    pressureCold: number,
-    tempTarget: number,
-    tempAmbient: number
-  ): number => {
-    return (pressureHot + pressureCold * (tempTarget + 273.15) / (tempAmbient + 273.15)) - pressureCold;
+  // Formule Excel
+  // I3: =(G3+F4*(F3+273.15)/(E3+273.15))-F4
+  const calculateI3 = (data: InputData): number => {
+    return (data.G3 + data.F4 * (data.F3 + 273.15) / (data.E3 + 273.15)) - data.F4;
   };
 
-  /**
-   * Formula: =F7*14.504
-   * Conversione da bar a psi
-   */
-  const barToPsi = (bar: number): number => {
-    return bar * 14.504;
+  // J3: =(H3+F4*(F3+273.15)/(E3+273.15))-F4
+  const calculateJ3 = (data: InputData): number => {
+    return (data.H3 + data.F4 * (data.F3 + 273.15) / (data.E3 + 273.15)) - data.F4;
   };
 
-  /**
-   * Formula: =N17/14.504
-   * Conversione da psi a bar
-   */
-  const psiToBar = (psi: number): number => {
-    return psi / 14.504;
+  // I4: =(G4+F4*(F3+273.15)/(E3+273.15))-F4
+  const calculateI4 = (data: InputData): number => {
+    return (data.G4 + data.F4 * (data.F3 + 273.15) / (data.E3 + 273.15)) - data.F4;
   };
 
-  /**
-   * Formula: =D16/D13
-   * Calcola il rapporto tra pressione calda e fredda
-   */
-  const calculatePressureRatio = (psiHot: number, psiCold: number): number => {
-    if (psiCold === 0) return 1;
-    return psiHot / psiCold;
-  };
-
-  /**
-   * Formula: =(D7/D19)- $K$22*(H22-H13) - $K$23*(H23-H16)
-   * Calcola la pressione corretta in base agli incrementi di temperatura
-   */
-  const calculateCorrectedPressure = (
-    psiCold: number,
-    ratio: number,
-    coeffK22: number,
-    tempIncrement1: number,
-    tempBase1: number,
-    coeffK23: number,
-    tempIncrement2: number,
-    tempBase2: number
-  ): number => {
-    if (ratio === 0) return psiCold;
-    return (psiCold / ratio) - coeffK22 * (tempIncrement1 - tempBase1) - coeffK23 * (tempIncrement2 - tempBase2);
+  // J4: =(H4+F4*(F3+273.15)/(E3+273.15))-F4
+  const calculateJ4 = (data: InputData): number => {
+    return (data.H4 + data.F4 * (data.F3 + 273.15) / (data.E3 + 273.15)) - data.F4;
   };
 
   const handleCalculate = () => {
-    // Calcola incrementi di pressione (formule I3, J3, I4, J4)
-    const pressureIncFL_I3 = calculatePressureIncrement(
-      tireData.pressureHotFL,
-      tireData.pressureColdFL,
-      tireData.tempTarget,
-      tireData.tempAmbient
-    );
-    
-    const pressureIncFR_J3 = calculatePressureIncrement(
-      tireData.pressureHotFR,
-      tireData.pressureColdFR,
-      tireData.tempTarget,
-      tireData.tempAmbient
-    );
-
-    // Conversioni bar -> psi (formule D7, E7, D8, E8)
-    const psiColdFL_D7 = barToPsi(tireData.pressureColdFL);
-    const psiColdFR_E7 = barToPsi(tireData.pressureColdFR);
-    const psiHotFL_D8 = barToPsi(tireData.pressureHotFL);
-    const psiHotFR_E8 = barToPsi(tireData.pressureHotFR);
-
-    // Calcola rapporti (formule D19, E19)
-    const ratioFL_D19 = calculatePressureRatio(psiHotFL_D8, psiColdFL_D7);
-    const ratioFR_E19 = calculatePressureRatio(psiHotFR_E8, psiColdFR_E7);
-
-    // Calcola pressioni corrette (formule D22, E22)
-    const correctedPsiFL_D22 = calculateCorrectedPressure(
-      psiColdFL_D7,
-      ratioFL_D19,
-      tireData.coeffK22,
-      tireData.tempIncrementFL,
-      0, // H13 base
-      tireData.coeffK23,
-      tireData.tempIncrementFR,
-      0  // H16 base
-    );
-
-    const correctedPsiFR_E22 = calculateCorrectedPressure(
-      psiColdFR_E7,
-      ratioFR_E19,
-      tireData.coeffK22,
-      tireData.tempIncrementFL,
-      0,
-      tireData.coeffK23,
-      tireData.tempIncrementFR,
-      0
-    );
-
-    // Conversioni psi -> bar (formule F22, G22)
-    const correctedBarFL_F22 = psiToBar(correctedPsiFL_D22);
-    const correctedBarFR_G22 = psiToBar(correctedPsiFR_E22);
-
-    setResults({
-      pressureIncFL_I3,
-      pressureIncFR_J3,
-      pressureIncFL_I4: pressureIncFL_I3, // Replica formula I4
-      pressureIncFR_J4: pressureIncFR_J3, // Replica formula J4
-      psiColdFL_D7,
-      psiColdFR_E7,
-      psiHotFL_D8,
-      psiHotFR_E8,
-      ratioFL_D19,
-      ratioFR_E19,
-      correctedPsiFL_D22,
-      correctedPsiFR_E22,
-      correctedBarFL_F22,
-      correctedBarFR_G22,
+    setOutputs({
+      I3: calculateI3(inputs),
+      J3: calculateJ3(inputs),
+      I4: calculateI4(inputs),
+      J4: calculateJ4(inputs),
     });
   };
 
-  const handleInputChange = (field: keyof TireData, value: number) => {
-    setTireData({
-      ...tireData,
+  const handleInputChange = (field: keyof InputData, value: number) => {
+    setInputs({
+      ...inputs,
       [field]: value,
     });
   };
 
   return (
-    <div className="container" style={{ paddingTop: '40px' }}>
+    <div className="container" style={{ paddingTop: '40px', maxWidth: '1000px' }}>
       <h1>🏎️ Tire Pressure Management</h1>
       <p style={{ color: '#666', marginBottom: '30px' }}>
-        Gestione delle pressioni pneumatici - Replica del worksheet Excel "Pressioni"
+        Gestione delle pressioni pneumatici - Layout Excel
       </p>
 
+      {/* Dati di Input - Excel Style */}
       <div className="card" style={{ marginBottom: '30px' }}>
-        <h2>Dati di Input</h2>
+        <h2>📝 Dati di Input</h2>
         
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginTop: '20px' }}>
-          {/* Temperature */}
-          <div className="form-group">
-            <label>Temperatura Ambiente (°C)</label>
-            <input
-              type="number"
-              step="0.1"
-              value={tireData.tempAmbient}
-              onChange={(e) => handleInputChange('tempAmbient', parseFloat(e.target.value) || 0)}
-              style={{ width: '100%', padding: '8px', fontSize: '16px' }}
-            />
+        <div style={{ marginTop: '20px' }}>
+          {/* Riga intestazioni */}
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: '200px 120px 120px 120px 120px',
+            gap: '10px',
+            marginBottom: '10px',
+            fontWeight: 'bold',
+            fontSize: '14px',
+            color: '#666'
+          }}>
+            <div></div>
+            <div style={{ textAlign: 'center' }}>E</div>
+            <div style={{ textAlign: 'center' }}>F</div>
+            <div style={{ textAlign: 'center' }}>G</div>
+            <div style={{ textAlign: 'center' }}>H</div>
           </div>
 
-          <div className="form-group">
-            <label>Temperatura Target (°C)</label>
-            <input
-              type="number"
-              step="0.1"
-              value={tireData.tempTarget}
-              onChange={(e) => handleInputChange('tempTarget', parseFloat(e.target.value) || 0)}
-              style={{ width: '100%', padding: '8px', fontSize: '16px' }}
-            />
+          {/* Riga 3 */}
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: '200px 120px 120px 120px 120px',
+            gap: '10px',
+            marginBottom: '15px'
+          }}>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center',
+              fontWeight: '600',
+              fontSize: '14px'
+            }}>
+              Riga 3
+            </div>
+            
+            {/* E3 */}
+            <div>
+              <label style={{ 
+                display: 'block', 
+                fontSize: '11px', 
+                marginBottom: '4px',
+                color: '#666'
+              }}>
+                Temp. Amb. (°C)
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                value={inputs.E3}
+                onChange={(e) => handleInputChange('E3', parseFloat(e.target.value) || 0)}
+                style={{ 
+                  width: '100%', 
+                  padding: '8px',
+                  border: '2px solid #4CAF50',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  backgroundColor: '#E8F5E9'
+                }}
+              />
+            </div>
+
+            {/* F3 */}
+            <div>
+              <label style={{ 
+                display: 'block', 
+                fontSize: '11px', 
+                marginBottom: '4px',
+                color: '#666'
+              }}>
+                Temp. Target (°C)
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                value={inputs.F3}
+                onChange={(e) => handleInputChange('F3', parseFloat(e.target.value) || 0)}
+                style={{ 
+                  width: '100%', 
+                  padding: '8px',
+                  border: '2px solid #2196F3',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  backgroundColor: '#E3F2FD'
+                }}
+              />
+            </div>
+
+            {/* G3 */}
+            <div>
+              <label style={{ 
+                display: 'block', 
+                fontSize: '11px', 
+                marginBottom: '4px',
+                color: '#666'
+              }}>
+                Press. Calda FL (bar)
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                value={inputs.G3}
+                onChange={(e) => handleInputChange('G3', parseFloat(e.target.value) || 0)}
+                style={{ 
+                  width: '100%', 
+                  padding: '8px',
+                  border: '2px solid #FF9800',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  backgroundColor: '#FFF3E0'
+                }}
+              />
+            </div>
+
+            {/* H3 */}
+            <div>
+              <label style={{ 
+                display: 'block', 
+                fontSize: '11px', 
+                marginBottom: '4px',
+                color: '#666'
+              }}>
+                Press. Calda FR (bar)
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                value={inputs.H3}
+                onChange={(e) => handleInputChange('H3', parseFloat(e.target.value) || 0)}
+                style={{ 
+                  width: '100%', 
+                  padding: '8px',
+                  border: '2px solid #FF9800',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  backgroundColor: '#FFF3E0'
+                }}
+              />
+            </div>
           </div>
 
-          {/* Pressioni Anteriore Sinistro */}
-          <div className="form-group">
-            <label>Pressione Fredda FL (bar)</label>
-            <input
-              type="number"
-              step="0.1"
-              value={tireData.pressureColdFL}
-              onChange={(e) => handleInputChange('pressureColdFL', parseFloat(e.target.value) || 0)}
-              style={{ width: '100%', padding: '8px', fontSize: '16px' }}
-            />
-          </div>
+          {/* Riga 4 */}
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: '200px 120px 120px 120px 120px',
+            gap: '10px',
+            marginBottom: '15px'
+          }}>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center',
+              fontWeight: '600',
+              fontSize: '14px'
+            }}>
+              Riga 4
+            </div>
+            
+            {/* E4 */}
+            <div>
+              <label style={{ 
+                display: 'block', 
+                fontSize: '11px', 
+                marginBottom: '4px',
+                color: '#666'
+              }}>
+                Temp. Amb. (°C)
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                value={inputs.E4}
+                onChange={(e) => handleInputChange('E4', parseFloat(e.target.value) || 0)}
+                style={{ 
+                  width: '100%', 
+                  padding: '8px',
+                  border: '2px solid #4CAF50',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  backgroundColor: '#E8F5E9'
+                }}
+              />
+            </div>
 
-          <div className="form-group">
-            <label>Pressione Calda FL (bar)</label>
-            <input
-              type="number"
-              step="0.1"
-              value={tireData.pressureHotFL}
-              onChange={(e) => handleInputChange('pressureHotFL', parseFloat(e.target.value) || 0)}
-              style={{ width: '100%', padding: '8px', fontSize: '16px' }}
-            />
-          </div>
+            {/* F4 */}
+            <div>
+              <label style={{ 
+                display: 'block', 
+                fontSize: '11px', 
+                marginBottom: '4px',
+                color: '#666'
+              }}>
+                Press. Fredda (bar)
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                value={inputs.F4}
+                onChange={(e) => handleInputChange('F4', parseFloat(e.target.value) || 0)}
+                style={{ 
+                  width: '100%', 
+                  padding: '8px',
+                  border: '2px solid #2196F3',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  backgroundColor: '#E3F2FD'
+                }}
+              />
+            </div>
 
-          {/* Pressioni Anteriore Destro */}
-          <div className="form-group">
-            <label>Pressione Fredda FR (bar)</label>
-            <input
-              type="number"
-              step="0.1"
-              value={tireData.pressureColdFR}
-              onChange={(e) => handleInputChange('pressureColdFR', parseFloat(e.target.value) || 0)}
-              style={{ width: '100%', padding: '8px', fontSize: '16px' }}
-            />
-          </div>
+            {/* G4 */}
+            <div>
+              <label style={{ 
+                display: 'block', 
+                fontSize: '11px', 
+                marginBottom: '4px',
+                color: '#666'
+              }}>
+                Press. Calda FL (bar)
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                value={inputs.G4}
+                onChange={(e) => handleInputChange('G4', parseFloat(e.target.value) || 0)}
+                style={{ 
+                  width: '100%', 
+                  padding: '8px',
+                  border: '2px solid #FF9800',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  backgroundColor: '#FFF3E0'
+                }}
+              />
+            </div>
 
-          <div className="form-group">
-            <label>Pressione Calda FR (bar)</label>
-            <input
-              type="number"
-              step="0.1"
-              value={tireData.pressureHotFR}
-              onChange={(e) => handleInputChange('pressureHotFR', parseFloat(e.target.value) || 0)}
-              style={{ width: '100%', padding: '8px', fontSize: '16px' }}
-            />
-          </div>
-
-          {/* Incrementi Temperatura */}
-          <div className="form-group">
-            <label>Incremento Temp FL (°C)</label>
-            <input
-              type="number"
-              step="0.1"
-              value={tireData.tempIncrementFL}
-              onChange={(e) => handleInputChange('tempIncrementFL', parseFloat(e.target.value) || 0)}
-              style={{ width: '100%', padding: '8px', fontSize: '16px' }}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Incremento Temp FR (°C)</label>
-            <input
-              type="number"
-              step="0.1"
-              value={tireData.tempIncrementFR}
-              onChange={(e) => handleInputChange('tempIncrementFR', parseFloat(e.target.value) || 0)}
-              style={{ width: '100%', padding: '8px', fontSize: '16px' }}
-            />
-          </div>
-
-          {/* Coefficienti */}
-          <div className="form-group">
-            <label>Coefficiente K22</label>
-            <input
-              type="number"
-              step="0.001"
-              value={tireData.coeffK22}
-              onChange={(e) => handleInputChange('coeffK22', parseFloat(e.target.value) || 0)}
-              style={{ width: '100%', padding: '8px', fontSize: '16px' }}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Coefficiente K23</label>
-            <input
-              type="number"
-              step="0.001"
-              value={tireData.coeffK23}
-              onChange={(e) => handleInputChange('coeffK23', parseFloat(e.target.value) || 0)}
-              style={{ width: '100%', padding: '8px', fontSize: '16px' }}
-            />
+            {/* H4 */}
+            <div>
+              <label style={{ 
+                display: 'block', 
+                fontSize: '11px', 
+                marginBottom: '4px',
+                color: '#666'
+              }}>
+                Press. Calda FR (bar)
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                value={inputs.H4}
+                onChange={(e) => handleInputChange('H4', parseFloat(e.target.value) || 0)}
+                style={{ 
+                  width: '100%', 
+                  padding: '8px',
+                  border: '2px solid #FF9800',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  backgroundColor: '#FFF3E0'
+                }}
+              />
+            </div>
           </div>
         </div>
 
-        <div style={{ marginTop: '20px' }}>
-          <button className="btn btn-primary" onClick={handleCalculate} style={{ fontSize: '18px', padding: '12px 30px' }}>
-            🧮 Calcola Pressioni
+        <div style={{ marginTop: '25px' }}>
+          <button 
+            className="btn btn-primary" 
+            onClick={handleCalculate}
+            style={{ fontSize: '16px', padding: '12px 30px' }}
+          >
+            🧮 Calcola Incrementi Pressione
           </button>
         </div>
       </div>
 
-      {results && (
-        <>
-          <div className="card" style={{ marginBottom: '30px' }}>
-            <h2>📊 Risultati - Conversioni e Incrementi</h2>
-            
-            <div style={{ overflowX: 'auto', marginTop: '20px' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ backgroundColor: '#f8f9fa' }}>
-                    <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'left' }}>Parametro</th>
-                    <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'center' }}>Front Left</th>
-                    <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'center' }}>Front Right</th>
-                    <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'left' }}>Formula Excel</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td style={{ padding: '12px', border: '1px solid #dee2e6' }}>Incremento Pressione (bar)</td>
-                    <td style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'center', fontWeight: 'bold' }}>
-                      {results.pressureIncFL_I3.toFixed(3)}
-                    </td>
-                    <td style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'center', fontWeight: 'bold' }}>
-                      {results.pressureIncFR_J3.toFixed(3)}
-                    </td>
-                    <td style={{ padding: '12px', border: '1px solid #dee2e6', fontSize: '14px', fontFamily: 'monospace' }}>
-                      =(G3+F4*(F3+273.15)/(E3+273.15))-F4
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style={{ padding: '12px', border: '1px solid #dee2e6' }}>Pressione Fredda (psi)</td>
-                    <td style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'center' }}>
-                      {results.psiColdFL_D7.toFixed(2)}
-                    </td>
-                    <td style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'center' }}>
-                      {results.psiColdFR_E7.toFixed(2)}
-                    </td>
-                    <td style={{ padding: '12px', border: '1px solid #dee2e6', fontSize: '14px', fontFamily: 'monospace' }}>
-                      =F7*14.504
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style={{ padding: '12px', border: '1px solid #dee2e6' }}>Pressione Calda (psi)</td>
-                    <td style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'center' }}>
-                      {results.psiHotFL_D8.toFixed(2)}
-                    </td>
-                    <td style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'center' }}>
-                      {results.psiHotFR_E8.toFixed(2)}
-                    </td>
-                    <td style={{ padding: '12px', border: '1px solid #dee2e6', fontSize: '14px', fontFamily: 'monospace' }}>
-                      =F8*14.504
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style={{ padding: '12px', border: '1px solid #dee2e6' }}>Rapporto Caldo/Freddo</td>
-                    <td style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'center' }}>
-                      {results.ratioFL_D19.toFixed(4)}
-                    </td>
-                    <td style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'center' }}>
-                      {results.ratioFR_E19.toFixed(4)}
-                    </td>
-                    <td style={{ padding: '12px', border: '1px solid #dee2e6', fontSize: '14px', fontFamily: 'monospace' }}>
-                      =D16/D13
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+      {/* Output - Blocco 2x2 */}
+      {outputs && (
+        <div className="card" style={{ backgroundColor: '#f8f9fa' }}>
+          <h2>📊 Risultati - Incrementi Pressione</h2>
+          
+          <div style={{ 
+            marginTop: '30px',
+            display: 'inline-block',
+            border: '3px solid #1976d2',
+            borderRadius: '8px',
+            overflow: 'hidden',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+          }}>
+            {/* Intestazioni colonne */}
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: '140px 140px',
+              backgroundColor: '#1976d2',
+              color: 'white'
+            }}>
+              <div style={{ 
+                padding: '12px',
+                textAlign: 'center',
+                fontWeight: 'bold',
+                borderRight: '2px solid white',
+                fontSize: '14px'
+              }}>
+                I (Front Left)
+              </div>
+              <div style={{ 
+                padding: '12px',
+                textAlign: 'center',
+                fontWeight: 'bold',
+                fontSize: '14px'
+              }}>
+                J (Front Right)
+              </div>
+            </div>
+
+            {/* Riga 3 */}
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: '140px 140px',
+              backgroundColor: 'white',
+              borderBottom: '2px solid #1976d2'
+            }}>
+              <div style={{ 
+                padding: '20px',
+                textAlign: 'center',
+                borderRight: '2px solid #1976d2'
+              }}>
+                <div style={{ 
+                  fontSize: '11px', 
+                  color: '#666',
+                  marginBottom: '6px',
+                  fontWeight: '600'
+                }}>
+                  I3
+                </div>
+                <div style={{ 
+                  fontSize: '24px',
+                  fontWeight: 'bold',
+                  color: '#1976d2'
+                }}>
+                  {outputs.I3.toFixed(3)}
+                </div>
+                <div style={{ 
+                  fontSize: '10px', 
+                  color: '#999',
+                  marginTop: '4px'
+                }}>
+                  bar
+                </div>
+              </div>
+              <div style={{ 
+                padding: '20px',
+                textAlign: 'center'
+              }}>
+                <div style={{ 
+                  fontSize: '11px', 
+                  color: '#666',
+                  marginBottom: '6px',
+                  fontWeight: '600'
+                }}>
+                  J3
+                </div>
+                <div style={{ 
+                  fontSize: '24px',
+                  fontWeight: 'bold',
+                  color: '#1976d2'
+                }}>
+                  {outputs.J3.toFixed(3)}
+                </div>
+                <div style={{ 
+                  fontSize: '10px', 
+                  color: '#999',
+                  marginTop: '4px'
+                }}>
+                  bar
+                </div>
+              </div>
+            </div>
+
+            {/* Riga 4 */}
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: '140px 140px',
+              backgroundColor: 'white'
+            }}>
+              <div style={{ 
+                padding: '20px',
+                textAlign: 'center',
+                borderRight: '2px solid #1976d2'
+              }}>
+                <div style={{ 
+                  fontSize: '11px', 
+                  color: '#666',
+                  marginBottom: '6px',
+                  fontWeight: '600'
+                }}>
+                  I4
+                </div>
+                <div style={{ 
+                  fontSize: '24px',
+                  fontWeight: 'bold',
+                  color: '#1976d2'
+                }}>
+                  {outputs.I4.toFixed(3)}
+                </div>
+                <div style={{ 
+                  fontSize: '10px', 
+                  color: '#999',
+                  marginTop: '4px'
+                }}>
+                  bar
+                </div>
+              </div>
+              <div style={{ 
+                padding: '20px',
+                textAlign: 'center'
+              }}>
+                <div style={{ 
+                  fontSize: '11px', 
+                  color: '#666',
+                  marginBottom: '6px',
+                  fontWeight: '600'
+                }}>
+                  J4
+                </div>
+                <div style={{ 
+                  fontSize: '24px',
+                  fontWeight: 'bold',
+                  color: '#1976d2'
+                }}>
+                  {outputs.J4.toFixed(3)}
+                </div>
+                <div style={{ 
+                  fontSize: '10px', 
+                  color: '#999',
+                  marginTop: '4px'
+                }}>
+                  bar
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="card">
-            <h2>✅ Pressioni Corrette Raccomandate</h2>
-            
-            <div style={{ overflowX: 'auto', marginTop: '20px' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ backgroundColor: '#d4edda' }}>
-                    <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'left' }}>Parametro</th>
-                    <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'center' }}>Front Left</th>
-                    <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'center' }}>Front Right</th>
-                    <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'left' }}>Formula Excel</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td style={{ padding: '12px', border: '1px solid #dee2e6' }}>Pressione Corretta (psi)</td>
-                    <td style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'center', fontSize: '18px', fontWeight: 'bold' }}>
-                      {results.correctedPsiFL_D22.toFixed(2)}
-                    </td>
-                    <td style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'center', fontSize: '18px', fontWeight: 'bold' }}>
-                      {results.correctedPsiFR_E22.toFixed(2)}
-                    </td>
-                    <td style={{ padding: '12px', border: '1px solid #dee2e6', fontSize: '14px', fontFamily: 'monospace' }}>
-                      =(D7/D19)-K22*(H22-H13)-K23*(H23-H16)
-                    </td>
-                  </tr>
-                  <tr style={{ backgroundColor: '#fff3cd' }}>
-                    <td style={{ padding: '12px', border: '1px solid #dee2e6' }}>
-                      <strong>Pressione Corretta (bar)</strong>
-                    </td>
-                    <td style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'center', fontSize: '20px', fontWeight: 'bold', color: '#0066cc' }}>
-                      {results.correctedBarFL_F22.toFixed(3)}
-                    </td>
-                    <td style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'center', fontSize: '20px', fontWeight: 'bold', color: '#0066cc' }}>
-                      {results.correctedBarFR_G22.toFixed(3)}
-                    </td>
-                    <td style={{ padding: '12px', border: '1px solid #dee2e6', fontSize: '14px', fontFamily: 'monospace' }}>
-                      =D22/14.504
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <div style={{ marginTop: '20px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
-              <h3 style={{ marginTop: 0 }}>💡 Raccomandazioni</h3>
-              <ul style={{ lineHeight: '1.8' }}>
-                <li>
-                  <strong>Front Left:</strong> Impostare a {results.correctedBarFL_F22.toFixed(3)} bar 
-                  ({results.correctedPsiFL_D22.toFixed(2)} psi)
-                </li>
-                <li>
-                  <strong>Front Right:</strong> Impostare a {results.correctedBarFR_G22.toFixed(3)} bar 
-                  ({results.correctedPsiFR_E22.toFixed(2)} psi)
-                </li>
-                <li>Le pressioni sono state corrette considerando gli incrementi di temperatura e i coefficienti di calibrazione</li>
-              </ul>
+          {/* Formule di riferimento */}
+          <div style={{ 
+            marginTop: '30px',
+            padding: '15px',
+            backgroundColor: 'white',
+            borderRadius: '4px',
+            border: '1px solid #ddd'
+          }}>
+            <h3 style={{ marginTop: 0, fontSize: '16px', color: '#666' }}>📐 Formule Excel</h3>
+            <div style={{ fontFamily: 'monospace', fontSize: '13px', lineHeight: '1.8' }}>
+              <div><strong>I3:</strong> =(G3+F4*(F3+273.15)/(E3+273.15))-F4</div>
+              <div><strong>J3:</strong> =(H3+F4*(F3+273.15)/(E3+273.15))-F4</div>
+              <div><strong>I4:</strong> =(G4+F4*(F3+273.15)/(E3+273.15))-F4</div>
+              <div><strong>J4:</strong> =(H4+F4*(F3+273.15)/(E3+273.15))-F4</div>
             </div>
           </div>
-        </>
+        </div>
       )}
 
-      <div className="card" style={{ marginTop: '30px', backgroundColor: '#e7f3ff' }}>
-        <h3>📋 Note sulle Formule</h3>
-        <p style={{ lineHeight: '1.8' }}>
-          Le formule implementate replicano il worksheet "Pressioni" dall'Excel originale (linee 1538-1594 del file formule_estratte.txt):
-        </p>
-        <ul style={{ lineHeight: '1.8' }}>
-          <li><strong>Conversione bar ↔ psi:</strong> 1 bar = 14.504 psi</li>
-          <li><strong>Incremento pressione:</strong> Calcolato usando la legge dei gas ideali con temperature assolute (Kelvin)</li>
-          <li><strong>Rapporto caldo/freddo:</strong> Indica l'espansione termica della pressione</li>
-          <li><strong>Correzioni:</strong> Applicate in base agli incrementi di temperatura e ai coefficienti K22 e K23</li>
-        </ul>
+      {/* Legenda colori */}
+      <div className="card" style={{ marginTop: '20px', backgroundColor: '#f0f0f0' }}>
+        <h3 style={{ marginTop: 0, fontSize: '16px' }}>🎨 Legenda Campi Input</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ 
+              width: '20px', 
+              height: '20px', 
+              backgroundColor: '#E8F5E9',
+              border: '2px solid #4CAF50',
+              borderRadius: '3px'
+            }}></div>
+            <span style={{ fontSize: '14px' }}>E - Temperatura Ambiente</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ 
+              width: '20px', 
+              height: '20px', 
+              backgroundColor: '#E3F2FD',
+              border: '2px solid #2196F3',
+              borderRadius: '3px'
+            }}></div>
+            <span style={{ fontSize: '14px' }}>F - Temperatura Target / Pressione Fredda</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ 
+              width: '20px', 
+              height: '20px', 
+              backgroundColor: '#FFF3E0',
+              border: '2px solid #FF9800',
+              borderRadius: '3px'
+            }}></div>
+            <span style={{ fontSize: '14px' }}>G, H - Pressioni Calde FL/FR</span>
+          </div>
+        </div>
       </div>
     </div>
   );

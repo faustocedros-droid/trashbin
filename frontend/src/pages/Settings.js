@@ -49,6 +49,10 @@ function Settings() {
     // Create a download link
     const link = document.createElement('a');
     link.href = url;
+    
+    // Use archivePath as the filename for download
+    // Note: Browser security prevents direct filesystem access, 
+    // so this will trigger a download dialog with the specified filename
     const filename = archivePath || 'tire_pressure_data.tpdb';
     link.download = filename.endsWith('.tpdb') ? filename : filename + '.tpdb';
     document.body.appendChild(link);
@@ -56,7 +60,7 @@ function Settings() {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
-    setMessage('Archivio salvato con successo!');
+    setMessage('Archivio salvato con successo! Il file verrà scaricato nella cartella Download del browser.');
     setTimeout(() => setMessage(''), 3000);
   };
 
@@ -169,14 +173,14 @@ function Settings() {
           
           <div className="form-group" style={{ marginBottom: '20px' }}>
             <label htmlFor="archivePath" style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-              Nome File Archivio (opzionale)
+              Percorso/Nome File Archivio (opzionale)
             </label>
             <input
               type="text"
               id="archivePath"
               value={archivePath}
               onChange={(e) => setArchivePath(e.target.value)}
-              placeholder="es. my_archive.tpdb"
+              placeholder="es. C:\RacingData\my_archive.tpdb o my_archive.tpdb"
               style={{
                 width: '100%',
                 padding: '10px',
@@ -186,7 +190,9 @@ function Settings() {
               }}
             />
             <small style={{ display: 'block', marginTop: '8px', color: '#666' }}>
-              Se non specificato, verrà utilizzato "tire_pressure_data.tpdb"
+              Specifica il percorso completo o solo il nome file. Se non specificato, verrà utilizzato "tire_pressure_data.tpdb".<br />
+              <strong>Nota:</strong> Per limitazioni del browser, il file verrà scaricato nella cartella Download. 
+              Per salvare in percorsi personalizzati, utilizzare una desktop app o backend.
             </small>
           </div>
 

@@ -18,7 +18,30 @@ Racing Car Manager può essere utilizzato in due modi:
 - ✅ Python 3.9+
 - ✅ Node.js 16+
 
+### ⚠️ PRIMA INSTALLAZIONE
+
+**IMPORTANTE**: Se è la prima volta che usi l'app, devi prima installare le dipendenze:
+
+```bash
+# Vai nella cartella frontend
+cd frontend
+
+# Installa dipendenze (incluso Electron)
+npm install
+
+# Torna alla cartella principale
+cd ..
+```
+
+Questo comando installa Electron e tutte le dipendenze necessarie. Può richiedere alcuni minuti (~400MB di download).
+
+**Devi farlo solo una volta!** Dopo la prima installazione, puoi usare direttamente gli script di avvio.
+
+📖 **Vedi [INSTALLAZIONE.md](INSTALLAZIONE.md) per istruzioni dettagliate**
+
 ### Avvio Rapido
+
+Dopo aver installato le dipendenze (vedi sopra):
 
 **Windows:**
 ```bash
@@ -34,7 +57,7 @@ start-desktop.bat
 ### Cosa Fa lo Script
 1. ✅ Verifica Python e Node.js
 2. ✅ Installa dipendenze backend (automatico)
-3. ✅ Installa dipendenze frontend (automatico)
+3. ✅ Verifica dipendenze frontend (le installa se mancano)
 4. ✅ Avvia backend Flask (automatico)
 5. ✅ Apre l'app desktop
 

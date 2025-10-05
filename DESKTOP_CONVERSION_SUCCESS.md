@@ -22,7 +22,23 @@ L'applicazione ora può essere eseguita come:
 
 ## 🚀 Avvio Rapido
 
+### ⚠️ PRIMA INSTALLAZIONE
+
+**IMPORTANTE**: Prima di avviare l'app per la prima volta, installa le dipendenze:
+
+```bash
+cd frontend
+npm install
+cd ..
+```
+
+Questo installa Electron e tutte le dipendenze necessarie (~400MB, richiede alcuni minuti).
+
+📖 **Vedi [INSTALLAZIONE.md](INSTALLAZIONE.md) per istruzioni dettagliate**
+
 ### Desktop App (NUOVO)
+
+Dopo aver installato le dipendenze (vedi sopra):
 
 **Windows:**
 ```bash
@@ -37,6 +53,26 @@ start-desktop.bat
 ### Validazione Setup
 
 Verifica che tutto sia configurato correttamente:
+
+**Windows:**
+```bash
+check-dependencies.bat
+```
+
+**macOS/Linux:**
+```bash
+./check-dependencies.sh
+```
+
+Questo script verifica:
+- ✓ Python e Node.js installati
+- ✓ Versioni corrette
+- ✓ Electron e dipendenze installate
+- ✓ File essenziali presenti
+
+Se il controllo fallisce, vedi [INSTALLAZIONE.md](INSTALLAZIONE.md) per risolvere.
+
+**Per validare il setup completo dell'app:**
 
 **Windows:**
 ```bash

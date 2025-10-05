@@ -227,6 +227,32 @@ Se hai già utilizzato la web app e vuoi migrare i dati all'app desktop:
 
 ## Troubleshooting
 
+### Dipendenze non installate / Electron non trovato
+
+**Sintomi:**
+- Errore "electron: command not found"
+- Errore "Cannot find module 'electron'"
+- L'app non si avvia
+
+**Causa:** Le dipendenze Node.js non sono state installate.
+
+**Soluzione:**
+```bash
+# Vai nella cartella frontend
+cd frontend
+
+# Installa tutte le dipendenze
+npm install
+
+# Torna alla cartella principale
+cd ..
+
+# Avvia l'app
+start-desktop.bat  # o ./start-desktop.sh
+```
+
+📖 **Vedi [INSTALLAZIONE.md](INSTALLAZIONE.md) per istruzioni dettagliate**
+
 ### L'app non si avvia
 
 **Windows**:

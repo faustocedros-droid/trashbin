@@ -6,7 +6,25 @@ A desktop and web application for managing racing car data, sessions, and teleme
 
 **NEW**: Racing Car Manager è ora disponibile come applicazione desktop standalone!
 
+### ⚠️ IMPORTANTE: Prima Installazione
+
+**Prima di avviare l'app desktop per la prima volta**, devi installare le dipendenze:
+
+```bash
+cd frontend
+npm install
+cd ..
+```
+
+Questo installerà Electron e tutte le dipendenze necessarie (~400MB, può richiedere alcuni minuti).
+
+📖 **Guide Installazione:**
+- **[AVVIO_RAPIDO.md](AVVIO_RAPIDO.md)** ⭐ - Soluzione rapida al problema "app non parte"
+- **[INSTALLAZIONE.md](INSTALLAZIONE.md)** - Guida completa e troubleshooting
+
 ### Quick Start Desktop App
+
+Dopo aver installato le dipendenze (vedi sopra):
 
 **Windows:**
 ```bash

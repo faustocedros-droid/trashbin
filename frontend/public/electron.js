@@ -1,6 +1,7 @@
 const { app, BrowserWindow, Menu, shell } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
+const fs = require('fs');
 
 let mainWindow;
 let backendProcess;
@@ -9,6 +10,21 @@ let backendProcess;
 const isDev = !app.isPackaged;
 
 function createWindow() {
+  // Set icon based on platform
+  let iconPath;
+  if (process.platform === 'win32') {
+    iconPath = path.join(__dirname, 'icon.ico');
+  } else if (process.platform === 'darwin') {
+    iconPath = path.join(__dirname, 'icon.icns');
+  } else {
+    iconPath = path.join(__dirname, 'icon.png');
+  }
+
+  // Check if icon exists, otherwise use default
+  if (!fs.existsSync(iconPath)) {
+    iconPath = undefined; // Let Electron use default icon
+  }
+
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -19,7 +35,7 @@ function createWindow() {
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js')
     },
-    icon: path.join(__dirname, 'favicon.ico'),
+    ...(iconPath && { icon: iconPath }),
     title: 'Racing Car Manager'
   });
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import './App.css';
 import Dashboard from './pages/Dashboard';
@@ -9,19 +9,30 @@ import TirePressure from './pages/TirePressure';
 import Settings from './pages/Settings';
 
 function App() {
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
     <Router>
       <div className="App">
         <header className="App-header">
           <nav className="navbar">
             <div className="container">
-              <h1 className="logo">🏎️ Racing Car Manager</h1>
-              <ul className="nav-links">
-                <li><Link to="/">Dashboard</Link></li>
-                <li><Link to="/events">Eventi</Link></li>
-                <li><Link to="/tire-pressure">Pressioni</Link></li>
-                <li><Link to="/demo">Demo</Link></li>
-                <li><Link to="/settings">Impostazioni</Link></li>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                <button 
+                  className="hamburger-menu"
+                  onClick={() => setMenuOpen(!menuOpen)}
+                  aria-label="Toggle menu"
+                >
+                  ☰
+                </button>
+                <h1 className="logo">🏎️ Racing Car Manager</h1>
+              </div>
+              <ul className={`nav-links ${menuOpen ? 'open' : ''}`}>
+                <li><Link to="/" onClick={() => setMenuOpen(false)}>Dashboard</Link></li>
+                <li><Link to="/events" onClick={() => setMenuOpen(false)}>Eventi</Link></li>
+                <li><Link to="/tire-pressure" onClick={() => setMenuOpen(false)}>Tire pressure management</Link></li>
+                <li><Link to="/demo" onClick={() => setMenuOpen(false)}>Demo</Link></li>
+                <li><Link to="/settings" onClick={() => setMenuOpen(false)}>Impostazioni</Link></li>
               </ul>
             </div>
           </nav>

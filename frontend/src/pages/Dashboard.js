@@ -105,6 +105,36 @@ function Dashboard() {
           </table>
         )}
       </div>
+
+      {/* Images Section */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+        gap: '20px',
+        marginTop: '30px'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <img 
+            src="/images/image1.svg" 
+            alt="Racing Car Manager" 
+            style={{ width: '100%', height: 'auto', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+          />
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <img 
+            src="/images/image2.svg" 
+            alt="Tire Management" 
+            style={{ width: '100%', height: 'auto', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+          />
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <img 
+            src="/images/image3.svg" 
+            alt="Performance Data" 
+            style={{ width: '100%', height: 'auto', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+          />
+        </div>
+      </div>
     </div>
   );
 }

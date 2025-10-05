@@ -6,10 +6,13 @@ import Events from './pages/Events';
 import EventDetail from './pages/EventDetail';
 import EventFullDemo from './pages/EventFullDemo';
 import TirePressure from './pages/TirePressure';
+import TirePressureSetsManagement from './pages/TirePressureSetsManagement';
+import TirePressureSetup from './pages/TirePressureSetup';
 import Settings from './pages/Settings';
 
 function App() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [tirePressureSubmenuOpen, setTirePressureSubmenuOpen] = useState(false);
 
   return (
     <Router>
@@ -25,12 +28,43 @@ function App() {
                 >
                   ☰
                 </button>
-                <h1 className="logo">🏎️ Racing Car Manager</h1>
+                <Link to="/" style={{ textDecoration: 'none', color: 'white' }}>
+                  <h1 className="logo">🏎️ Racing Car Manager</h1>
+                </Link>
               </div>
               <ul className={`nav-links ${menuOpen ? 'open' : ''}`}>
-                <li><Link to="/" onClick={() => setMenuOpen(false)}>Dashboard</Link></li>
                 <li><Link to="/events" onClick={() => setMenuOpen(false)}>Eventi</Link></li>
-                <li><Link to="/tire-pressure" onClick={() => setMenuOpen(false)}>Tire pressure management</Link></li>
+                <li>
+                  <div style={{ position: 'relative' }}>
+                    <span 
+                      onClick={() => setTirePressureSubmenuOpen(!tirePressureSubmenuOpen)}
+                      style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+                    >
+                      Tire pressure management {tirePressureSubmenuOpen ? '▼' : '▶'}
+                    </span>
+                    {tirePressureSubmenuOpen && (
+                      <ul style={{ 
+                        listStyle: 'none', 
+                        padding: '10px 0 10px 20px', 
+                        margin: 0,
+                        backgroundColor: '#2a2a2a',
+                        borderRadius: '4px',
+                        marginTop: '5px'
+                      }}>
+                        <li style={{ padding: '5px 0' }}>
+                          <Link to="/tire-pressure/sets-management" onClick={() => { setMenuOpen(false); setTirePressureSubmenuOpen(false); }}>
+                            Cold tire pressure sets management
+                          </Link>
+                        </li>
+                        <li style={{ padding: '5px 0' }}>
+                          <Link to="/tire-pressure/setup" onClick={() => { setMenuOpen(false); setTirePressureSubmenuOpen(false); }}>
+                            Cold tire pressure setup
+                          </Link>
+                        </li>
+                      </ul>
+                    )}
+                  </div>
+                </li>
                 <li><Link to="/demo" onClick={() => setMenuOpen(false)}>Demo</Link></li>
                 <li><Link to="/settings" onClick={() => setMenuOpen(false)}>Impostazioni</Link></li>
               </ul>
@@ -44,6 +78,8 @@ function App() {
             <Route path="/events" element={<Events />} />
             <Route path="/events/:id" element={<EventDetail />} />
             <Route path="/tire-pressure" element={<TirePressure />} />
+            <Route path="/tire-pressure/sets-management" element={<TirePressureSetsManagement />} />
+            <Route path="/tire-pressure/setup" element={<TirePressureSetup />} />
             <Route path="/demo" element={<EventFullDemo />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>

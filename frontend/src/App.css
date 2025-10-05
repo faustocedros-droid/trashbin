@@ -29,7 +29,7 @@
   font-size: 28px;
   cursor: pointer;
   padding: 5px 10px;
-  display: none;
+  display: block;
   transition: transform 0.3s;
 }
 
@@ -37,62 +37,47 @@
   transform: scale(1.1);
 }
 
-@media (max-width: 768px) {
-  .hamburger-menu {
-    display: block;
-  }
-  
-  .nav-links {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background-color: #1a1a1a;
-    flex-direction: column;
-    gap: 0;
-    padding: 0;
-    display: none;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-  }
-  
-  .nav-links.open {
-    display: flex;
-  }
-  
-  .nav-links li {
-    width: 100%;
-    border-bottom: 1px solid #333;
-  }
-  
-  .nav-links a {
-    display: block;
-    padding: 15px 20px;
-  }
+.nav-links {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: #1a1a1a;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  display: none;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  min-width: 300px;
+  z-index: 1000;
+}
+
+.nav-links.open {
+  display: flex;
+}
+
+.nav-links li {
+  width: 100%;
+  border-bottom: 1px solid #333;
+}
+
+.nav-links a, .nav-links span {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s;
+  display: block;
+  padding: 15px 20px;
+}
+
+.nav-links a:hover, .nav-links span:hover {
+  color: #1976d2;
+  background-color: #2a2a2a;
 }
 
 .logo {
   margin: 0;
   font-size: 24px;
   font-weight: 700;
-}
-
-.nav-links {
-  display: flex;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  gap: 30px;
-}
-
-.nav-links a {
-  color: white;
-  text-decoration: none;
-  font-weight: 500;
-  transition: color 0.3s;
-}
-
-.nav-links a:hover {
-  color: #1976d2;
 }
 
 .App-main {

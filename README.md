@@ -18,7 +18,9 @@ cd ..
 
 Questo installerà Electron e tutte le dipendenze necessarie (~400MB, può richiedere alcuni minuti).
 
-📖 **Vedi [INSTALLAZIONE.md](INSTALLAZIONE.md) per istruzioni dettagliate**
+📖 **Guide Installazione:**
+- **[AVVIO_RAPIDO.md](AVVIO_RAPIDO.md)** ⭐ - Soluzione rapida al problema "app non parte"
+- **[INSTALLAZIONE.md](INSTALLAZIONE.md)** - Guida completa e troubleshooting
 
 ### Quick Start Desktop App
 

@@ -8,6 +8,7 @@ import EventFullDemo from './pages/EventFullDemo';
 import TirePressure from './pages/TirePressure';
 import TirePressureSetsManagement from './pages/TirePressureSetsManagement';
 import TirePressureSetup from './pages/TirePressureSetup';
+import TirePressureDatabase from './pages/TirePressureDatabase';
 import Settings from './pages/Settings';
 
 function App() {
@@ -61,6 +62,11 @@ function App() {
                             Cold tire pressure setup
                           </Link>
                         </li>
+                        <li style={{ padding: '5px 0' }}>
+                          <Link to="/tire-pressure/database" onClick={() => { setMenuOpen(false); setTirePressureSubmenuOpen(false); }}>
+                            Tire pressure database
+                          </Link>
+                        </li>
                       </ul>
                     )}
                   </div>
@@ -80,6 +86,7 @@ function App() {
             <Route path="/tire-pressure" element={<TirePressure />} />
             <Route path="/tire-pressure/sets-management" element={<TirePressureSetsManagement />} />
             <Route path="/tire-pressure/setup" element={<TirePressureSetup />} />
+            <Route path="/tire-pressure/database" element={<TirePressureDatabase />} />
             <Route path="/demo" element={<EventFullDemo />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>

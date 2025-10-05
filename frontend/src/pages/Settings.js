@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 
 function Settings() {
   const STORAGE_PATH_KEY = 'racingCarManager_storagePath';
+  const ARCHIVE_PATH_KEY = 'racingCarManager_archivePath';
   const [storagePath, setStoragePath] = useState('');
+  const [archivePath, setArchivePath] = useState('');
   const [message, setMessage] = useState('');
 
   useEffect(() => {
@@ -10,6 +12,10 @@ function Settings() {
     const savedPath = localStorage.getItem(STORAGE_PATH_KEY);
     if (savedPath) {
       setStoragePath(savedPath);
+    }
+    const savedArchivePath = localStorage.getItem(ARCHIVE_PATH_KEY);
+    if (savedArchivePath) {
+      setArchivePath(savedArchivePath);
     }
   }, []);
 
@@ -24,6 +30,58 @@ function Settings() {
     localStorage.removeItem(STORAGE_PATH_KEY);
     setStoragePath('');
     setMessage('Percorso ripristinato al default!');
+    setTimeout(() => setMessage(''), 3000);
+  };
+
+  const handleSaveArchive = () => {
+    // Get all tire pressure database data from localStorage
+    const data = localStorage.getItem('tirePressureDatabase');
+    if (!data) {
+      setMessage('Nessun dato da salvare!');
+      setTimeout(() => setMessage(''), 3000);
+      return;
+    }
+
+    // Create a blob with the data
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    // Create a download link
+    const link = document.createElement('a');
+    link.href = url;
+    const filename = archivePath || 'tire_pressure_data.tpdb';
+    link.download = filename.endsWith('.tpdb') ? filename : filename + '.tpdb';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    setMessage('Archivio salvato con successo!');
+    setTimeout(() => setMessage(''), 3000);
+  };
+
+  const handleLoadArchive = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = event.target.result;
+        localStorage.setItem('tirePressureDatabase', data);
+        setMessage('Archivio caricato con successo!');
+        setTimeout(() => setMessage(''), 3000);
+      } catch (error) {
+        setMessage('Errore nel caricamento del file!');
+        setTimeout(() => setMessage(''), 3000);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleSaveArchivePath = () => {
+    localStorage.setItem(ARCHIVE_PATH_KEY, archivePath);
+    setMessage('Percorso archivio salvato!');
     setTimeout(() => setMessage(''), 3000);
   };
 
@@ -97,6 +155,77 @@ function Settings() {
         <p style={{ color: '#666' }}>
           Ulteriori impostazioni saranno disponibili nelle prossime versioni.
         </p>
+      </div>
+
+      {/* Archive Management Section */}
+      <div className="card" style={{ marginTop: '30px', maxWidth: '800px' }}>
+        <h2>📁 Gestione Archivio Dati</h2>
+        
+        <div style={{ marginTop: '20px' }}>
+          <h3>Salva Archivio</h3>
+          <p style={{ color: '#666', marginBottom: '15px' }}>
+            Salva tutti i dati del database pressioni pneumatici in un file .tpdb
+          </p>
+          
+          <div className="form-group" style={{ marginBottom: '20px' }}>
+            <label htmlFor="archivePath" style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+              Nome File Archivio (opzionale)
+            </label>
+            <input
+              type="text"
+              id="archivePath"
+              value={archivePath}
+              onChange={(e) => setArchivePath(e.target.value)}
+              placeholder="es. my_archive.tpdb"
+              style={{
+                width: '100%',
+                padding: '10px',
+                fontSize: '16px',
+                border: '1px solid #ddd',
+                borderRadius: '4px'
+              }}
+            />
+            <small style={{ display: 'block', marginTop: '8px', color: '#666' }}>
+              Se non specificato, verrà utilizzato "tire_pressure_data.tpdb"
+            </small>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+            <button 
+              onClick={handleSaveArchivePath}
+              className="btn btn-secondary"
+            >
+              💾 Salva Percorso
+            </button>
+            <button 
+              onClick={handleSaveArchive}
+              className="btn btn-primary"
+            >
+              📥 Scarica Archivio
+            </button>
+          </div>
+
+          <hr style={{ margin: '30px 0' }} />
+
+          <h3>Carica Archivio</h3>
+          <p style={{ color: '#666', marginBottom: '15px' }}>
+            Carica un file .tpdb precedentemente salvato
+          </p>
+          
+          <div style={{ marginBottom: '20px' }}>
+            <input
+              type="file"
+              accept=".tpdb"
+              onChange={handleLoadArchive}
+              style={{
+                padding: '10px',
+                fontSize: '16px',
+                border: '1px solid #ddd',
+                borderRadius: '4px'
+              }}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

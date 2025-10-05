@@ -50,10 +50,16 @@ function Settings() {
     const link = document.createElement('a');
     link.href = url;
     
-    // Use archivePath as the filename for download
-    // Note: Browser security prevents direct filesystem access, 
-    // so this will trigger a download dialog with the specified filename
-    const filename = archivePath || 'tire_pressure_data.tpdb';
+    // Extract filename from archivePath (remove any path separators)
+    // Browser security prevents direct filesystem access, so only the filename is used
+    let filename = archivePath || 'tire_pressure_data.tpdb';
+    
+    // If user provided a path, extract just the filename
+    if (filename.includes('\\') || filename.includes('/')) {
+      const parts = filename.split(/[\\/]/);
+      filename = parts[parts.length - 1];
+    }
+    
     link.download = filename.endsWith('.tpdb') ? filename : filename + '.tpdb';
     document.body.appendChild(link);
     link.click();
@@ -85,7 +91,7 @@ function Settings() {
 
   const handleSaveArchivePath = () => {
     localStorage.setItem(ARCHIVE_PATH_KEY, archivePath);
-    setMessage('Percorso archivio salvato!');
+    setMessage('Nome file archivio salvato!');
     setTimeout(() => setMessage(''), 3000);
   };
 
@@ -173,14 +179,14 @@ function Settings() {
           
           <div className="form-group" style={{ marginBottom: '20px' }}>
             <label htmlFor="archivePath" style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-              Percorso/Nome File Archivio (opzionale)
+              Nome File Archivio (opzionale)
             </label>
             <input
               type="text"
               id="archivePath"
               value={archivePath}
               onChange={(e) => setArchivePath(e.target.value)}
-              placeholder="es. C:\RacingData\my_archive.tpdb o my_archive.tpdb"
+              placeholder="es. Imolatest_V1.tpdb o my_archive"
               style={{
                 width: '100%',
                 padding: '10px',
@@ -190,10 +196,22 @@ function Settings() {
               }}
             />
             <small style={{ display: 'block', marginTop: '8px', color: '#666' }}>
-              Specifica il percorso completo o solo il nome file. Se non specificato, verrà utilizzato "tire_pressure_data.tpdb".<br />
-              <strong>Nota:</strong> Per limitazioni del browser, il file verrà scaricato nella cartella Download. 
-              Per salvare in percorsi personalizzati, utilizzare una desktop app o backend.
+              Specifica il nome del file da scaricare. Se non specificato, verrà utilizzato "tire_pressure_data.tpdb".<br />
             </small>
+            <div style={{ 
+              display: 'block', 
+              marginTop: '12px', 
+              padding: '12px', 
+              backgroundColor: '#fff3cd', 
+              border: '1px solid #ffc107',
+              borderRadius: '4px',
+              color: '#856404'
+            }}>
+              <strong>⚠️ IMPORTANTE:</strong> Per limitazioni di sicurezza del browser, il file verrà sempre scaricato nella cartella Download predefinita del browser. 
+              Non è possibile salvare direttamente in percorsi personalizzati. Se specifichi un percorso completo (es. C:\RacingData\file.tpdb), 
+              verrà utilizzato solo il nome del file (es. file.tpdb). Per salvare in percorsi specifici, sposta manualmente il file dopo il download 
+              o utilizza una desktop app.
+            </div>
           </div>
 
           <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
@@ -201,7 +219,7 @@ function Settings() {
               onClick={handleSaveArchivePath}
               className="btn btn-secondary"
             >
-              💾 Salva Percorso
+              💾 Salva Nome File
             </button>
             <button 
               onClick={handleSaveArchive}

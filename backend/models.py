@@ -10,6 +10,7 @@ class RaceEvent(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
     track = db.Column(db.String(200), nullable=False)
+    track_length = db.Column(db.Float)  # Track length in kilometers
     date_start = db.Column(db.DateTime, nullable=False)
     date_end = db.Column(db.DateTime, nullable=False)
     weather = db.Column(db.String(100))
@@ -25,6 +26,7 @@ class RaceEvent(db.Model):
             'id': self.id,
             'name': self.name,
             'track': self.track,
+            'track_length': self.track_length,
             'date_start': self.date_start.isoformat(),
             'date_end': self.date_end.isoformat(),
             'weather': self.weather,

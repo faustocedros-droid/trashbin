@@ -259,6 +259,9 @@ function EventDetail() {
           <div>
             <h1>{event.name}</h1>
             <p><strong>Circuito:</strong> {event.track}</p>
+            {event.track_length && (
+              <p><strong>Lunghezza Percorso:</strong> {event.track_length} KM</p>
+            )}
             <p><strong>Date:</strong> {new Date(event.date_start).toLocaleDateString('it-IT')} - {new Date(event.date_end).toLocaleDateString('it-IT')}</p>
             <p><strong>Meteo:</strong> {event.weather || 'Non specificato'}</p>
             {event.notes && <p><strong>Note:</strong> {event.notes}</p>}

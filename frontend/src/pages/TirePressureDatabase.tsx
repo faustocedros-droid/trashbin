@@ -20,11 +20,13 @@ interface PressureEntry {
   laps: string;
   airTemp: string;
   trackTemp: string;
+  initialKm: string;
 }
 
 function TirePressureDatabase() {
   const [entries, setEntries] = useState<PressureEntry[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [trackLength, setTrackLength] = useState<number>(0);
   const [formData, setFormData] = useState<PressureEntry>({
     id: '',
     session: 'FP1',
@@ -35,6 +37,7 @@ function TirePressureDatabase() {
     laps: '',
     airTemp: '',
     trackTemp: '',
+    initialKm: '',
   });
 
   const sessionOptions = ['T1', 'T2', 'T3', 'T4', 'FP1', 'FP2', 'FP3', 'Q1', 'Q2', 'R1', 'R2'];
@@ -44,6 +47,11 @@ function TirePressureDatabase() {
     const saved = localStorage.getItem('tirePressureDatabase');
     if (saved) {
       setEntries(JSON.parse(saved));
+    }
+    // Load track length from localStorage (could be set from event settings)
+    const savedTrackLength = localStorage.getItem('currentTrackLength');
+    if (savedTrackLength) {
+      setTrackLength(parseFloat(savedTrackLength));
     }
   }, []);
 
@@ -96,6 +104,7 @@ function TirePressureDatabase() {
       laps: '',
       airTemp: '',
       trackTemp: '',
+      initialKm: '',
     });
   };
 
@@ -104,12 +113,53 @@ function TirePressureDatabase() {
     resetForm();
   };
 
+  // Calculate final KM: initialKm + (trackLength * laps)
+  const calculateFinalKm = (initialKm: string, laps: string): number => {
+    const initial = parseFloat(initialKm) || 0;
+    const numLaps = parseFloat(laps) || 0;
+    return initial + (trackLength * numLaps);
+  };
+
   return (
     <div className="container" style={{ paddingTop: '40px' }}>
       <h1>🗄️ Tire Pressure Database</h1>
       <p style={{ color: '#666', marginBottom: '30px' }}>
         Database completo delle pressioni pneumatici per sessione
       </p>
+
+      {/* Track Length Configuration */}
+      <div className="card" style={{ marginBottom: '20px', backgroundColor: '#f0f8ff' }}>
+        <h3 style={{ marginTop: 0, marginBottom: '15px' }}>⚙️ Configurazione Percorso</h3>
+        <div style={{ display: 'flex', gap: '15px', alignItems: 'end' }}>
+          <div style={{ flex: 1 }}>
+            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+              Lunghezza Percorso (KM)
+            </label>
+            <input
+              type="number"
+              value={trackLength}
+              onChange={(e) => {
+                const value = parseFloat(e.target.value) || 0;
+                setTrackLength(value);
+                localStorage.setItem('currentTrackLength', value.toString());
+              }}
+              step="0.001"
+              min="0"
+              placeholder="es. 4.909"
+              style={{
+                width: '100%',
+                padding: '8px',
+                fontSize: '16px',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+              }}
+            />
+            <small style={{ display: 'block', marginTop: '4px', color: '#666' }}>
+              Lunghezza del circuito in chilometri (usata per calcolare i KM finali)
+            </small>
+          </div>
+        </div>
+      </div>
 
       {/* Input Form */}
       <div className="card" style={{ marginBottom: '30px' }}>
@@ -434,6 +484,47 @@ function TirePressureDatabase() {
                 }}
               />
             </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#fff' }}>
+                KM Iniziali
+              </label>
+              <input
+                type="text"
+                value={formData.initialKm}
+                onChange={(e) => setFormData({ ...formData, initialKm: e.target.value })}
+                placeholder="es. 0"
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  fontSize: '16px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#fff' }}>
+                KM Finali
+              </label>
+              <div
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  fontSize: '16px',
+                  border: '2px solid #fff',
+                  borderRadius: '4px',
+                  backgroundColor: '#FFD700',
+                  color: '#000',
+                  fontWeight: 'bold',
+                  textAlign: 'center',
+                }}
+              >
+                {calculateFinalKm(formData.initialKm, formData.laps).toFixed(3)}
+              </div>
+              <small style={{ display: 'block', marginTop: '4px', fontSize: '11px', color: '#fff' }}>
+                KM Iniziali + (Lunghezza × Giri)
+              </small>
+            </div>
           </div>
         </div>
 
@@ -482,6 +573,8 @@ function TirePressureDatabase() {
                   <th style={{ backgroundColor: '#FFA500', color: '#fff' }}>Laps</th>
                   <th style={{ backgroundColor: '#FFA500', color: '#fff' }}>Air Temp (°C)</th>
                   <th style={{ backgroundColor: '#FFA500', color: '#fff' }}>Track Temp (°C)</th>
+                  <th style={{ backgroundColor: '#FFA500', color: '#fff' }}>KM Iniziali</th>
+                  <th style={{ backgroundColor: '#FFD700', color: '#000', fontWeight: 'bold' }}>KM Finali</th>
                   <th>Azioni</th>
                 </tr>
                 <tr>
@@ -496,6 +589,8 @@ function TirePressureDatabase() {
                   <th style={{ backgroundColor: '#FFA500', color: '#fff' }}>FR</th>
                   <th style={{ backgroundColor: '#FFA500', color: '#fff' }}>RL</th>
                   <th style={{ backgroundColor: '#FFA500', color: '#fff' }}>RR</th>
+                  <th></th>
+                  <th></th>
                   <th></th>
                   <th></th>
                   <th></th>
@@ -519,6 +614,10 @@ function TirePressureDatabase() {
                     <td style={{ backgroundColor: '#FFE5CC' }}>{entry.laps}</td>
                     <td style={{ backgroundColor: '#FFE5CC' }}>{entry.airTemp}</td>
                     <td style={{ backgroundColor: '#FFE5CC' }}>{entry.trackTemp}</td>
+                    <td style={{ backgroundColor: '#FFE5CC' }}>{entry.initialKm || '0'}</td>
+                    <td style={{ backgroundColor: '#FFFACD', fontWeight: 'bold' }}>
+                      {calculateFinalKm(entry.initialKm || '0', entry.laps || '0').toFixed(3)}
+                    </td>
                     <td>
                       <div style={{ display: 'flex', gap: '5px' }}>
                         <button

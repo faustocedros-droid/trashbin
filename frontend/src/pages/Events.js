@@ -9,6 +9,7 @@ function Events() {
   const [formData, setFormData] = useState({
     name: '',
     track: '',
+    track_length: '',
     date_start: '',
     date_end: '',
     weather: '',
@@ -38,6 +39,7 @@ function Events() {
       setFormData({
         name: '',
         track: '',
+        track_length: '',
         date_start: '',
         date_end: '',
         weather: '',
@@ -108,6 +110,22 @@ function Events() {
                 required
                 placeholder="es. Autodromo Enzo e Dino Ferrari - Imola"
               />
+            </div>
+
+            <div className="form-group">
+              <label>Lunghezza Percorso (KM)</label>
+              <input
+                type="number"
+                name="track_length"
+                value={formData.track_length}
+                onChange={handleChange}
+                step="0.001"
+                min="0"
+                placeholder="es. 4.909"
+              />
+              <small style={{ display: 'block', marginTop: '4px', color: '#666' }}>
+                Lunghezza del circuito in chilometri
+              </small>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>

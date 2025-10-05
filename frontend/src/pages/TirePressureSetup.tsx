@@ -647,6 +647,81 @@ function TirePressureSetup() {
           Le matrici di output mostrano i risultati calcolati automaticamente in base alle formule implementate.
         </p>
       </div>
+
+      {/* Reference Images Section */}
+      <div className="card" style={{ marginTop: '30px' }}>
+        <h2 style={{ color: '#2c5282', marginBottom: '20px' }}>📊 Immagini di Riferimento</h2>
+        <p style={{ color: '#666', marginBottom: '20px' }}>
+          Immagini di riferimento per il setup delle pressioni pneumatici
+        </p>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+          {/* Placeholder for Image 1 */}
+          <div style={{ 
+            border: '2px dashed #ccc', 
+            borderRadius: '8px', 
+            padding: '20px',
+            textAlign: 'center',
+            backgroundColor: '#f8f9fa',
+            minHeight: '200px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <div>
+              <div style={{ fontSize: '48px', marginBottom: '10px' }}>📸</div>
+              <p style={{ margin: 0, color: '#666' }}>Immagine 1</p>
+              <small style={{ color: '#999' }}>Riferimento setup pressioni</small>
+            </div>
+          </div>
+
+          {/* Placeholder for Image 2 */}
+          <div style={{ 
+            border: '2px dashed #ccc', 
+            borderRadius: '8px', 
+            padding: '20px',
+            textAlign: 'center',
+            backgroundColor: '#f8f9fa',
+            minHeight: '200px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <div>
+              <div style={{ fontSize: '48px', marginBottom: '10px' }}>📸</div>
+              <p style={{ margin: 0, color: '#666' }}>Immagine 2</p>
+              <small style={{ color: '#999' }}>Riferimento setup pressioni</small>
+            </div>
+          </div>
+
+          {/* Placeholder for Image 3 */}
+          <div style={{ 
+            border: '2px dashed #ccc', 
+            borderRadius: '8px', 
+            padding: '20px',
+            textAlign: 'center',
+            backgroundColor: '#f8f9fa',
+            minHeight: '200px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <div>
+              <div style={{ fontSize: '48px', marginBottom: '10px' }}>📸</div>
+              <p style={{ margin: 0, color: '#666' }}>Immagine 3</p>
+              <small style={{ color: '#999' }}>Riferimento setup pressioni</small>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ marginTop: '20px', padding: '15px', backgroundColor: '#fff3cd', borderRadius: '4px', border: '1px solid #ffc107' }}>
+          <p style={{ margin: 0, color: '#856404' }}>
+            <strong>Nota:</strong> Per sostituire i placeholder con immagini reali, aggiungere i file immagine nella cartella 
+            <code style={{ backgroundColor: '#fff', padding: '2px 6px', borderRadius: '3px', marginLeft: '4px' }}>frontend/public/images/</code> 
+            e aggiornare i tag img con i percorsi appropriati.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

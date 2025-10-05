@@ -1,0 +1,200 @@
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                     RACING CAR MANAGER - DESKTOP APP                      ║
+║                         Architecture Diagram                              ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+┌───────────────────────────────────────────────────────────────────────────┐
+│                          USER INTERACTION                                  │
+│                                                                            │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  │
+│  │Dashboard │  │ Eventi   │  │Sessioni  │  │Pneumatici│  │  Setup   │  │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘  │
+│                                                                            │
+│  Menu: File | Modifica | Visualizza | Finestra | Aiuto                   │
+│  Shortcut: Ctrl+N | Ctrl+D | Ctrl+E | Ctrl+T | F11                       │
+└───────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌───────────────────────────────────────────────────────────────────────────┐
+│                    ELECTRON RENDERER PROCESS                               │
+│                      (Chromium + React)                                    │
+│                                                                            │
+│  ┌─────────────────────────────────────────────────────────────────┐     │
+│  │                      React Frontend                              │     │
+│  │  • React 18 (Components invariati)                              │     │
+│  │  • React Router 6 (Navigation)                                  │     │
+│  │  • Material-UI 5 (UI Components)                                │     │
+│  │  • Chart.js 4 (Visualizations)                                  │     │
+│  │  • Axios (HTTP Client)                                          │     │
+│  └─────────────────────────────────────────────────────────────────┘     │
+│                                                                            │
+│  Preload Script (Security Layer)                                          │
+│  • contextIsolation: true                                                 │
+│  • nodeIntegration: false                                                 │
+└───────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │ IPC (Secure)
+                                    │
+┌───────────────────────────────────────────────────────────────────────────┐
+│                      ELECTRON MAIN PROCESS                                 │
+│                          (Node.js)                                         │
+│                                                                            │
+│  ┌─────────────────────────────────────────────────────────────────┐     │
+│  │ Window Management                                                │     │
+│  │ • createWindow()                                                 │     │
+│  │ • Menu creation (Italian)                                        │     │
+│  │ • Keyboard shortcuts                                             │     │
+│  │ • External links handling                                        │     │
+│  └─────────────────────────────────────────────────────────────────┘     │
+│                                                                            │
+│  ┌─────────────────────────────────────────────────────────────────┐     │
+│  │ Backend Management                                               │     │
+│  │ • Auto-start Flask server                                        │     │
+│  │ • Process lifecycle management                                   │     │
+│  │ • Port 5000 monitoring                                           │     │
+│  └─────────────────────────────────────────────────────────────────┘     │
+└───────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │ spawn()
+                                    │
+┌───────────────────────────────────────────────────────────────────────────┐
+│                      FLASK BACKEND SERVER                                  │
+│                         (Python 3.9+)                                      │
+│                                                                            │
+│  ┌─────────────────────────────────────────────────────────────────┐     │
+│  │                   REST API Endpoints                             │     │
+│  │  • GET/POST /api/events                                          │     │
+│  │  • GET/PUT/DELETE /api/events/{id}                              │     │
+│  │  • GET/POST /api/sessions                                        │     │
+│  │  • GET/PUT/DELETE /api/sessions/{id}                            │     │
+│  │  • GET/POST /api/sessions/{id}/laps                             │     │
+│  │  • GET/POST /api/tire-data                                       │     │
+│  │  • POST /api/archive                                             │     │
+│  └─────────────────────────────────────────────────────────────────┘     │
+│                                                                            │
+│  ┌─────────────────────────────────────────────────────────────────┐     │
+│  │                 Business Logic Layer                             │     │
+│  │  • calculations.py (9 racing functions)                          │     │
+│  │  • Tire pressure optimization                                    │     │
+│  │  • Fuel consumption calculations                                 │     │
+│  │  • Setup adjustments                                             │     │
+│  └─────────────────────────────────────────────────────────────────┘     │
+│                                                                            │
+│  ┌─────────────────────────────────────────────────────────────────┐     │
+│  │                   Data Access Layer                              │     │
+│  │  • models.py (5 models)                                          │     │
+│  │    - RaceEvent                                                   │     │
+│  │    - Session                                                     │     │
+│  │    - TireData                                                    │     │
+│  │    - EngineData                                                  │     │
+│  │    - SetupData                                                   │     │
+│  └─────────────────────────────────────────────────────────────────┘     │
+│                                                                            │
+│  Host: localhost:5000                                                     │
+│  CORS: Enabled for Electron                                               │
+└───────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │ SQLAlchemy ORM
+                                    ▼
+┌───────────────────────────────────────────────────────────────────────────┐
+│                         DATABASE (SQLite)                                  │
+│                                                                            │
+│  ┌─────────────────────────────────────────────────────────────────┐     │
+│  │ racing.db                                                        │     │
+│  │                                                                  │     │
+│  │  Tables:                                                         │     │
+│  │  • race_events (eventi di gara)                                 │     │
+│  │  • sessions (sessioni di gara)                                  │     │
+│  │  • laps (giri cronometrati)                                     │     │
+│  │  • tire_data (dati pneumatici)                                  │     │
+│  │  • engine_data (dati motore)                                    │     │
+│  │  • setup_data (dati assetto)                                    │     │
+│  └─────────────────────────────────────────────────────────────────┘     │
+│                                                                            │
+│  Location: backend/racing.db                                              │
+│  Format: SQLite 3                                                         │
+└───────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════
+
+TECHNOLOGY STACK:
+
+Desktop Layer:
+  • Electron 28.0.0 (Main + Renderer Process)
+  • electron-builder 24.9.1 (Packaging)
+
+Frontend Layer (UNCHANGED):
+  • React 18.2.0
+  • React Router 6.20.0
+  • Material-UI 5.14.20
+  • Chart.js 4.4.0
+  • Axios 1.6.2
+
+Backend Layer (UNCHANGED):
+  • Flask 3.0.0
+  • Flask-CORS 4.0.0
+  • SQLAlchemy 2.0.23
+  • pandas 2.1.4
+
+Database Layer (UNCHANGED):
+  • SQLite (development)
+  • PostgreSQL ready (production)
+
+═══════════════════════════════════════════════════════════════════════════
+
+DEPLOYMENT FLOW:
+
+1. Development Mode:
+   ┌──────────────┐
+   │ User runs    │
+   │start-desktop │──┐
+   └──────────────┘  │
+                     ├──► Installs dependencies (if needed)
+                     │
+                     ├──► Starts Flask backend (Python)
+                     │
+                     └──► Opens Electron window
+                          └──► Loads React app from localhost:3000
+
+2. Production Mode (Built App):
+   ┌──────────────┐
+   │ User opens   │
+   │ .exe/.dmg/   │──┐
+   │ .AppImage    │  │
+   └──────────────┘  │
+                     ├──► Launches Electron
+                     │
+                     ├──► Starts embedded Flask backend
+                     │
+                     └──► Loads React app from build/
+
+═══════════════════════════════════════════════════════════════════════════
+
+FEATURES PRESERVED (100%):
+
+✓ Dashboard con statistiche
+✓ Gestione completa eventi
+✓ Pianificazione sessioni (Test, FP, Q, Race)
+✓ Gestione pneumatici e pressioni
+✓ Analisi temperature gomme
+✓ Database pressioni pneumatici
+✓ Setup vettura
+✓ Impostazioni
+✓ Demo EventFullDemo
+✓ Tutte le API REST
+✓ Tutti i calcoli racing
+✓ Database SQLite
+
+FEATURES ADDED (Desktop):
+
+✓ Native OS menus (Italian)
+✓ Global keyboard shortcuts
+✓ Auto-start backend
+✓ Window management
+✓ Fullscreen mode
+✓ DevTools integration
+✓ External link handling
+✓ Desktop icon/taskbar
+✓ Standalone installer
+
+═══════════════════════════════════════════════════════════════════════════

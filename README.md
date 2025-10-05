@@ -1,6 +1,35 @@
-# Racing Car Management Web Application
+# Racing Car Management Application
 
-A web application for managing racing car data, sessions, and telemetry - converted from an Excel-based system.
+A desktop and web application for managing racing car data, sessions, and telemetry - converted from an Excel-based system.
+
+## 🖥️ Desktop App Available!
+
+**NEW**: Racing Car Manager è ora disponibile come applicazione desktop standalone!
+
+### Quick Start Desktop App
+
+**Windows:**
+```bash
+start-desktop.bat
+```
+
+**macOS/Linux:**
+```bash
+./start-desktop.sh
+```
+
+📖 **Vedi [DESKTOP_APP_GUIDE.md](DESKTOP_APP_GUIDE.md) per la guida completa all'app desktop**
+
+### Vantaggi App Desktop
+- ✅ Nessun browser necessario
+- ✅ Menu nativi del sistema operativo
+- ✅ Icona sul desktop
+- ✅ Scorciatoie da tastiera globali
+- ✅ Backend avviato automaticamente
+- ✅ Funziona offline
+- ✅ Aspetto e funzioni identiche alla web app
+
+---
 
 ## Overview
 
@@ -51,7 +80,25 @@ The original Excel file contains the following sheets that are being converted:
 
 ## Installation
 
-### Prerequisites
+### Desktop App (Recommended)
+
+The easiest way to use Racing Car Manager is as a desktop application:
+
+**Windows:**
+```bash
+start-desktop.bat
+```
+
+**macOS/Linux:**
+```bash
+./start-desktop.sh
+```
+
+See [DESKTOP_APP_GUIDE.md](DESKTOP_APP_GUIDE.md) for complete desktop app documentation.
+
+### Web App (Traditional)
+
+#### Prerequisites
 - Python 3.9+
 - Node.js 16+
 - npm or yarn
@@ -71,6 +118,17 @@ cd frontend
 npm install
 npm start
 ```
+
+## Deployment Options
+
+### 1. Desktop App
+- **Development**: Use `start-desktop.bat` or `start-desktop.sh`
+- **Production**: Build with `npm run electron-build` (see [DESKTOP_APP_GUIDE.md](DESKTOP_APP_GUIDE.md))
+- **Platforms**: Windows, macOS, Linux
+
+### 2. Web App
+- **Development**: See [DEPLOYMENT.md](DEPLOYMENT.md)
+- **Production**: Deploy backend and frontend separately (Heroku, Docker, etc.)
 
 ## Features
 

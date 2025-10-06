@@ -190,3 +190,39 @@ start-desktop.bat
 **Data Fix:** Gennaio 2025  
 **Stato:** ✅ Completato e Testato  
 **Versione:** Desktop App Error Handling v2.0
+
+---
+
+## Aggiornamento - Fix Aggiuntivo
+
+**Data:** Gennaio 2025  
+**Issue:** La finestra continuava a chiudersi automaticamente anche dopo il fix precedente
+
+### Problema Residuo
+Nonostante il fix precedente, alcuni utenti segnalavano ancora che la finestra si chiudeva automaticamente dopo l'installazione delle dipendenze Python, senza mostrare messaggi di errore.
+
+### Causa
+Il fix precedente aveva aggiunto `pause` per tutti i casi di errore, ma mancava un `pause` nel caso di uscita normale dell'applicazione. Quando l'utente chiudeva la finestra Electron normalmente, lo script batch mostrava il messaggio "Desktop App Closed" ma poi terminava immediatamente, causando la chiusura automatica della finestra del prompt dei comandi prima che l'utente potesse leggere il messaggio.
+
+### Soluzione Implementata
+Aggiunto un comando `pause` alla fine dello script `start-desktop.bat` (linea 149), subito dopo il messaggio "Desktop App Closed" e prima del comando `cd ..`. Questo assicura che la finestra rimanga aperta anche quando l'applicazione si chiude normalmente, permettendo all'utente di:
+- Vedere il messaggio "Desktop App Closed"
+- Confermare che l'applicazione è stata chiusa intenzionalmente
+- Leggere eventuali messaggi finali
+
+### Modifica Applicata
+```batch
+echo.
+echo ==========================================
+echo Desktop App Closed
+echo ==========================================
+echo.
+echo The application has been closed.
+echo Run start-desktop.bat again to restart.
+echo.
+
+pause       <-- AGGIUNTO
+cd ..
+```
+
+Questo completa il fix per il problema della finestra che si chiude silenziosamente.

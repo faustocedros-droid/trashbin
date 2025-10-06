@@ -49,6 +49,12 @@ yarn-error.log*
 *.tmp
 *.log
 
+# Screenshots (testing only)
+screenshots/
+*.png
+*.jpg
+*.jpeg
+
 # TypeScript
 dist/
 *.tsbuildinfo

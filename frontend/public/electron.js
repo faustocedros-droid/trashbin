@@ -1,15 +1,61 @@
-const { app, BrowserWindow, Menu, shell } = require('electron');
+const { app, BrowserWindow, Menu, shell, dialog } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs');
+const http = require('http');
 
 let mainWindow;
 let backendProcess;
+let backendReady = false;
+let startupErrors = [];
 
 // Determine if running in development mode
 const isDev = !app.isPackaged;
 
-function createWindow() {
+// Function to check if a port is available
+function checkPort(port, timeout = 5000) {
+  return new Promise((resolve) => {
+    const startTime = Date.now();
+    const checkInterval = setInterval(() => {
+      const req = http.get(`http://localhost:${port}/api/health`, (res) => {
+        clearInterval(checkInterval);
+        resolve(true);
+      });
+      req.on('error', () => {
+        if (Date.now() - startTime > timeout) {
+          clearInterval(checkInterval);
+          resolve(false);
+        }
+      });
+      req.end();
+    }, 500);
+  });
+}
+
+// Function to show error dialog
+function showErrorDialog(title, message, detail = '') {
+  const options = {
+    type: 'error',
+    title: title,
+    message: message,
+    detail: detail,
+    buttons: ['OK', 'View Logs']
+  };
+  
+  const response = dialog.showMessageBoxSync(options);
+  if (response === 1) {
+    // View Logs button clicked
+    console.log('=== STARTUP ERRORS ===');
+    startupErrors.forEach(err => console.log(err));
+    console.log('=== END ERRORS ===');
+  }
+}
+
+async function createWindow() {
+  console.log('=== Creating Electron Window ===');
+  console.log('Development mode:', isDev);
+  console.log('Backend ready:', backendReady);
+  
   // Set icon based on platform
   let iconPath;
   if (process.platform === 'win32') {
@@ -22,7 +68,10 @@ function createWindow() {
 
   // Check if icon exists, otherwise use default
   if (!fs.existsSync(iconPath)) {
+    console.log('Icon not found, using default');
     iconPath = undefined; // Let Electron use default icon
+  } else {
+    console.log('Using icon:', iconPath);
   }
 
   mainWindow = new BrowserWindow({
@@ -36,21 +85,75 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js')
     },
     ...(iconPath && { icon: iconPath }),
-    title: 'Racing Car Manager'
+    title: 'Racing Car Manager',
+    show: false  // Don't show until ready to load
   });
+
+  // Wait for backend to be ready
+  if (!backendReady) {
+    console.log('Waiting for backend to be ready...');
+    const backendIsReady = await checkPort(5000, 30000);
+    if (!backendIsReady) {
+      const errorMsg = 'Backend server failed to start within 30 seconds';
+      console.error(errorMsg);
+      startupErrors.push(errorMsg);
+      showErrorDialog(
+        'Backend Error',
+        'The backend server could not start.',
+        'Please check:\n1. Python virtual environment is set up\n2. Dependencies are installed\n3. Port 5000 is not in use\n\nSee console for details.'
+      );
+      app.quit();
+      return;
+    }
+    backendReady = true;
+    console.log('✓ Backend is ready');
+  }
 
   // Load the app
   const startURL = isDev
     ? 'http://localhost:3000'
     : `file://${path.join(__dirname, '../build/index.html')}`;
 
-  mainWindow.loadURL(startURL).catch((err) => {
+  console.log('Loading URL:', startURL);
+
+  // In dev mode, wait for React dev server
+  if (isDev) {
+    console.log('Waiting for React dev server...');
+    const reactReady = await checkPort(3000, 60000);
+    if (!reactReady) {
+      const errorMsg = 'React dev server failed to start within 60 seconds';
+      console.error(errorMsg);
+      startupErrors.push(errorMsg);
+      showErrorDialog(
+        'React Dev Server Error',
+        'The React development server could not start.',
+        'Please run "npm start" in the frontend directory manually to see error details.'
+      );
+      app.quit();
+      return;
+    }
+    console.log('✓ React dev server is ready');
+  }
+
+  try {
+    await mainWindow.loadURL(startURL);
+    console.log('✓ Application loaded successfully');
+    mainWindow.show();
+  } catch (err) {
     console.error('Failed to load URL:', err);
-  });
+    startupErrors.push(`Failed to load URL: ${err.message}`);
+    showErrorDialog(
+      'Application Load Error',
+      'Failed to load the application.',
+      `Error: ${err.message}\n\nCheck console for details.`
+    );
+  }
 
   // Handle load failures
   mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
-    console.error(`Failed to load: ${errorDescription} (${errorCode})`);
+    const errorMsg = `Failed to load: ${errorDescription} (${errorCode})`;
+    console.error(errorMsg);
+    startupErrors.push(errorMsg);
   });
 
   // Open DevTools in development mode
@@ -70,6 +173,8 @@ function createWindow() {
 
   // Create application menu
   createMenu();
+  
+  console.log('=== Window creation complete ===');
 }
 
 function createMenu() {
@@ -183,72 +288,184 @@ function createMenu() {
 }
 
 function startBackend() {
+  console.log('=== Starting Backend ===');
+  
   // Backend path relative to the app
   const backendPath = isDev
     ? path.join(__dirname, '../../backend')
     : path.join(process.resourcesPath, 'backend');
 
+  console.log('Backend path:', backendPath);
+
+  // Check if backend directory exists
+  if (!fs.existsSync(backendPath)) {
+    const errorMsg = `Backend directory not found: ${backendPath}`;
+    console.error(errorMsg);
+    startupErrors.push(errorMsg);
+    showErrorDialog(
+      'Backend Not Found',
+      'Backend directory is missing.',
+      `Expected location: ${backendPath}\n\nPlease ensure the backend folder exists.`
+    );
+    app.quit();
+    return;
+  }
+
   const backendScript = path.join(backendPath, 'app.py');
+  
+  // Check if app.py exists
+  if (!fs.existsSync(backendScript)) {
+    const errorMsg = `Backend script not found: ${backendScript}`;
+    console.error(errorMsg);
+    startupErrors.push(errorMsg);
+    showErrorDialog(
+      'Backend Script Not Found',
+      'app.py is missing from backend directory.',
+      `Expected location: ${backendScript}`
+    );
+    app.quit();
+    return;
+  }
   
   // Determine Python command from virtual environment
   let pythonCmd;
   const venvPath = path.join(backendPath, 'venv');
   
+  console.log('Checking for virtual environment:', venvPath);
+  
   if (process.platform === 'win32') {
     pythonCmd = path.join(venvPath, 'Scripts', 'python.exe');
     // Fallback to system python if venv doesn't exist
     if (!fs.existsSync(pythonCmd)) {
-      console.warn('Virtual environment not found, using system python');
+      console.warn('⚠ Virtual environment not found, using system python');
+      console.warn('This may cause issues if Flask dependencies are not installed globally');
+      startupErrors.push('Warning: Virtual environment not found, using system python');
       pythonCmd = 'python';
+    } else {
+      console.log('✓ Using virtual environment Python');
     }
   } else {
     pythonCmd = path.join(venvPath, 'bin', 'python');
     // Fallback to system python3 if venv doesn't exist
     if (!fs.existsSync(pythonCmd)) {
-      console.warn('Virtual environment not found, using system python3');
+      console.warn('⚠ Virtual environment not found, using system python3');
+      console.warn('This may cause issues if Flask dependencies are not installed globally');
+      startupErrors.push('Warning: Virtual environment not found, using system python3');
       pythonCmd = 'python3';
+    } else {
+      console.log('✓ Using virtual environment Python');
     }
   }
 
-  console.log('Starting backend from:', backendPath);
-  console.log('Using Python:', pythonCmd);
+  console.log('Python command:', pythonCmd);
+  console.log('Starting Flask backend...');
 
   // Start the Flask backend
-  backendProcess = spawn(pythonCmd, [backendScript], {
-    cwd: backendPath,
-    env: { ...process.env, FLASK_ENV: 'production' }
-  });
+  try {
+    backendProcess = spawn(pythonCmd, [backendScript], {
+      cwd: backendPath,
+      env: { ...process.env, FLASK_ENV: 'production' }
+    });
 
-  backendProcess.stdout.on('data', (data) => {
-    console.log(`Backend: ${data}`);
-  });
+    backendProcess.stdout.on('data', (data) => {
+      const output = data.toString();
+      console.log(`[Backend] ${output}`);
+      // Check if backend is ready
+      if (output.includes('Running on')) {
+        backendReady = true;
+      }
+    });
 
-  backendProcess.stderr.on('data', (data) => {
-    console.error(`Backend Error: ${data}`);
-  });
+    backendProcess.stderr.on('data', (data) => {
+      const error = data.toString();
+      console.error(`[Backend Error] ${error}`);
+      startupErrors.push(`Backend error: ${error}`);
+      
+      // Check for common errors
+      if (error.includes('ModuleNotFoundError') || error.includes('No module named')) {
+        showErrorDialog(
+          'Python Dependencies Missing',
+          'Backend failed to start due to missing Python dependencies.',
+          'Please run:\n\ncd backend\npython -m venv venv\nsource venv/bin/activate  # or venv\\Scripts\\activate on Windows\npip install -r requirements.txt'
+        );
+      }
+    });
 
-  backendProcess.on('close', (code) => {
-    console.log(`Backend process exited with code ${code}`);
-  });
+    backendProcess.on('close', (code) => {
+      console.log(`Backend process exited with code ${code}`);
+      if (code !== 0 && code !== null) {
+        startupErrors.push(`Backend exited with code ${code}`);
+      }
+    });
+    
+    backendProcess.on('error', (error) => {
+      const errorMsg = `Failed to start backend: ${error.message}`;
+      console.error(errorMsg);
+      startupErrors.push(errorMsg);
+      showErrorDialog(
+        'Backend Start Error',
+        'Failed to start the backend process.',
+        `Error: ${error.message}\n\nPlease check:\n1. Python is installed\n2. Virtual environment is set up\n3. Dependencies are installed`
+      );
+    });
+    
+    console.log('Backend process started, PID:', backendProcess.pid);
+  } catch (error) {
+    const errorMsg = `Exception starting backend: ${error.message}`;
+    console.error(errorMsg);
+    startupErrors.push(errorMsg);
+    showErrorDialog(
+      'Backend Start Exception',
+      'An exception occurred while starting the backend.',
+      error.message
+    );
+  }
   
-  backendProcess.on('error', (error) => {
-    console.error(`Failed to start backend: ${error.message}`);
-  });
+  console.log('=== Backend startup initiated ===');
 }
 
 // App lifecycle
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  console.log('=== Electron App Starting ===');
+  console.log('Node version:', process.versions.node);
+  console.log('Electron version:', process.versions.electron);
+  console.log('Platform:', process.platform);
+  console.log('Development mode:', isDev);
+  
   // Start backend server
   startBackend();
 
-  // Wait a bit for backend to start, then create window
-  setTimeout(() => {
-    createWindow();
-  }, 2000);
+  // Wait for backend, then create window
+  console.log('Waiting for backend to be ready...');
+  const backendIsReady = await checkPort(5000, 30000);
+  
+  if (!backendIsReady) {
+    console.error('Backend did not become ready in time');
+    const options = {
+      type: 'error',
+      title: 'Backend Timeout',
+      message: 'Backend server did not start within 30 seconds',
+      detail: 'Please check the console for error messages.\n\nCommon causes:\n- Virtual environment not set up\n- Python dependencies not installed\n- Port 5000 already in use',
+      buttons: ['Quit', 'Try Again']
+    };
+    
+    const response = dialog.showMessageBoxSync(options);
+    if (response === 1) {
+      // Try again
+      app.relaunch();
+    }
+    app.quit();
+    return;
+  }
+  
+  backendReady = true;
+  console.log('✓ Backend is ready, creating window...');
+  
+  await createWindow();
 
-  app.on('activate', () => {
+  app.on('activate', async () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
+      await createWindow();
     }
   });
 });

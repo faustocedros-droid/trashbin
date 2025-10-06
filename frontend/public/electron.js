@@ -300,7 +300,15 @@ function startBackend() {
   // Check if backend directory exists
   if (!fs.existsSync(backendPath)) {
     const errorMsg = `Backend directory not found: ${backendPath}`;
+    console.error('=========================================');
+    console.error('FATAL ERROR: Backend directory not found');
+    console.error('=========================================');
     console.error(errorMsg);
+    console.error('');
+    console.error('Expected location:', backendPath);
+    console.error('Please ensure the backend folder exists.');
+    console.error('=========================================');
+    
     startupErrors.push(errorMsg);
     showErrorDialog(
       'Backend Not Found',
@@ -316,7 +324,15 @@ function startBackend() {
   // Check if app.py exists
   if (!fs.existsSync(backendScript)) {
     const errorMsg = `Backend script not found: ${backendScript}`;
+    console.error('=========================================');
+    console.error('FATAL ERROR: Backend script not found');
+    console.error('=========================================');
     console.error(errorMsg);
+    console.error('');
+    console.error('Expected location:', backendScript);
+    console.error('Please ensure app.py exists in the backend folder.');
+    console.error('=========================================');
+    
     startupErrors.push(errorMsg);
     showErrorDialog(
       'Backend Script Not Found',
@@ -388,6 +404,7 @@ function startBackend() {
           'Backend failed to start due to missing Python dependencies.',
           'Please run:\n\ncd backend\npython -m venv venv\nsource venv/bin/activate  # or venv\\Scripts\\activate on Windows\npip install -r requirements.txt'
         );
+        app.quit();
       }
     });
 
@@ -400,13 +417,30 @@ function startBackend() {
     
     backendProcess.on('error', (error) => {
       const errorMsg = `Failed to start backend: ${error.message}`;
+      console.error('=========================================');
+      console.error('FATAL ERROR: Backend process failed to start');
+      console.error('=========================================');
       console.error(errorMsg);
+      console.error('');
+      console.error('Please check:');
+      console.error('1. Python is installed and accessible');
+      console.error('2. Virtual environment exists in backend/venv');
+      console.error('3. Dependencies are installed in the venv');
+      console.error('');
+      console.error('To fix, run:');
+      console.error('  cd backend');
+      console.error('  python -m venv venv');
+      console.error('  venv\\Scripts\\activate.bat  (on Windows)');
+      console.error('  pip install -r requirements.txt');
+      console.error('=========================================');
+      
       startupErrors.push(errorMsg);
       showErrorDialog(
         'Backend Start Error',
         'Failed to start the backend process.',
         `Error: ${error.message}\n\nPlease check:\n1. Python is installed\n2. Virtual environment is set up\n3. Dependencies are installed`
       );
+      app.quit();
     });
     
     console.log('Backend process started, PID:', backendProcess.pid);
@@ -440,7 +474,24 @@ app.whenReady().then(async () => {
   const backendIsReady = await checkPort(5000, 30000);
   
   if (!backendIsReady) {
-    console.error('Backend did not become ready in time');
+    console.error('=========================================');
+    console.error('FATAL ERROR: Backend did not become ready in time');
+    console.error('=========================================');
+    console.error('');
+    console.error('The backend server failed to start within 30 seconds.');
+    console.error('');
+    console.error('Common causes:');
+    console.error('- Virtual environment not set up correctly');
+    console.error('- Python dependencies not installed');
+    console.error('- Port 5000 already in use');
+    console.error('- Backend script errors');
+    console.error('');
+    console.error('Startup errors collected:');
+    startupErrors.forEach(err => console.error(`  - ${err}`));
+    console.error('');
+    console.error('To diagnose the issue, run: diagnose-desktop.bat');
+    console.error('=========================================');
+    
     const options = {
       type: 'error',
       title: 'Backend Timeout',

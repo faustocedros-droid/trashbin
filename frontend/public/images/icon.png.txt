@@ -1,0 +1,3 @@
+# This is a placeholder for the app icon
+# For production, replace this with a proper 512x512 PNG icon
+# The icon should represent the Racing Car Manager application

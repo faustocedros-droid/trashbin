@@ -253,7 +253,65 @@ start-desktop.bat  # o ./start-desktop.sh
 
 📖 **Vedi [INSTALLAZIONE.md](INSTALLAZIONE.md) per istruzioni dettagliate**
 
-### L'app non si avvia
+### L'app non si avvia / si pianta
+
+**Sintomi:**
+- L'app Electron si apre ma mostra una pagina bianca
+- La finestra si chiude immediatamente dopo l'apertura
+- Console mostra errori del backend
+
+**Causa principale:** Il backend Flask non riesce ad avviarsi perché le dipendenze Python non sono installate nel virtual environment.
+
+**Soluzione - Installa dipendenze backend:**
+
+**Windows**:
+```bash
+# Vai nella cartella backend
+cd backend
+
+# Crea virtual environment se non esiste
+python -m venv venv
+
+# Attiva virtual environment
+venv\Scripts\activate.bat
+
+# Installa dipendenze
+pip install -r requirements.txt
+
+# Torna alla cartella principale
+cd ..
+
+# Avvia l'app
+start-desktop.bat
+```
+
+**macOS/Linux**:
+```bash
+# Vai nella cartella backend
+cd backend
+
+# Crea virtual environment se non esiste
+python3 -m venv venv
+
+# Attiva virtual environment
+source venv/bin/activate
+
+# Installa dipendenze
+pip install -r requirements.txt
+
+# Torna alla cartella principale
+cd ..
+
+# Avvia l'app
+./start-desktop.sh
+```
+
+**Debug:**
+- Apri DevTools (F12) nella finestra Electron
+- Controlla la console per errori del backend come "ModuleNotFoundError: No module named 'flask'"
+- Dovresti vedere "Backend: * Running on http://0.0.0.0:5000" se il backend si avvia correttamente
+
+**Causa secondaria:** Dipendenze frontend non installate.
 
 **Windows**:
 ```bash

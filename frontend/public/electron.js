@@ -44,7 +44,14 @@ function createWindow() {
     ? 'http://localhost:3000'
     : `file://${path.join(__dirname, '../build/index.html')}`;
 
-  mainWindow.loadURL(startURL);
+  mainWindow.loadURL(startURL).catch((err) => {
+    console.error('Failed to load URL:', err);
+  });
+
+  // Handle load failures
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+    console.error(`Failed to load: ${errorDescription} (${errorCode})`);
+  });
 
   // Open DevTools in development mode
   if (isDev) {
@@ -176,17 +183,35 @@ function createMenu() {
 }
 
 function startBackend() {
-  // Determine Python command (python or python3)
-  const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
-  
   // Backend path relative to the app
   const backendPath = isDev
     ? path.join(__dirname, '../../backend')
     : path.join(process.resourcesPath, 'backend');
 
   const backendScript = path.join(backendPath, 'app.py');
+  
+  // Determine Python command from virtual environment
+  let pythonCmd;
+  const venvPath = path.join(backendPath, 'venv');
+  
+  if (process.platform === 'win32') {
+    pythonCmd = path.join(venvPath, 'Scripts', 'python.exe');
+    // Fallback to system python if venv doesn't exist
+    if (!fs.existsSync(pythonCmd)) {
+      console.warn('Virtual environment not found, using system python');
+      pythonCmd = 'python';
+    }
+  } else {
+    pythonCmd = path.join(venvPath, 'bin', 'python');
+    // Fallback to system python3 if venv doesn't exist
+    if (!fs.existsSync(pythonCmd)) {
+      console.warn('Virtual environment not found, using system python3');
+      pythonCmd = 'python3';
+    }
+  }
 
   console.log('Starting backend from:', backendPath);
+  console.log('Using Python:', pythonCmd);
 
   // Start the Flask backend
   backendProcess = spawn(pythonCmd, [backendScript], {
@@ -204,6 +229,10 @@ function startBackend() {
 
   backendProcess.on('close', (code) => {
     console.log(`Backend process exited with code ${code}`);
+  });
+  
+  backendProcess.on('error', (error) => {
+    console.error(`Failed to start backend: ${error.message}`);
   });
 }
 

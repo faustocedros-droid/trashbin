@@ -1,6 +1,9 @@
 #!/bin/bash
 # Script di verifica installazione dipendenze
 
+# Change to script directory
+cd "$(dirname "$0")"
+
 echo "=========================================="
 echo "Verifica Installazione Dipendenze"
 echo "Racing Car Manager Desktop App"

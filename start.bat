@@ -1,6 +1,9 @@
 @echo off
 REM Quick Start Script for Racing Car Management Web App (Windows)
 
+REM Change to script directory
+cd /d "%~dp0"
+
 echo ==========================================
 echo Racing Car Manager - Quick Start
 echo ==========================================

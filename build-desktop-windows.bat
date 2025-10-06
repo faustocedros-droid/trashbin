@@ -1,6 +1,9 @@
 @echo off
 REM Build Desktop App for Windows
 
+REM Change to script directory
+cd /d "%~dp0"
+
 echo ==========================================
 echo Racing Car Manager - Build Desktop App
 echo ==========================================

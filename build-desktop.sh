@@ -1,6 +1,9 @@
 #!/bin/bash
 # Build Desktop App for macOS/Linux
 
+# Change to script directory
+cd "$(dirname "$0")"
+
 echo "=========================================="
 echo "Racing Car Manager - Build Desktop App"
 echo "=========================================="

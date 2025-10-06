@@ -1,6 +1,9 @@
 @echo off
 REM Script di verifica installazione dipendenze
 
+REM Change to script directory
+cd /d "%~dp0"
+
 echo ==========================================
 echo Verifica Installazione Dipendenze
 echo Racing Car Manager Desktop App

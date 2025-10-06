@@ -2,6 +2,9 @@
 # Comprehensive Desktop App Diagnostic Script
 # This script tests all components step by step
 
+# Change to script directory
+cd "$(dirname "$0")"
+
 echo "=========================================="
 echo "Racing Car Manager - Desktop App Diagnostic"
 echo "=========================================="

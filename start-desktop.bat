@@ -146,4 +146,5 @@ echo The application has been closed.
 echo Run start-desktop.bat again to restart.
 echo.
 
+pause
 cd ..

@@ -34,16 +34,27 @@ function Settings() {
   };
 
   const handleSaveArchive = () => {
-    // Get all tire pressure database data from localStorage
-    const data = localStorage.getItem('tirePressureDatabase');
-    if (!data) {
+    // Get all data from localStorage
+    const eventsData = localStorage.getItem('racingCarManager_events');
+    const tirePressureData = localStorage.getItem('tirePressureDatabase');
+    
+    // Create a comprehensive archive object
+    const archiveData = {
+      version: '1.0',
+      exportDate: new Date().toISOString(),
+      events: eventsData ? JSON.parse(eventsData) : [],
+      tirePressureDatabase: tirePressureData ? JSON.parse(tirePressureData) : null
+    };
+    
+    // Check if there's any data to save
+    if (!eventsData && !tirePressureData) {
       setMessage('Nessun dato da salvare!');
       setTimeout(() => setMessage(''), 3000);
       return;
     }
 
-    // Create a blob with the data
-    const blob = new Blob([data], { type: 'application/json' });
+    // Create a blob with the comprehensive data
+    const blob = new Blob([JSON.stringify(archiveData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     
     // Create a download link
@@ -53,7 +64,7 @@ function Settings() {
     // Use archivePath as the filename for download
     // Note: Browser security prevents direct filesystem access, 
     // so this will trigger a download dialog with the specified filename
-    const filename = archivePath || 'tire_pressure_data.tpdb';
+    const filename = archivePath || 'racing_data_archive.tpdb';
     link.download = filename.endsWith('.tpdb') ? filename : filename + '.tpdb';
     document.body.appendChild(link);
     link.click();
@@ -72,11 +83,30 @@ function Settings() {
     reader.onload = (event) => {
       try {
         const data = event.target.result;
-        localStorage.setItem('tirePressureDatabase', data);
-        setMessage('Archivio caricato con successo!');
-        setTimeout(() => setMessage(''), 3000);
+        const archiveData = JSON.parse(data);
+        
+        // Check if this is the new format (with version) or old format
+        if (archiveData.version) {
+          // New format - restore both events and tire pressure data
+          if (archiveData.events) {
+            localStorage.setItem('racingCarManager_events', JSON.stringify(archiveData.events));
+          }
+          if (archiveData.tirePressureDatabase) {
+            localStorage.setItem('tirePressureDatabase', JSON.stringify(archiveData.tirePressureDatabase));
+          }
+          setMessage('Archivio caricato con successo! Tutti i dati sono stati ripristinati.');
+        } else {
+          // Old format - assume it's just tire pressure data
+          localStorage.setItem('tirePressureDatabase', data);
+          setMessage('Archivio caricato con successo! (formato vecchio - solo dati pressioni)');
+        }
+        setTimeout(() => setMessage(''), 5000);
+        
+        // Reload the page to reflect the restored data
+        setTimeout(() => window.location.reload(), 1500);
       } catch (error) {
-        setMessage('Errore nel caricamento del file!');
+        console.error('Error loading archive:', error);
+        setMessage('Errore nel caricamento del file! Assicurati che sia un file .tpdb valido.');
         setTimeout(() => setMessage(''), 3000);
       }
     };
@@ -168,7 +198,7 @@ function Settings() {
         <div style={{ marginTop: '20px' }}>
           <h3>Salva Archivio</h3>
           <p style={{ color: '#666', marginBottom: '15px' }}>
-            Salva tutti i dati del database pressioni pneumatici in un file .tpdb
+            Salva tutti i dati dell'applicazione (eventi, sessioni, giri e database pressioni pneumatici) in un file .tpdb
           </p>
           
           <div className="form-group" style={{ marginBottom: '20px' }}>
@@ -190,7 +220,7 @@ function Settings() {
               }}
             />
             <small style={{ display: 'block', marginTop: '8px', color: '#666' }}>
-              Specifica il percorso completo o solo il nome file. Se non specificato, verrà utilizzato "tire_pressure_data.tpdb".<br />
+              Specifica il percorso completo o solo il nome file. Se non specificato, verrà utilizzato "racing_data_archive.tpdb".<br />
               <strong>Nota:</strong> Per limitazioni del browser, il file verrà scaricato nella cartella Download. 
               Per salvare in percorsi personalizzati, utilizzare una desktop app o backend.
             </small>

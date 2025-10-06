@@ -769,7 +769,11 @@ function EventDetail() {
                         <td>{lap.sector2 || '-'}</td>
                         <td>{lap.sector3 || '-'}</td>
                         <td>{lap.sector4 || '-'}</td>
-                        <td>{lap.fuel_consumed?.toFixed(2) || '-'}</td>
+                        <td>
+                          {selectedSession.fuel_start !== undefined && selectedSession.fuel_per_lap !== undefined
+                            ? calculateRemainingFuel(selectedSession.fuel_start, selectedSession.fuel_per_lap, lap.lap_number).toFixed(2)
+                            : '-'}
+                        </td>
                         <td>{lap.tire_set || '-'}</td>
                         <td>{lap.notes || '-'}</td>
                         <td>

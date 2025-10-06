@@ -776,7 +776,11 @@ const EventFullDemo: React.FC = () => {
                         <td>{lap.sector2 || '-'}</td>
                         <td>{lap.sector3 || '-'}</td>
                         <td>{lap.sector4 || '-'}</td>
-                        <td>{lap.fuelConsumed?.toFixed(2) || '-'}</td>
+                        <td>
+                          {selectedSession.fuel_start !== undefined && selectedSession.fuel_per_lap !== undefined
+                            ? calculateRemainingFuel(selectedSession.fuel_start, selectedSession.fuel_per_lap, lap.lapNumber).toFixed(2)
+                            : '-'}
+                        </td>
                         <td>{lap.tireSet || '-'}</td>
                         <td>{lap.notes || '-'}</td>
                         <td>

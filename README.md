@@ -51,6 +51,24 @@ The original Excel file contains the following sheets that are being converted:
 
 ## Installation
 
+### Desktop App (Recommended)
+
+The easiest way to use the application is with the desktop app, which automatically starts both the backend and frontend.
+
+**Linux/macOS:**
+```bash
+./start-desktop.sh
+```
+
+**Windows:**
+```batch
+start-desktop.bat
+```
+
+See [DESKTOP_APP_README.md](DESKTOP_APP_README.md) for more details.
+
+### Manual Installation (Web App)
+
 ### Prerequisites
 - Python 3.9+
 - Node.js 16+

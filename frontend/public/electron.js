@@ -406,7 +406,9 @@ function startBackend() {
           output.includes('WARNING: This is a development server') ||
           output.includes('Restarting with') ||
           output.includes('Debugger is active') ||
-          output.includes('Debugger PIN:');
+          output.includes('Debugger PIN:') ||
+          output.includes('DeprecationWarning:') ||
+          /\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3} - -/.test(output); // Access log pattern
         
         if (isNormalFlaskMessage) {
           console.log(`[Backend] ${output}`);

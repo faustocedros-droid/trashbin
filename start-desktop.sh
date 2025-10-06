@@ -128,6 +128,8 @@ if [ $EXIT_CODE -ne 0 ]; then
     echo ""
     echo "Check the error messages above for details."
     echo ""
+    echo "For detailed troubleshooting steps, see: TROUBLESHOOTING.md"
+    echo ""
     read -p "Press Enter to continue..."
     cd ..
     exit 1

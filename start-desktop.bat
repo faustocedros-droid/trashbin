@@ -130,6 +130,8 @@ if errorlevel 1 (
     echo.
     echo Check the error messages above for details.
     echo.
+    echo For detailed troubleshooting steps, see: TROUBLESHOOTING.md
+    echo.
     pause
     cd ..
     exit /b 1

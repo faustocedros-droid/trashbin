@@ -97,6 +97,39 @@ Se vedi un errore, ripeti il Passo 2.
 
 ## 🐛 Troubleshooting
 
+### L'app si pianta/crasha all'avvio
+
+**Causa**: Il backend Flask non riesce ad avviarsi perché le dipendenze Python non sono installate nel virtual environment.
+
+**Soluzione**:
+```bash
+# Vai nella cartella backend
+cd backend
+
+# Crea il virtual environment se non esiste
+python -m venv venv    # Windows
+python3 -m venv venv   # Linux/Mac
+
+# Attiva il virtual environment
+venv\Scripts\activate.bat     # Windows
+source venv/bin/activate      # Linux/Mac
+
+# Installa le dipendenze
+pip install -r requirements.txt
+
+# Torna alla cartella principale
+cd ..
+
+# Avvia l'app
+start-desktop.bat    # Windows
+./start-desktop.sh   # Linux/Mac
+```
+
+**Verifica che funzioni**:
+- Apri i DevTools (F12) nell'app Electron
+- Guarda la console per errori del backend
+- Dovresti vedere "Backend: * Running on http://0.0.0.0:5000"
+
 ### Errore: "electron: comando non trovato"
 
 **Causa**: Le dipendenze non sono installate.

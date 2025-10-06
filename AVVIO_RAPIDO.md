@@ -79,10 +79,20 @@ Verifica che:
 ### L'installazione è lenta/bloccata
 Electron è grande (~200MB). Con connessione lenta può richiedere 5-10 minuti. Attendi pazientemente.
 
-### Ho installato ma continua a non funzionare
-1. Verifica: `./check-dependencies.sh`
-2. Se OK, prova: `cd frontend && rm -rf node_modules && npm install`
-3. Consulta [INSTALLAZIONE.md](INSTALLAZIONE.md) per troubleshooting
+### Ho installato ma continua a non funzionare / si pianta
+1. **PRIMA**: Verifica dipendenze backend Python!
+   ```bash
+   cd backend
+   python -m venv venv                    # Windows
+   # oppure: python3 -m venv venv        # Linux/Mac
+   venv\Scripts\activate.bat              # Windows
+   # oppure: source venv/bin/activate    # Linux/Mac
+   pip install -r requirements.txt
+   cd ..
+   ```
+2. Verifica setup: `./check-dependencies.sh` (o `.bat` su Windows)
+3. Se ancora non funziona, prova: `cd frontend && rm -rf node_modules && npm install`
+4. Consulta [INSTALLAZIONE.md](INSTALLAZIONE.md) per troubleshooting dettagliato
 
 ---
 
@@ -90,6 +100,7 @@ Electron è grande (~200MB). Con connessione lenta può richiedere 5-10 minuti. 
 
 | Errore | Causa | Soluzione |
 |--------|-------|-----------|
+| **L'app si pianta/crasha all'avvio** | Dipendenze Python non nel venv | `cd backend && python -m venv venv && venv\Scripts\activate && pip install -r requirements.txt` |
 | `electron: command not found` | Dipendenze non installate | `cd frontend && npm install` |
 | `Cannot find module 'electron'` | node_modules corrotto | `cd frontend && rm -rf node_modules && npm install` |
 | `Python not found` | Python non installato | Installa da python.org |

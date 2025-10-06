@@ -92,9 +92,9 @@ async function createWindow() {
   // Wait for backend to be ready
   if (!backendReady) {
     console.log('Waiting for backend to be ready...');
-    const backendIsReady = await checkPort(5000, 30000);
+    const backendIsReady = await checkPort(5000, 60000);
     if (!backendIsReady) {
-      const errorMsg = 'Backend server failed to start within 30 seconds';
+      const errorMsg = 'Backend server failed to start within 60 seconds';
       console.error(errorMsg);
       startupErrors.push(errorMsg);
       showErrorDialog(
@@ -378,7 +378,8 @@ function startBackend() {
 
   // Start the Flask backend
   try {
-    backendProcess = spawn(pythonCmd, [backendScript], {
+    // Use -u flag to run Python in unbuffered mode for immediate output
+    backendProcess = spawn(pythonCmd, ['-u', backendScript], {
       cwd: backendPath,
       env: { ...process.env, FLASK_ENV: 'production' }
     });
@@ -493,14 +494,14 @@ app.whenReady().then(async () => {
 
   // Wait for backend, then create window
   console.log('Waiting for backend to be ready...');
-  const backendIsReady = await checkPort(5000, 30000);
+  const backendIsReady = await checkPort(5000, 60000);
   
   if (!backendIsReady) {
     console.error('=========================================');
     console.error('FATAL ERROR: Backend did not become ready in time');
     console.error('=========================================');
     console.error('');
-    console.error('The backend server failed to start within 30 seconds.');
+    console.error('The backend server failed to start within 60 seconds.');
     console.error('');
     console.error('Common causes:');
     console.error('- Virtual environment not set up correctly');
@@ -517,7 +518,7 @@ app.whenReady().then(async () => {
     const options = {
       type: 'error',
       title: 'Backend Timeout',
-      message: 'Backend server did not start within 30 seconds',
+      message: 'Backend server did not start within 60 seconds',
       detail: 'Please check the console for error messages.\n\nCommon causes:\n- Virtual environment not set up\n- Python dependencies not installed\n- Port 5000 already in use',
       buttons: ['Quit', 'Try Again']
     };

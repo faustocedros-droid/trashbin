@@ -38,7 +38,7 @@ function checkPort(port, timeout = 5000) {
 
 **Benefits:**
 - ✅ Actively polls the `/api/health` endpoint every 500ms
-- ✅ Configurable timeout (default 30 seconds for backend, 60 for React)
+- ✅ Configurable timeout (default 60 seconds for backend, 60 for React)
 - ✅ Returns true only when backend is actually responding
 
 ### 2. **Enhanced Error Dialogs**
@@ -186,7 +186,7 @@ start-desktop.bat        # Start the app
 
 ### What Happens Now:
 1. **Backend starts** and logs appear in console
-2. **Health check waits** for backend to be ready (up to 30 seconds)
+2. **Health check waits** for backend to be ready (up to 60 seconds)
 3. **React dev server** starts and health check waits (up to 60 seconds in dev mode)
 4. **Window opens** only when everything is ready
 5. **DevTools open** automatically in dev mode for debugging
@@ -199,7 +199,7 @@ start-desktop.bat        # Start the app
 
 ## 🐛 Common Issues and Solutions
 
-### Issue: "Backend server did not start within 30 seconds"
+### Issue: "Backend server did not start within 60 seconds"
 **Cause:** Virtual environment not set up or dependencies not installed
 **Solution:**
 ```bash
@@ -208,6 +208,8 @@ python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
+
+**Note:** The timeout has been increased from 30 to 60 seconds and Python now runs with the `-u` flag for unbuffered output, ensuring faster and more reliable backend startup detection.
 
 ### Issue: "React dev server could not start"
 **Cause:** Frontend dependencies not installed

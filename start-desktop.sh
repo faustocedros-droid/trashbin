@@ -1,6 +1,9 @@
 #!/bin/bash
 # Desktop App Launcher for Racing Car Manager (Linux/Mac)
 
+# Change to script directory
+cd "$(dirname "$0")"
+
 echo "=========================================="
 echo "Racing Car Manager - Desktop App"
 echo "=========================================="

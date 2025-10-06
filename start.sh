@@ -1,6 +1,9 @@
 #!/bin/bash
 # Quick Start Script for Racing Car Management Web App
 
+# Change to script directory
+cd "$(dirname "$0")"
+
 echo "=========================================="
 echo "Racing Car Manager - Quick Start"
 echo "=========================================="

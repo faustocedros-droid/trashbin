@@ -1,6 +1,9 @@
 @echo off
 REM Desktop App Launcher for Racing Car Manager (Windows)
 
+REM Change to script directory
+cd /d "%~dp0"
+
 echo ==========================================
 echo Racing Car Manager - Desktop App
 echo ==========================================

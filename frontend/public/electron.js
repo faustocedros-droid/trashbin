@@ -407,6 +407,7 @@ function startBackend() {
           output.includes('Restarting with') ||
           output.includes('Debugger is active') ||
           output.includes('Debugger PIN:') ||
+          output.includes('Press CTRL+C to quit') ||
           output.includes('DeprecationWarning:') ||
           /\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3} - -/.test(output); // Access log pattern
         

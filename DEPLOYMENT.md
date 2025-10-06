@@ -1,6 +1,18 @@
-# Deployment Guide - Racing Car Management Web App
+# Deployment Guide - Racing Car Management Application
 
-## Quick Start
+## Deployment Options
+
+This application can be deployed in three ways:
+
+1. **Desktop App** (Recommended for end users) - Standalone application with auto-starting backend
+2. **Web App - Separate Deployment** - Backend and frontend deployed separately
+3. **Web App - Single Server** - Backend serves static frontend files
+
+## Desktop App Deployment
+
+See [DESKTOP_APP_README.md](DESKTOP_APP_README.md) for detailed desktop app documentation.
+
+### Quick Start
 
 ### Prerequisites
 - Python 3.9 or higher

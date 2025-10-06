@@ -393,12 +393,34 @@ function startBackend() {
     });
 
     backendProcess.stderr.on('data', (data) => {
-      const error = data.toString();
-      console.error(`[Backend Error] ${error}`);
-      startupErrors.push(`Backend error: ${error}`);
+      const output = data.toString();
+      
+      // Flask outputs normal startup messages to stderr, not stdout
+      // Check if backend is ready by looking for the "Running on" message
+      if (output.includes('Running on')) {
+        backendReady = true;
+        console.log(`[Backend] ${output}`);
+      } else {
+        // Only log as error and add to startupErrors if it's not a normal Flask message
+        const isNormalFlaskMessage = 
+          output.includes('WARNING: This is a development server') ||
+          output.includes('Restarting with') ||
+          output.includes('Debugger is active') ||
+          output.includes('Debugger PIN:') ||
+          output.includes('Press CTRL+C to quit') ||
+          output.includes('DeprecationWarning:') ||
+          /\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3} - -/.test(output); // Access log pattern
+        
+        if (isNormalFlaskMessage) {
+          console.log(`[Backend] ${output}`);
+        } else {
+          console.error(`[Backend Error] ${output}`);
+          startupErrors.push(`Backend error: ${output}`);
+        }
+      }
       
       // Check for common errors
-      if (error.includes('ModuleNotFoundError') || error.includes('No module named')) {
+      if (output.includes('ModuleNotFoundError') || output.includes('No module named')) {
         showErrorDialog(
           'Python Dependencies Missing',
           'Backend failed to start due to missing Python dependencies.',

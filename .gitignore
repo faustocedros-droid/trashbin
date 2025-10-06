@@ -27,16 +27,6 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
-# Electron
-/frontend/dist/
-/frontend/out/
-*.dmg
-*.AppImage
-*.deb
-*.rpm
-*.exe
-*.msi
-
 # IDE
 .vscode/
 .idea/

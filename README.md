@@ -1,53 +1,6 @@
 # Racing Car Management Application
 
-A desktop and web application for managing racing car data, sessions, and telemetry - converted from an Excel-based system.
-
-## 🖥️ Desktop App Available!
-
-**NEW**: Racing Car Manager è ora disponibile come applicazione desktop standalone!
-
-### ⚠️ IMPORTANTE: Prima Installazione
-
-**Prima di avviare l'app desktop per la prima volta**, devi installare le dipendenze:
-
-```bash
-cd frontend
-npm install
-cd ..
-```
-
-Questo installerà Electron e tutte le dipendenze necessarie (~400MB, può richiedere alcuni minuti).
-
-📖 **Guide Installazione:**
-- **[AVVIO_RAPIDO.md](AVVIO_RAPIDO.md)** ⭐ - Soluzione rapida al problema "app non parte"
-- **[INSTALLAZIONE.md](INSTALLAZIONE.md)** - Guida completa e troubleshooting
-
-### Quick Start Desktop App
-
-Dopo aver installato le dipendenze (vedi sopra):
-
-**Windows:**
-```bash
-start-desktop.bat
-```
-
-**macOS/Linux:**
-```bash
-./start-desktop.sh
-```
-
-📖 **Vedi [DESKTOP_APP_GUIDE.md](DESKTOP_APP_GUIDE.md) per la guida completa all'app desktop**
-
-### Vantaggi App Desktop
-- ✅ Nessun browser necessario
-- ✅ Menu nativi del sistema operativo
-- ✅ Icona sul desktop
-- ✅ Scorciatoie da tastiera globali
-- ✅ Backend avviato automaticamente
-- ✅ Funziona offline
-- ✅ Aspetto e funzioni identiche alla web app
-
----
+A web application for managing racing car data, sessions, and telemetry - converted from an Excel-based system.
 
 ## Overview
 
@@ -98,25 +51,7 @@ The original Excel file contains the following sheets that are being converted:
 
 ## Installation
 
-### Desktop App (Recommended)
-
-The easiest way to use Racing Car Manager is as a desktop application:
-
-**Windows:**
-```bash
-start-desktop.bat
-```
-
-**macOS/Linux:**
-```bash
-./start-desktop.sh
-```
-
-See [DESKTOP_APP_GUIDE.md](DESKTOP_APP_GUIDE.md) for complete desktop app documentation.
-
-### Web App (Traditional)
-
-#### Prerequisites
+### Prerequisites
 - Python 3.9+
 - Node.js 16+
 - npm or yarn
@@ -139,13 +74,9 @@ npm start
 
 ## Deployment Options
 
-### 1. Desktop App
-- **Development**: Use `start-desktop.bat` or `start-desktop.sh`
-- **Production**: Build with `npm run electron-build` (see [DESKTOP_APP_GUIDE.md](DESKTOP_APP_GUIDE.md))
-- **Platforms**: Windows, macOS, Linux
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions.
 
-### 2. Web App
-- **Development**: See [DEPLOYMENT.md](DEPLOYMENT.md)
+- **Development**: Run backend and frontend separately
 - **Production**: Deploy backend and frontend separately (Heroku, Docker, etc.)
 
 ## Features

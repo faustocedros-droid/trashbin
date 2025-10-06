@@ -10,10 +10,12 @@ import TirePressureSetsManagement from './pages/TirePressureSetsManagement';
 import TirePressureSetup from './pages/TirePressureSetup';
 import TirePressureDatabase from './pages/TirePressureDatabase';
 import Settings from './pages/Settings';
+import RunPlanSheet from './pages/RunPlanSheet';
 
 function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [tirePressureSubmenuOpen, setTirePressureSubmenuOpen] = useState(false);
+  const [runPlanSubmenuOpen, setRunPlanSubmenuOpen] = useState(false);
 
   return (
     <Router>
@@ -35,6 +37,32 @@ function App() {
               </div>
               <ul className={`nav-links ${menuOpen ? 'open' : ''}`}>
                 <li><Link to="/events" onClick={() => setMenuOpen(false)}>Eventi</Link></li>
+                <li>
+                  <div style={{ position: 'relative' }}>
+                    <span 
+                      onClick={() => setRunPlanSubmenuOpen(!runPlanSubmenuOpen)}
+                      style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+                    >
+                      RunPlan Sheets {runPlanSubmenuOpen ? '▼' : '▶'}
+                    </span>
+                    {runPlanSubmenuOpen && (
+                      <ul style={{ 
+                        listStyle: 'none', 
+                        padding: '10px 0 10px 20px', 
+                        margin: 0,
+                        backgroundColor: '#2a2a2a',
+                        borderRadius: '4px',
+                        marginTop: '5px'
+                      }}>
+                        <li style={{ padding: '5px 0' }}>
+                          <Link to="/runplan/fp1" onClick={() => { setMenuOpen(false); setRunPlanSubmenuOpen(false); }}>
+                            FP1 RunPlan Generator
+                          </Link>
+                        </li>
+                      </ul>
+                    )}
+                  </div>
+                </li>
                 <li>
                   <div style={{ position: 'relative' }}>
                     <span 
@@ -87,6 +115,7 @@ function App() {
             <Route path="/tire-pressure/sets-management" element={<TirePressureSetsManagement />} />
             <Route path="/tire-pressure/setup" element={<TirePressureSetup />} />
             <Route path="/tire-pressure/database" element={<TirePressureDatabase />} />
+            <Route path="/runplan/fp1" element={<RunPlanSheet />} />
             <Route path="/demo" element={<EventFullDemo />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>

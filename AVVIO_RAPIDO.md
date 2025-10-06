@@ -2,6 +2,9 @@
 
 ## La Desktop App Non Parte? 👇
 
+### ⚠️ AGGIORNAMENTO: Ora con Gestione Errori Migliorata!
+**Gli script sono stati aggiornati per mostrare messaggi di errore chiari e non chiudere immediatamente la finestra.**
+
 ### Causa Più Comune
 **Le dipendenze Node.js (Electron) non sono installate!**
 
@@ -27,6 +30,8 @@ Attendi il completamento (~400MB, 2-5 minuti)
 #### 3️⃣ Avvia l'app
 **Windows:** Doppio click su `start-desktop.bat`
 **Linux/Mac:** `./start-desktop.sh`
+
+**Nota:** Se qualcosa va storto, ora vedrai un messaggio di errore chiaro che spiega il problema!
 
 ---
 
@@ -90,10 +95,13 @@ Electron è grande (~200MB). Con connessione lenta può richiedere 5-10 minuti. 
 
 | Errore | Causa | Soluzione |
 |--------|-------|-----------|
+| **Finestra CMD si chiude subito** | **[RISOLTO]** Script aggiornato mostra errori | Usa la nuova versione dello script |
 | `electron: command not found` | Dipendenze non installate | `cd frontend && npm install` |
 | `Cannot find module 'electron'` | node_modules corrotto | `cd frontend && rm -rf node_modules && npm install` |
 | `Python not found` | Python non installato | Installa da python.org |
 | `Port 5000 already in use` | Backend già in esecuzione | Chiudi processi Python o cambia porta |
+| `Failed to create venv` | Python non configurato | Reinstalla Python con opzione "Add to PATH" |
+| `npm install failed` | Connessione internet o npm | Controlla connessione e riprova |
 
 ---
 

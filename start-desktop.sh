@@ -30,12 +30,42 @@ cd backend
 if [ ! -d "venv" ]; then
     echo "Creating Python virtual environment..."
     python3 -m venv venv
+    if [ $? -ne 0 ]; then
+        echo ""
+        echo "✗ Failed to create virtual environment"
+        echo ""
+        read -p "Press Enter to continue..."
+        cd ..
+        exit 1
+    fi
 fi
 
 # Activate virtual environment and install dependencies
 echo "Installing Python dependencies..."
 source venv/bin/activate
+if [ $? -ne 0 ]; then
+    echo ""
+    echo "✗ Failed to activate virtual environment"
+    echo ""
+    read -p "Press Enter to continue..."
+    cd ..
+    exit 1
+fi
+
 pip install -q -r requirements.txt
+if [ $? -ne 0 ]; then
+    echo ""
+    echo "✗ Failed to install Python dependencies"
+    echo ""
+    echo "Try running manually:"
+    echo "  cd backend"
+    echo "  source venv/bin/activate"
+    echo "  pip install -r requirements.txt"
+    echo ""
+    read -p "Press Enter to continue..."
+    cd ..
+    exit 1
+fi
 
 echo "✓ Backend setup complete"
 cd ..
@@ -50,6 +80,18 @@ cd frontend
 if [ ! -d "node_modules" ]; then
     echo "Installing Node.js dependencies (this may take a few minutes)..."
     npm install
+    if [ $? -ne 0 ]; then
+        echo ""
+        echo "✗ Failed to install Node.js dependencies"
+        echo ""
+        echo "Try running manually:"
+        echo "  cd frontend"
+        echo "  npm install"
+        echo ""
+        read -p "Press Enter to continue..."
+        cd ..
+        exit 1
+    fi
 else
     echo "Node modules already installed"
 fi
@@ -63,6 +105,41 @@ echo "=========================================="
 echo ""
 
 # Start the Electron app in development mode
+echo "Running: npm run electron-dev"
+echo ""
+echo "NOTE: This will start both React dev server and Electron."
+echo "The window will open when both are ready."
+echo "Press Ctrl+C to stop the application."
+echo ""
+
 npm run electron-dev
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -ne 0 ]; then
+    echo ""
+    echo "=========================================="
+    echo "ERROR: Failed to start desktop app"
+    echo "=========================================="
+    echo ""
+    echo "The application failed to start. Common issues:"
+    echo "- React dev server failed to start (check port 3000)"
+    echo "- Backend failed to start (check port 5000)"
+    echo "- Missing dependencies"
+    echo ""
+    echo "Check the error messages above for details."
+    echo ""
+    read -p "Press Enter to continue..."
+    cd ..
+    exit 1
+fi
+
+echo ""
+echo "=========================================="
+echo "Desktop App Closed"
+echo "=========================================="
+echo ""
+echo "The application has been closed."
+echo "Run ./start-desktop.sh again to restart."
+echo ""
 
 cd ..

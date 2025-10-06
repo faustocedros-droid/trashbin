@@ -2,6 +2,9 @@
 REM Comprehensive Desktop App Diagnostic Script for Windows
 REM This script tests all components step by step
 
+REM Change to script directory
+cd /d "%~dp0"
+
 echo ==========================================
 echo Racing Car Manager - Desktop App Diagnostic
 echo ==========================================

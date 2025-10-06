@@ -1,6 +1,9 @@
 @echo off
 REM Validation Script for Desktop App Setup (Windows)
 
+REM Change to script directory
+cd /d "%~dp0"
+
 echo ==========================================
 echo Desktop App Setup Validation
 echo ==========================================

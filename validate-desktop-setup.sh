@@ -1,6 +1,9 @@
 #!/bin/bash
 # Validation Script for Desktop App Setup
 
+# Change to script directory
+cd "$(dirname "$0")"
+
 echo "=========================================="
 echo "Desktop App Setup Validation"
 echo "=========================================="

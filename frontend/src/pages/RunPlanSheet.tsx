@@ -872,35 +872,75 @@ function RunPlanSheet() {
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>1</td>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>{data.H11}</td>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.B17.toFixed(0)}</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{data.REFUEL1.toFixed(2)} L</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    value={data.REFUEL1}
+                                    onChange={(e) => handleInputChange('REFUEL1', parseFloat(e.target.value) || 0)}
+                                    style={{ width: '80px', padding: '4px', border: '1px solid #ccc', borderRadius: '3px' }}
+                                /> L
+                            </td>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.G18.toFixed(3)} km</td>
                         </tr>
                         <tr>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>2</td>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>{data.H19}</td>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.B25.toFixed(0)}</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{data.REFUEL2.toFixed(2)} L</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    value={data.REFUEL2}
+                                    onChange={(e) => handleInputChange('REFUEL2', parseFloat(e.target.value) || 0)}
+                                    style={{ width: '80px', padding: '4px', border: '1px solid #ccc', borderRadius: '3px' }}
+                                /> L
+                            </td>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.G26.toFixed(3)} km</td>
                         </tr>
                         <tr>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>3</td>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>{data.H27}</td>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.B33.toFixed(0)}</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{data.REFUEL3.toFixed(2)} L</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    value={data.REFUEL3}
+                                    onChange={(e) => handleInputChange('REFUEL3', parseFloat(e.target.value) || 0)}
+                                    style={{ width: '80px', padding: '4px', border: '1px solid #ccc', borderRadius: '3px' }}
+                                /> L
+                            </td>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.G34.toFixed(3)} km</td>
                         </tr>
                         <tr>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>4</td>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>{data.H35}</td>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.B41.toFixed(0)}</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{data.REFUEL4.toFixed(2)} L</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    value={data.REFUEL4}
+                                    onChange={(e) => handleInputChange('REFUEL4', parseFloat(e.target.value) || 0)}
+                                    style={{ width: '80px', padding: '4px', border: '1px solid #ccc', borderRadius: '3px' }}
+                                /> L
+                            </td>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.G42.toFixed(3)} km</td>
                         </tr>
                         <tr>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>5</td>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>{data.H43}</td>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.B49.toFixed(0)}</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{data.REFUEL5.toFixed(2)} L</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    value={data.REFUEL5}
+                                    onChange={(e) => handleInputChange('REFUEL5', parseFloat(e.target.value) || 0)}
+                                    style={{ width: '80px', padding: '4px', border: '1px solid #ccc', borderRadius: '3px' }}
+                                /> L
+                            </td>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.G50.toFixed(3)} km</td>
                         </tr>
                     </tbody>
@@ -918,23 +958,63 @@ function RunPlanSheet() {
                     <tbody>
                         <tr>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>1</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{data.NOTE1 || '-'}</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>
+                                <input
+                                    type="text"
+                                    value={data.NOTE1}
+                                    onChange={(e) => handleInputChange('NOTE1', e.target.value)}
+                                    placeholder="Enter note..."
+                                    style={{ width: '100%', padding: '4px', border: '1px solid #ccc', borderRadius: '3px' }}
+                                />
+                            </td>
                         </tr>
                         <tr>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>2</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{data.NOTE2 || '-'}</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>
+                                <input
+                                    type="text"
+                                    value={data.NOTE2}
+                                    onChange={(e) => handleInputChange('NOTE2', e.target.value)}
+                                    placeholder="Enter note..."
+                                    style={{ width: '100%', padding: '4px', border: '1px solid #ccc', borderRadius: '3px' }}
+                                />
+                            </td>
                         </tr>
                         <tr>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>3</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{data.NOTE3 || '-'}</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>
+                                <input
+                                    type="text"
+                                    value={data.NOTE3}
+                                    onChange={(e) => handleInputChange('NOTE3', e.target.value)}
+                                    placeholder="Enter note..."
+                                    style={{ width: '100%', padding: '4px', border: '1px solid #ccc', borderRadius: '3px' }}
+                                />
+                            </td>
                         </tr>
                         <tr>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>4</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{data.NOTE4 || '-'}</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>
+                                <input
+                                    type="text"
+                                    value={data.NOTE4}
+                                    onChange={(e) => handleInputChange('NOTE4', e.target.value)}
+                                    placeholder="Enter note..."
+                                    style={{ width: '100%', padding: '4px', border: '1px solid #ccc', borderRadius: '3px' }}
+                                />
+                            </td>
                         </tr>
                         <tr>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>5</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{data.NOTE5 || '-'}</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>
+                                <input
+                                    type="text"
+                                    value={data.NOTE5}
+                                    onChange={(e) => handleInputChange('NOTE5', e.target.value)}
+                                    placeholder="Enter note..."
+                                    style={{ width: '100%', padding: '4px', border: '1px solid #ccc', borderRadius: '3px' }}
+                                />
+                            </td>
                         </tr>
                     </tbody>
                 </table>

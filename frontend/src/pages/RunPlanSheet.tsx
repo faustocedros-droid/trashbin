@@ -13,11 +13,12 @@ interface RunPlanData {
 
     // Input cells
     D5: number;  // Starting fuel
-    I5: number;  // Fuel consumption rate 1
-    I7: number;  // Fuel consumption rate 2
-    I9: number;  // Fuel consumption rate 3
-    N5: number;  // Time per lap factor
-    N7: number;  // Laps multiplier
+    I5: number;  // Fuel consumption per lap
+    OUTLAP_TIME: string;  // Outlap time in mm:ss format
+    INLAP_TIME: string;   // Inlap time in mm:ss format
+    PACE: string;         // Pace time in mm:ss format
+    START_TIME: string;   // Start time in hh:mm:ss format
+    DURATION: string;     // Duration in h:mm:ss format
     D7: number;  // Initial value for N13
     E11: number;  // Value for G18
     E19: number;  // Value for G26
@@ -26,42 +27,42 @@ interface RunPlanData {
     E43: number;  // Value for G50
 
     // Stint 1 (rows 13-16)
-    B13: number;
-    B14: number;
-    B15: number;
-    B16: number;
+    B13: number;  // OUTLAP
+    B14: number;  // LAPS
+    B15: number;  // INLAP
+    B16: string;  // PIT TIME in mm:ss format
     D16: number;
     H11: string;  // Set name for stint 1
 
     // Stint 2 (rows 21-24)
-    B21: number;
-    B22: number;
-    B23: number;
-    B24: number;
+    B21: number;  // OUTLAP
+    B22: number;  // LAPS
+    B23: number;  // INLAP
+    B24: string;  // PIT TIME in mm:ss format
     C24: number;
     H19: string;  // Set name for stint 2
 
     // Stint 3 (rows 29-32)
-    B29: number;
-    B30: number;
-    B31: number;
-    B32: number;
+    B29: number;  // OUTLAP
+    B30: number;  // LAPS
+    B31: number;  // INLAP
+    B32: string;  // PIT TIME in mm:ss format
     C32: number;
     H27: string;  // Set name for stint 3
 
     // Stint 4 (rows 37-41)
-    B37: number;
-    B38: number;
-    B39: number;
-    B40: number;
+    B37: number;  // OUTLAP
+    B38: number;  // LAPS
+    B39: number;  // INLAP
+    B40: string;  // PIT TIME in mm:ss format
     C40: number;
     H35: string;  // Set name for stint 4
 
     // Stint 5 (rows 45-49)
-    B45: number;
-    B46: number;
-    B47: number;
-    B48: number;
+    B45: number;  // OUTLAP
+    B46: number;  // LAPS
+    B47: number;  // INLAP
+    B48: string;  // PIT TIME in mm:ss format
     C48: number;
     H43: string;  // Set name for stint 5
 }
@@ -210,7 +211,39 @@ interface CalculatedValues {
     B50: number;
     G50: number;
     J50: number;
+    TIME_REMAINING: string;  // Calculated time remaining
+    DAYTIME: string;         // Calculated daytime
 }
+
+// Helper functions for time conversions
+const parseTimeMMSS = (time: string): number => {
+    // Parse mm:ss format to seconds
+    if (!time || time.trim() === '') return 0;
+    const parts = time.split(':');
+    if (parts.length !== 2) return 0;
+    const minutes = parseInt(parts[0]) || 0;
+    const seconds = parseInt(parts[1]) || 0;
+    return minutes * 60 + seconds;
+};
+
+const parseTimeHHMMSS = (time: string): number => {
+    // Parse hh:mm:ss or h:mm:ss format to seconds
+    if (!time || time.trim() === '') return 0;
+    const parts = time.split(':');
+    if (parts.length !== 3) return 0;
+    const hours = parseInt(parts[0]) || 0;
+    const minutes = parseInt(parts[1]) || 0;
+    const seconds = parseInt(parts[2]) || 0;
+    return hours * 3600 + minutes * 60 + seconds;
+};
+
+const formatTimeHHMMSS = (seconds: number): string => {
+    // Format seconds to hh:mm:ss
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
 
 function RunPlanSheet() {
     const [data, setData] = useState<RunPlanData>({
@@ -219,10 +252,11 @@ function RunPlanSheet() {
         O5: 'FP1',
         D5: 50,
         I5: 1.8,
-        I7: 1.5,
-        I9: 2.0,
-        N5: 0.035,
-        N7: 4953,
+        OUTLAP_TIME: '01:45',
+        INLAP_TIME: '01:50',
+        PACE: '01:42',
+        START_TIME: '10:00:00',
+        DURATION: '1:30:00',
         D7: 0,
         E11: 10,
         E19: 10,
@@ -232,31 +266,31 @@ function RunPlanSheet() {
         B13: 2,
         B14: 3,
         B15: 2,
-        B16: 0,
+        B16: '00:30',
         D16: 0,
         H11: 'Set#1',
         B21: 2,
         B22: 3,
         B23: 2,
-        B24: 0,
+        B24: '00:30',
         C24: 0,
         H19: 'Set#2',
         B29: 2,
         B30: 3,
         B31: 2,
-        B32: 0,
+        B32: '00:30',
         C32: 0,
         H27: 'Set#3',
         B37: 2,
         B38: 3,
         B39: 2,
-        B40: 0,
+        B40: '00:30',
         C40: 0,
         H35: 'Set#4',
         B45: 2,
         B46: 3,
         B47: 2,
-        B48: 0,
+        B48: '00:30',
         C48: 0,
         H43: 'Set#5',
     });
@@ -295,11 +329,25 @@ function RunPlanSheet() {
         const F3 = d.D4;
         const K3 = d.O5;
 
-        // Stint calculations
-        const C13 = d.B13 * d.I9;
-        const C14 = d.B14 * d.I5;
-        const C15 = d.I7 * d.B15;
-        const C16 = d.B16;
+        // Parse time values to seconds
+        const outlapTimeSeconds = parseTimeMMSS(d.OUTLAP_TIME);
+        const inlapTimeSeconds = parseTimeMMSS(d.INLAP_TIME);
+        const paceSeconds = parseTimeMMSS(d.PACE);
+        const startTimeSeconds = parseTimeHHMMSS(d.START_TIME);
+        const durationSeconds = parseTimeHHMMSS(d.DURATION);
+
+        // Parse pit times
+        const pitTime16 = parseTimeMMSS(d.B16);
+        const pitTime24 = parseTimeMMSS(d.B24);
+        const pitTime32 = parseTimeMMSS(d.B32);
+        const pitTime40 = parseTimeMMSS(d.B40);
+        const pitTime48 = parseTimeMMSS(d.B48);
+
+        // Stint calculations - using I5 (fuel consumption per lap) for all laps
+        const C13 = d.B13 * d.I5;  // OUTLAP fuel
+        const C14 = d.B14 * d.I5;  // LAPS fuel
+        const C15 = d.B15 * d.I5;  // INLAP fuel
+        const C16 = 0;  // PIT TIME doesn't consume fuel
 
         const N13 = d.D7 + C13;
         const N14 = N13 + C14;
@@ -309,10 +357,10 @@ function RunPlanSheet() {
         const B17 = d.B13 + d.B14 + d.B15;
         const B18 = d.B13 + d.B14 + d.B15;
 
-        const C21 = d.B21 * d.I9;
+        const C21 = d.B21 * d.I5;
         const C22 = d.B22 * d.I5;
-        const C23 = d.I7 * d.B23;
-        const C24 = d.B24;
+        const C23 = d.B23 * d.I5;
+        const C24 = 0;
 
         const N21 = N16 + C21;
         const N22 = N21 + C22;
@@ -322,10 +370,10 @@ function RunPlanSheet() {
         const B25 = d.B21 + d.B22 + d.B23;
         const B26 = B18 + d.B21 + d.B22 + d.B23;
 
-        const C29 = d.I9 * d.B29;
+        const C29 = d.I5 * d.B29;
         const C30 = d.I5 * d.B30;
-        const C31 = d.B31 * d.I7;
-        const C32 = d.B32;
+        const C31 = d.B31 * d.I5;
+        const C32 = 0;
 
         const N29 = N24 + C29;
         const N30 = N29 + C30;
@@ -335,23 +383,23 @@ function RunPlanSheet() {
         const B33 = d.B29 + d.B30 + d.B31;
         const B34 = B26 + B33;
 
-        const C37 = d.I9 * d.B37;
+        const C37 = d.I5 * d.B37;
         const C38 = d.I5 * d.B38;
-        const C39 = d.B39 * d.I7;
-        const C40 = d.B40;
+        const C39 = d.B39 * d.I5;
+        const C40 = 0;
 
         const N37 = N32 + C37;
         const N38 = N37 + C38;
         const N39 = C39 + N38;
         const N40 = N39 + C40;
 
-        const B41 = d.B37 + d.B38 + d.B39 + d.B40;
+        const B41 = d.B37 + d.B38 + d.B39;
         const B42 = B34 + B41;
 
-        const C45 = d.I9 * d.B45;
+        const C45 = d.I5 * d.B45;
         const C46 = d.I5 * d.B46;
-        const C47 = d.B47 * d.I7;
-        const C48 = d.B48;
+        const C47 = d.B47 * d.I5;
+        const C48 = 0;
 
         const N45 = N40 + C45;
         const N46 = N45 + C46;
@@ -362,118 +410,133 @@ function RunPlanSheet() {
         const B50 = B42 + B49;
 
         // T column calculations (sums)
-        const T5 = C13 + d.B13 + C14 + d.B14 + C15 + d.B15 + C16 + d.B16;
-        const T6 = C21 + d.B21 + C22 + d.B22 + C23 + d.B23 + C24 + d.B24;
-        const T7 = C29 + d.B29 + C30 + d.B30 + C31 + d.B31 + C32 + d.B32;
-        const T8 = C37 + d.B37 + C38 + d.B38 + C39 + d.B39 + C40 + d.B40;
-        const T9 = C45 + d.B45 + C46 + d.B46 + C47 + d.B47 + C48 + d.B48;
+        const T5 = C13 + C14 + C15 + C16;
+        const T6 = C21 + C22 + C23 + C24;
+        const T7 = C29 + C30 + C31 + C32;
+        const T8 = C37 + C38 + C39 + C40;
+        const T9 = C45 + C46 + C47 + C48;
         const T10 = T5 + T6 + T7 + T8 + T9;
 
         const D9 = d.D5 - (T5 + T6 + T7 + T8 + T9);
 
-        // G column calculations
-        const G18 = d.E11 - B18 * d.N5;
-        const G26 = G18 + d.E19 - (d.B21 + d.B22 + d.B23) * d.N5;
-        const G34 = G26 + d.E27 - B33 * d.N5;
-        const G42 = G34 + d.E35 - d.N5 * B41;
-        const G50 = G42 + d.E43 - B49 * d.N5;
+        // Calculate total elapsed time in seconds
+        const totalElapsedSeconds = 
+            (d.B13 + d.B21 + d.B29 + d.B37 + d.B45) * outlapTimeSeconds +  // OUTLAP times
+            (d.B14 + d.B22 + d.B30 + d.B38 + d.B46) * paceSeconds +        // LAPS times
+            (d.B15 + d.B23 + d.B31 + d.B39 + d.B47) * inlapTimeSeconds +   // INLAP times
+            pitTime16 + pitTime24 + pitTime32 + pitTime40 + pitTime48;     // PIT times
 
-        // J column calculations
+        // Calculate TIME REMAINING
+        const timeRemainingSeconds = durationSeconds - totalElapsedSeconds;
+        const TIME_REMAINING = formatTimeHHMMSS(Math.max(0, timeRemainingSeconds));
+
+        // Calculate DAYTIME
+        const daytimeSeconds = startTimeSeconds + totalElapsedSeconds;
+        const DAYTIME = formatTimeHHMMSS(daytimeSeconds);
+
+        // G column calculations - using placeholder values since we don't have the old N5 multiplier anymore
+        const G18 = d.E11;
+        const G26 = G18 + d.E19;
+        const G34 = G26 + d.E27;
+        const G42 = G34 + d.E35;
+        const G50 = G42 + d.E43;
+
+        // J column calculations - using placeholder values
         const J11 = vlookup(d.H11);
-        const J18 = B18 * d.N7;
+        const J18 = B18;
         const M18 = J18;
         const J19 = vlookup(d.H19);
-        const J26 = B26 * d.N7;
+        const J26 = B26;
         const J27 = vlookup(d.H27);
-        const J34 = B34 * d.N7;
+        const J34 = B34;
         const J35 = vlookup(d.H35);
-        const J42 = B42 * d.N7;
+        const J42 = B42;
         const J43 = vlookup(d.H43);
-        const J50 = B50 * d.N7;
+        const J50 = B50;
 
-        // Z-AE columns (Set-based calculations)
-        const Z15 = d.H11 === 'Set#1' ? d.B13 + d.B14 + d.B15 * d.N7 : 0;
-        const AA15 = d.H19 === 'Set#1' ? B25 * d.N7 : 0;
-        const AB15 = d.H27 === 'Set#1' ? B33 * d.N7 : 0;
-        const AC15 = d.H35 === 'Set#1' ? B41 * d.N7 : 0;
-        const AD15 = d.H43 === 'Set#1' ? B49 * d.N7 : 0;
+        // Z-AE columns (Set-based calculations) - using placeholder values
+        const Z15 = d.H11 === 'Set#1' ? (d.B13 + d.B14 + d.B15) : 0;
+        const AA15 = d.H19 === 'Set#1' ? B25 : 0;
+        const AB15 = d.H27 === 'Set#1' ? B33 : 0;
+        const AC15 = d.H35 === 'Set#1' ? B41 : 0;
+        const AD15 = d.H43 === 'Set#1' ? B49 : 0;
         const AE15 = Z15 + AA15 + AB15 + AC15 + AD15;
 
-        const Z16 = d.H11 === 'Set#2' ? B17 * d.N7 : 0;
-        const AA16 = d.H19 === 'Set#2' ? B25 * d.N7 : 0;
-        const AB16 = d.H27 === 'Set#2' ? B33 * d.N7 : 0;
-        const AC16 = d.H35 === 'Set#2' ? B41 * d.N7 : 0;
-        const AD16 = d.H43 === 'Set#2' ? B49 * d.N7 : 0;
+        const Z16 = d.H11 === 'Set#2' ? B17 : 0;
+        const AA16 = d.H19 === 'Set#2' ? B25 : 0;
+        const AB16 = d.H27 === 'Set#2' ? B33 : 0;
+        const AC16 = d.H35 === 'Set#2' ? B41 : 0;
+        const AD16 = d.H43 === 'Set#2' ? B49 : 0;
         const AE16 = Z16 + AA16 + AB16 + AC16 + AD16;
 
-        const Z17 = d.H11 === 'Set#3' ? B17 * d.N7 : 0;
-        const AA17 = d.H19 === 'Set#3' ? B25 * d.N7 : 0;
-        const AB17 = d.H27 === 'Set#3' ? B33 * d.N7 : 0;
-        const AC17 = d.H35 === 'Set#3' ? B41 * d.N7 : 0;
-        const AD17 = d.H43 === 'Set#3' ? B49 * d.N7 : 0;
+        const Z17 = d.H11 === 'Set#3' ? B17 : 0;
+        const AA17 = d.H19 === 'Set#3' ? B25 : 0;
+        const AB17 = d.H27 === 'Set#3' ? B33 : 0;
+        const AC17 = d.H35 === 'Set#3' ? B41 : 0;
+        const AD17 = d.H43 === 'Set#3' ? B49 : 0;
         const AE17 = Z17 + AA17 + AB17 + AC17 + AD17;
 
-        const Z18 = d.H11 === 'Set#4' ? B17 * d.N7 : 0;
-        const AA18 = d.H19 === 'Set#4' ? B25 * d.N7 : 0;
-        const AB18 = d.H27 === 'Set#4' ? B33 * d.N7 : 0;
-        const AC18 = d.H35 === 'Set#4' ? B41 * d.N7 : 0;
-        const AD18 = d.H43 === 'Set#4' ? B49 * d.N7 : 0;
+        const Z18 = d.H11 === 'Set#4' ? B17 : 0;
+        const AA18 = d.H19 === 'Set#4' ? B25 : 0;
+        const AB18 = d.H27 === 'Set#4' ? B33 : 0;
+        const AC18 = d.H35 === 'Set#4' ? B41 : 0;
+        const AD18 = d.H43 === 'Set#4' ? B49 : 0;
         const AE18 = Z18 + AA18 + AB18 + AC18 + AD18;
 
-        const Z19 = d.H11 === 'Set#5' ? B17 * d.N7 : 0;
-        const AA19 = d.H19 === 'Set#5' ? B25 * d.N7 : 0;
-        const AB19 = d.H27 === 'Set#5' ? B33 * d.N7 : 0;
-        const AC19 = d.H35 === 'Set#5' ? B41 * d.N7 : 0;
-        const AD19 = d.H43 === 'Set#5' ? B49 * d.N7 : 0;
+        const Z19 = d.H11 === 'Set#5' ? B17 : 0;
+        const AA19 = d.H19 === 'Set#5' ? B25 : 0;
+        const AB19 = d.H27 === 'Set#5' ? B33 : 0;
+        const AC19 = d.H35 === 'Set#5' ? B41 : 0;
+        const AD19 = d.H43 === 'Set#5' ? B49 : 0;
         const AE19 = Z19 + AA19 + AB19 + AC19 + AD19;
 
-        const Z20 = d.H11 === 'Set#6' ? B17 * d.N7 : 0;
-        const AA20 = d.H19 === 'Set#6' ? B25 * d.N7 : 0;
-        const AB20 = d.H27 === 'Set#6' ? B33 * d.N7 : 0;
-        const AC20 = d.H35 === 'Set#6' ? B41 * d.N7 : 0;
-        const AD20 = d.H43 === 'Set#6' ? B49 * d.N7 : 0;
+        const Z20 = d.H11 === 'Set#6' ? B17 : 0;
+        const AA20 = d.H19 === 'Set#6' ? B25 : 0;
+        const AB20 = d.H27 === 'Set#6' ? B33 : 0;
+        const AC20 = d.H35 === 'Set#6' ? B41 : 0;
+        const AD20 = d.H43 === 'Set#6' ? B49 : 0;
         const AE20 = Z20 + AA20 + AB20 + AC20 + AD20;
 
-        const Z21 = d.H11 === 'Set#7' ? B17 * d.N7 : 0;
-        const AA21 = d.H19 === 'Set#7' ? B25 * d.N7 : 0;
-        const AB21 = d.H27 === 'Set#7' ? B33 * d.N7 : 0;
-        const AC21 = d.H35 === 'Set#7' ? B41 * d.N7 : 0;
-        const AD21 = d.H43 === 'Set#7' ? B49 * d.N7 : 0;
+        const Z21 = d.H11 === 'Set#7' ? B17 : 0;
+        const AA21 = d.H19 === 'Set#7' ? B25 : 0;
+        const AB21 = d.H27 === 'Set#7' ? B33 : 0;
+        const AC21 = d.H35 === 'Set#7' ? B41 : 0;
+        const AD21 = d.H43 === 'Set#7' ? B49 : 0;
         const AE21 = Z21 + AA21 + AB21 + AC21 + AD21;
 
-        const Z22 = d.H11 === 'Set#8' ? B17 * d.N7 : 0;
-        const AA22 = d.H19 === 'Set#8' ? B25 * d.N7 : 0;
-        const AB22 = d.H27 === 'Set#8' ? B33 * d.N7 : 0;
-        const AC22 = d.H35 === 'Set#8' ? B41 * d.N7 : 0;
-        const AD22 = d.H43 === 'Set#8' ? B49 * d.N7 : 0;
+        const Z22 = d.H11 === 'Set#8' ? B17 : 0;
+        const AA22 = d.H19 === 'Set#8' ? B25 : 0;
+        const AB22 = d.H27 === 'Set#8' ? B33 : 0;
+        const AC22 = d.H35 === 'Set#8' ? B41 : 0;
+        const AD22 = d.H43 === 'Set#8' ? B49 : 0;
         const AE22 = Z22 + AA22 + AB22 + AC22 + AD22;
 
-        const Z23 = d.H11 === 'Set#9' ? B17 * d.N7 : 0;
-        const AA23 = d.H19 === 'Set#9' ? B25 * d.N7 : 0;
-        const AB23 = d.H27 === 'Set#9' ? B33 * d.N7 : 0;
-        const AC23 = d.H35 === 'Set#9' ? B41 * d.N7 : 0;
-        const AD23 = d.H43 === 'Set#9' ? B49 * d.N7 : 0;
+        const Z23 = d.H11 === 'Set#9' ? B17 : 0;
+        const AA23 = d.H19 === 'Set#9' ? B25 : 0;
+        const AB23 = d.H27 === 'Set#9' ? B33 : 0;
+        const AC23 = d.H35 === 'Set#9' ? B41 : 0;
+        const AD23 = d.H43 === 'Set#9' ? B49 : 0;
         const AE23 = Z23 + AA23 + AB23 + AC23 + AD23;
 
-        const Z24 = d.H11 === 'Set#10' ? B17 * d.N7 : 0;
-        const AA24 = d.H19 === 'Set#10' ? B25 * d.N7 : 0;
-        const AB24 = d.H27 === 'Set#10' ? B33 * d.N7 : 0;
-        const AC24 = d.H35 === 'Set#10' ? B41 * d.N7 : 0;
-        const AD24 = d.H43 === 'Set#10' ? B49 * d.N7 : 0;
+        const Z24 = d.H11 === 'Set#10' ? B17 : 0;
+        const AA24 = d.H19 === 'Set#10' ? B25 : 0;
+        const AB24 = d.H27 === 'Set#10' ? B33 : 0;
+        const AC24 = d.H35 === 'Set#10' ? B41 : 0;
+        const AD24 = d.H43 === 'Set#10' ? B49 : 0;
         const AE24 = Z24 + AA24 + AB24 + AC24 + AD24;
 
-        const Z25 = d.H11 === 'Set#11' ? B17 * d.N7 : 0;
-        const AA25 = d.H19 === 'Set#11' ? B25 * d.N7 : 0;
-        const AB25 = d.H27 === 'Set#11' ? B33 * d.N7 : 0;
-        const AC25 = d.H35 === 'Set#11' ? B41 * d.N7 : 0;
-        const AD25 = d.H43 === 'Set#11' ? B49 * d.N7 : 0;
+        const Z25 = d.H11 === 'Set#11' ? B17 : 0;
+        const AA25 = d.H19 === 'Set#11' ? B25 : 0;
+        const AB25 = d.H27 === 'Set#11' ? B33 : 0;
+        const AC25 = d.H35 === 'Set#11' ? B41 : 0;
+        const AD25 = d.H43 === 'Set#11' ? B49 : 0;
         const AE25 = Z25 + AA25 + AB25 + AC25 + AD25;
 
-        const Z26 = d.H11 === 'Set#12' ? B17 * d.N7 : 0;
-        const AA26 = d.H19 === 'Set#12' ? B25 * d.N7 : 0;
-        const AB26 = d.H27 === 'Set#12' ? B33 * d.N7 : 0;
-        const AC26 = d.H35 === 'Set#12' ? B41 * d.N7 : 0;
-        const AD26 = d.H43 === 'Set#12' ? B49 * d.N7 : 0;
+        const Z26 = d.H11 === 'Set#12' ? B17 : 0;
+        const AA26 = d.H19 === 'Set#12' ? B25 : 0;
+        const AB26 = d.H27 === 'Set#12' ? B33 : 0;
+        const AC26 = d.H35 === 'Set#12' ? B41 : 0;
+        const AD26 = d.H43 === 'Set#12' ? B49 : 0;
         const AE26 = Z26 + AA26 + AB26 + AC26 + AD26;
 
         return {
@@ -498,6 +561,8 @@ function RunPlanSheet() {
             B41, B42, G42, J42, J43,
             C45, N45, C46, N46, C47, N47, N48,
             B49, B50, G50, J50,
+            TIME_REMAINING,
+            DAYTIME,
         };
     };
 
@@ -548,34 +613,110 @@ function RunPlanSheet() {
 
                 <h3 style={{ color: '#2c5282', marginTop: '30px', marginBottom: '15px' }}>⛽ Fuel & Timing Parameters</h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
-                    {[
-                        { key: 'D5', label: 'Starting Fuel (L)' },
-                        { key: 'I5', label: 'Fuel Rate 1 (L/lap)' },
-                        { key: 'I7', label: 'Fuel Rate 2 (L/lap)' },
-                        { key: 'I9', label: 'Fuel Rate 3 (L/lap)' },
-                        { key: 'N5', label: 'Time/Lap Factor' },
-                        { key: 'N7', label: 'Laps Multiplier' },
-                    ].map(({ key, label }) => (
-                        <div key={key}>
-                            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>{label}:</label>
-                            <input
-                                type="number"
-                                step="0.1"
-                                value={data[key as keyof RunPlanData]}
-                                onChange={(e) => handleInputChange(key as keyof RunPlanData, parseFloat(e.target.value) || 0)}
-                                style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
-                            />
-                        </div>
-                    ))}
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Starting Fuel (L):</label>
+                        <input
+                            type="number"
+                            step="0.1"
+                            value={data.D5}
+                            onChange={(e) => handleInputChange('D5', parseFloat(e.target.value) || 0)}
+                            style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                        />
+                    </div>
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Fuel Consumption Per Lap (L/lap):</label>
+                        <input
+                            type="number"
+                            step="0.1"
+                            value={data.I5}
+                            onChange={(e) => handleInputChange('I5', parseFloat(e.target.value) || 0)}
+                            style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                        />
+                    </div>
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Outlap Time (mm:ss):</label>
+                        <input
+                            type="text"
+                            placeholder="01:45"
+                            value={data.OUTLAP_TIME}
+                            onChange={(e) => handleInputChange('OUTLAP_TIME', e.target.value)}
+                            style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                        />
+                    </div>
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Inlap Time (mm:ss):</label>
+                        <input
+                            type="text"
+                            placeholder="01:50"
+                            value={data.INLAP_TIME}
+                            onChange={(e) => handleInputChange('INLAP_TIME', e.target.value)}
+                            style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                        />
+                    </div>
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Pace (mm:ss):</label>
+                        <input
+                            type="text"
+                            placeholder="01:42"
+                            value={data.PACE}
+                            onChange={(e) => handleInputChange('PACE', e.target.value)}
+                            style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                        />
+                    </div>
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Start Time (hh:mm:ss):</label>
+                        <input
+                            type="text"
+                            placeholder="10:00:00"
+                            value={data.START_TIME}
+                            onChange={(e) => handleInputChange('START_TIME', e.target.value)}
+                            style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                        />
+                    </div>
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Duration (h:mm:ss):</label>
+                        <input
+                            type="text"
+                            placeholder="1:30:00"
+                            value={data.DURATION}
+                            onChange={(e) => handleInputChange('DURATION', e.target.value)}
+                            style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                        />
+                    </div>
                 </div>
 
-                <h3 style={{ color: '#2c5282', marginTop: '30px', marginBottom: '15px' }}>🏎️ Stint Data</h3>
+                <h3 style={{ color: '#2c5282', marginTop: '30px', marginBottom: '15px' }}>🏎️ Run Sheet</h3>
                 {[
-                    { title: 'Stint 1', setKey: 'H11', rows: ['B13', 'B14', 'B15', 'B16'] },
-                    { title: 'Stint 2', setKey: 'H19', rows: ['B21', 'B22', 'B23', 'B24'] },
-                    { title: 'Stint 3', setKey: 'H27', rows: ['B29', 'B30', 'B31', 'B32'] },
-                    { title: 'Stint 4', setKey: 'H35', rows: ['B37', 'B38', 'B39', 'B40'] },
-                    { title: 'Stint 5', setKey: 'H43', rows: ['B45', 'B46', 'B47', 'B48'] },
+                    { title: 'Stint 1', setKey: 'H11', rows: [
+                        { key: 'B13', label: 'OUTLAP' },
+                        { key: 'B14', label: 'LAPS' },
+                        { key: 'B15', label: 'INLAP' },
+                        { key: 'B16', label: 'PIT TIME (mm:ss)', isTime: true }
+                    ]},
+                    { title: 'Stint 2', setKey: 'H19', rows: [
+                        { key: 'B21', label: 'OUTLAP' },
+                        { key: 'B22', label: 'LAPS' },
+                        { key: 'B23', label: 'INLAP' },
+                        { key: 'B24', label: 'PIT TIME (mm:ss)', isTime: true }
+                    ]},
+                    { title: 'Stint 3', setKey: 'H27', rows: [
+                        { key: 'B29', label: 'OUTLAP' },
+                        { key: 'B30', label: 'LAPS' },
+                        { key: 'B31', label: 'INLAP' },
+                        { key: 'B32', label: 'PIT TIME (mm:ss)', isTime: true }
+                    ]},
+                    { title: 'Stint 4', setKey: 'H35', rows: [
+                        { key: 'B37', label: 'OUTLAP' },
+                        { key: 'B38', label: 'LAPS' },
+                        { key: 'B39', label: 'INLAP' },
+                        { key: 'B40', label: 'PIT TIME (mm:ss)', isTime: true }
+                    ]},
+                    { title: 'Stint 5', setKey: 'H43', rows: [
+                        { key: 'B45', label: 'OUTLAP' },
+                        { key: 'B46', label: 'LAPS' },
+                        { key: 'B47', label: 'INLAP' },
+                        { key: 'B48', label: 'PIT TIME (mm:ss)', isTime: true }
+                    ]},
                 ].map(({ title, setKey, rows }) => (
                     <div key={setKey} style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f0f4f8', borderRadius: '8px' }}>
                         <h4 style={{ margin: '0 0 10px 0', color: '#2c5282' }}>{title}</h4>
@@ -592,14 +733,15 @@ function RunPlanSheet() {
                                     ))}
                                 </select>
                             </div>
-                            {rows.map((row) => (
-                                <div key={row}>
-                                    <label style={{ display: 'block', marginBottom: '5px' }}>{row}:</label>
+                            {rows.map(({ key, label, isTime }) => (
+                                <div key={key}>
+                                    <label style={{ display: 'block', marginBottom: '5px' }}>{label}:</label>
                                     <input
-                                        type="number"
-                                        step="1"
-                                        value={data[row as keyof RunPlanData] as number}
-                                        onChange={(e) => handleInputChange(row as keyof RunPlanData, parseFloat(e.target.value) || 0)}
+                                        type={isTime ? "text" : "number"}
+                                        step={isTime ? undefined : "1"}
+                                        placeholder={isTime ? "00:30" : undefined}
+                                        value={data[key as keyof RunPlanData] as number | string}
+                                        onChange={(e) => handleInputChange(key as keyof RunPlanData, isTime ? e.target.value : (parseFloat(e.target.value) || 0))}
                                         style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
                                     />
                                 </div>
@@ -641,6 +783,22 @@ function RunPlanSheet() {
                         <tr>
                             <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: 'bold' }}>Total Laps</td>
                             <td style={{ padding: '10px', border: '1px solid #ddd' }}>{calc.B50.toFixed(0)}</td>
+                        </tr>
+                        <tr>
+                            <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: 'bold' }}>Start Time</td>
+                            <td style={{ padding: '10px', border: '1px solid #ddd' }}>{data.START_TIME}</td>
+                        </tr>
+                        <tr>
+                            <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: 'bold' }}>Duration</td>
+                            <td style={{ padding: '10px', border: '1px solid #ddd' }}>{data.DURATION}</td>
+                        </tr>
+                        <tr>
+                            <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: 'bold' }}>Daytime</td>
+                            <td style={{ padding: '10px', border: '1px solid #ddd' }}>{calc.DAYTIME}</td>
+                        </tr>
+                        <tr>
+                            <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: 'bold' }}>Time Remaining</td>
+                            <td style={{ padding: '10px', border: '1px solid #ddd' }}>{calc.TIME_REMAINING}</td>
                         </tr>
                     </tbody>
                 </table>

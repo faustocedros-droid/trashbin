@@ -14,6 +14,7 @@ interface RunPlanData {
     // Input cells
     D5: number;  // Starting fuel
     I5: number;  // Fuel consumption per lap
+    TRACK_LENGTH: number;  // Track length in km
     OUTLAP_TIME: string;  // Outlap time in mm:ss format
     INLAP_TIME: string;   // Inlap time in mm:ss format
     PACE: string;         // Pace time in mm:ss format
@@ -32,7 +33,9 @@ interface RunPlanData {
     B15: number;  // INLAP
     B16: string;  // PIT TIME in mm:ss format
     D16: number;
-    H11: string;  // Set name for stint 1
+    H11: string;  // Tire Set for stint 1 (now text input)
+    REFUEL1: number;  // Refuel amount for stint 1
+    NOTE1: string;  // Note for stint 1
 
     // Stint 2 (rows 21-24)
     B21: number;  // OUTLAP
@@ -40,7 +43,9 @@ interface RunPlanData {
     B23: number;  // INLAP
     B24: string;  // PIT TIME in mm:ss format
     C24: number;
-    H19: string;  // Set name for stint 2
+    H19: string;  // Tire Set for stint 2 (now text input)
+    REFUEL2: number;  // Refuel amount for stint 2
+    NOTE2: string;  // Note for stint 2
 
     // Stint 3 (rows 29-32)
     B29: number;  // OUTLAP
@@ -48,7 +53,9 @@ interface RunPlanData {
     B31: number;  // INLAP
     B32: string;  // PIT TIME in mm:ss format
     C32: number;
-    H27: string;  // Set name for stint 3
+    H27: string;  // Tire Set for stint 3 (now text input)
+    REFUEL3: number;  // Refuel amount for stint 3
+    NOTE3: string;  // Note for stint 3
 
     // Stint 4 (rows 37-41)
     B37: number;  // OUTLAP
@@ -56,7 +63,9 @@ interface RunPlanData {
     B39: number;  // INLAP
     B40: string;  // PIT TIME in mm:ss format
     C40: number;
-    H35: string;  // Set name for stint 4
+    H35: string;  // Tire Set for stint 4 (now text input)
+    REFUEL4: number;  // Refuel amount for stint 4
+    NOTE4: string;  // Note for stint 4
 
     // Stint 5 (rows 45-49)
     B45: number;  // OUTLAP
@@ -64,7 +73,9 @@ interface RunPlanData {
     B47: number;  // INLAP
     B48: string;  // PIT TIME in mm:ss format
     C48: number;
-    H43: string;  // Set name for stint 5
+    H43: string;  // Tire Set for stint 5 (now text input)
+    REFUEL5: number;  // Refuel amount for stint 5
+    NOTE5: string;  // Note for stint 5
 }
 
 interface CalculatedValues {
@@ -252,6 +263,7 @@ function RunPlanSheet() {
         O5: 'FP1',
         D5: 50,
         I5: 1.8,
+        TRACK_LENGTH: 4.909,  // Imola track length in km
         OUTLAP_TIME: '01:45',
         INLAP_TIME: '01:50',
         PACE: '01:42',
@@ -269,30 +281,40 @@ function RunPlanSheet() {
         B16: '00:30',
         D16: 0,
         H11: 'Set#1',
+        REFUEL1: 0,
+        NOTE1: '',
         B21: 2,
         B22: 3,
         B23: 2,
         B24: '00:30',
         C24: 0,
         H19: 'Set#2',
+        REFUEL2: 0,
+        NOTE2: '',
         B29: 2,
         B30: 3,
         B31: 2,
         B32: '00:30',
         C32: 0,
         H27: 'Set#3',
+        REFUEL3: 0,
+        NOTE3: '',
         B37: 2,
         B38: 3,
         B39: 2,
         B40: '00:30',
         C40: 0,
         H35: 'Set#4',
+        REFUEL4: 0,
+        NOTE4: '',
         B45: 2,
         B46: 3,
         B47: 2,
         B48: '00:30',
         C48: 0,
         H43: 'Set#5',
+        REFUEL5: 0,
+        NOTE5: '',
     });
 
     const handleInputChange = (field: keyof RunPlanData, value: string | number) => {
@@ -417,7 +439,11 @@ function RunPlanSheet() {
         const T9 = C45 + C46 + C47 + C48;
         const T10 = T5 + T6 + T7 + T8 + T9;
 
-        const D9 = d.D5 - (T5 + T6 + T7 + T8 + T9);
+        // Calculate total refuel
+        const totalRefuel = d.REFUEL1 + d.REFUEL2 + d.REFUEL3 + d.REFUEL4 + d.REFUEL5;
+
+        // Calculate remaining fuel (starting fuel - consumed + refuels)
+        const D9 = d.D5 - (T5 + T6 + T7 + T8 + T9) + totalRefuel;
 
         // Calculate total elapsed time in seconds
         const totalElapsedSeconds = 
@@ -434,12 +460,12 @@ function RunPlanSheet() {
         const daytimeSeconds = startTimeSeconds + totalElapsedSeconds;
         const DAYTIME = formatTimeHHMMSS(daytimeSeconds);
 
-        // G column calculations - using placeholder values since we don't have the old N5 multiplier anymore
-        const G18 = d.E11;
-        const G26 = G18 + d.E19;
-        const G34 = G26 + d.E27;
-        const G42 = G34 + d.E35;
-        const G50 = G42 + d.E43;
+        // G column calculations - Stint KM (Track Length × total laps per stint)
+        const G18 = d.TRACK_LENGTH * B17;  // Stint 1 KM
+        const G26 = d.TRACK_LENGTH * B25;  // Stint 2 KM
+        const G34 = d.TRACK_LENGTH * B33;  // Stint 3 KM
+        const G42 = d.TRACK_LENGTH * B41;  // Stint 4 KM
+        const G50 = d.TRACK_LENGTH * B49;  // Stint 5 KM
 
         // J column calculations - using placeholder values
         const J11 = vlookup(d.H11);
@@ -634,6 +660,16 @@ function RunPlanSheet() {
                         />
                     </div>
                     <div>
+                        <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Track Length (km):</label>
+                        <input
+                            type="number"
+                            step="0.001"
+                            value={data.TRACK_LENGTH}
+                            onChange={(e) => handleInputChange('TRACK_LENGTH', parseFloat(e.target.value) || 0)}
+                            style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                        />
+                    </div>
+                    <div>
                         <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Outlap Time (mm:ss):</label>
                         <input
                             type="text"
@@ -687,51 +723,48 @@ function RunPlanSheet() {
 
                 <h3 style={{ color: '#2c5282', marginTop: '30px', marginBottom: '15px' }}>🏎️ Run Sheet</h3>
                 {[
-                    { title: 'Stint 1', setKey: 'H11', rows: [
+                    { title: 'Stint 1', setKey: 'H11', refuelKey: 'REFUEL1', noteKey: 'NOTE1', rows: [
                         { key: 'B13', label: 'OUTLAP' },
                         { key: 'B14', label: 'LAPS' },
                         { key: 'B15', label: 'INLAP' },
                         { key: 'B16', label: 'PIT TIME (mm:ss)', isTime: true }
                     ]},
-                    { title: 'Stint 2', setKey: 'H19', rows: [
+                    { title: 'Stint 2', setKey: 'H19', refuelKey: 'REFUEL2', noteKey: 'NOTE2', rows: [
                         { key: 'B21', label: 'OUTLAP' },
                         { key: 'B22', label: 'LAPS' },
                         { key: 'B23', label: 'INLAP' },
                         { key: 'B24', label: 'PIT TIME (mm:ss)', isTime: true }
                     ]},
-                    { title: 'Stint 3', setKey: 'H27', rows: [
+                    { title: 'Stint 3', setKey: 'H27', refuelKey: 'REFUEL3', noteKey: 'NOTE3', rows: [
                         { key: 'B29', label: 'OUTLAP' },
                         { key: 'B30', label: 'LAPS' },
                         { key: 'B31', label: 'INLAP' },
                         { key: 'B32', label: 'PIT TIME (mm:ss)', isTime: true }
                     ]},
-                    { title: 'Stint 4', setKey: 'H35', rows: [
+                    { title: 'Stint 4', setKey: 'H35', refuelKey: 'REFUEL4', noteKey: 'NOTE4', rows: [
                         { key: 'B37', label: 'OUTLAP' },
                         { key: 'B38', label: 'LAPS' },
                         { key: 'B39', label: 'INLAP' },
                         { key: 'B40', label: 'PIT TIME (mm:ss)', isTime: true }
                     ]},
-                    { title: 'Stint 5', setKey: 'H43', rows: [
+                    { title: 'Stint 5', setKey: 'H43', refuelKey: 'REFUEL5', noteKey: 'NOTE5', rows: [
                         { key: 'B45', label: 'OUTLAP' },
                         { key: 'B46', label: 'LAPS' },
                         { key: 'B47', label: 'INLAP' },
                         { key: 'B48', label: 'PIT TIME (mm:ss)', isTime: true }
                     ]},
-                ].map(({ title, setKey, rows }) => (
+                ].map(({ title, setKey, refuelKey, noteKey, rows }) => (
                     <div key={setKey} style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f0f4f8', borderRadius: '8px' }}>
                         <h4 style={{ margin: '0 0 10px 0', color: '#2c5282' }}>{title}</h4>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px' }}>
                             <div>
                                 <label style={{ display: 'block', marginBottom: '5px' }}>Tire Set:</label>
-                                <select
+                                <input
+                                    type="text"
                                     value={data[setKey as keyof RunPlanData] as string}
                                     onChange={(e) => handleInputChange(setKey as keyof RunPlanData, e.target.value)}
                                     style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
-                                >
-                                    {['Set#1', 'Set#2', 'Set#3', 'Set#4', 'Set#5', 'Set#6', 'Set#7', 'Set#8', 'Set#9', 'Set#10', 'Set#11', 'Set#12'].map(set => (
-                                        <option key={set} value={set}>{set}</option>
-                                    ))}
-                                </select>
+                                />
                             </div>
                             {rows.map(({ key, label, isTime }) => (
                                 <div key={key}>
@@ -746,6 +779,25 @@ function RunPlanSheet() {
                                     />
                                 </div>
                             ))}
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '5px' }}>Refuel (L):</label>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    value={data[refuelKey as keyof RunPlanData] as number}
+                                    onChange={(e) => handleInputChange(refuelKey as keyof RunPlanData, parseFloat(e.target.value) || 0)}
+                                    style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '5px' }}>Note:</label>
+                                <input
+                                    type="text"
+                                    value={data[noteKey as keyof RunPlanData] as string}
+                                    onChange={(e) => handleInputChange(noteKey as keyof RunPlanData, e.target.value)}
+                                    style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                                />
+                            </div>
                         </div>
                     </div>
                 ))}
@@ -810,85 +862,80 @@ function RunPlanSheet() {
                         <tr style={{ backgroundColor: '#2c5282', color: 'white' }}>
                             <th style={{ padding: '10px', border: '1px solid #ddd' }}>Stint</th>
                             <th style={{ padding: '10px', border: '1px solid #ddd' }}>Tire Set</th>
-                            <th style={{ padding: '10px', border: '1px solid #ddd' }}>Compound</th>
                             <th style={{ padding: '10px', border: '1px solid #ddd' }}>Laps</th>
-                            <th style={{ padding: '10px', border: '1px solid #ddd' }}>Fuel Used</th>
-                            <th style={{ padding: '10px', border: '1px solid #ddd' }}>Time Factor</th>
+                            <th style={{ padding: '10px', border: '1px solid #ddd' }}>Refuel</th>
+                            <th style={{ padding: '10px', border: '1px solid #ddd' }}>Stint KM</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>1</td>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>{data.H11}</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.J11}</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.B18.toFixed(0)}</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.T5.toFixed(2)} L</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.G18.toFixed(3)}</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.B17.toFixed(0)}</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{data.REFUEL1.toFixed(2)} L</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.G18.toFixed(3)} km</td>
                         </tr>
                         <tr>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>2</td>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>{data.H19}</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.J19}</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.B26.toFixed(0)}</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.T6.toFixed(2)} L</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.G26.toFixed(3)}</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.B25.toFixed(0)}</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{data.REFUEL2.toFixed(2)} L</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.G26.toFixed(3)} km</td>
                         </tr>
                         <tr>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>3</td>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>{data.H27}</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.J27}</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.B34.toFixed(0)}</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.T7.toFixed(2)} L</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.G34.toFixed(3)}</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.B33.toFixed(0)}</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{data.REFUEL3.toFixed(2)} L</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.G34.toFixed(3)} km</td>
                         </tr>
                         <tr>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>4</td>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>{data.H35}</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.J35}</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.B42.toFixed(0)}</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.T8.toFixed(2)} L</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.G42.toFixed(3)}</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.B41.toFixed(0)}</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{data.REFUEL4.toFixed(2)} L</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.G42.toFixed(3)} km</td>
                         </tr>
                         <tr>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>5</td>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>{data.H43}</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.J43}</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.B50.toFixed(0)}</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.T9.toFixed(2)} L</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.G50.toFixed(3)}</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.B49.toFixed(0)}</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{data.REFUEL5.toFixed(2)} L</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{calc.G50.toFixed(3)} km</td>
                         </tr>
                     </tbody>
                 </table>
 
-                {/* Tire Set Usage Summary */}
-                <h3 style={{ color: '#2c5282', marginBottom: '15px' }}>Tire Set Usage (Calculated)</h3>
+                {/* Notes Section */}
+                <h3 style={{ color: '#2c5282', marginBottom: '15px' }}>Notes</h3>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                         <tr style={{ backgroundColor: '#2c5282', color: 'white' }}>
-                            <th style={{ padding: '10px', border: '1px solid #ddd' }}>Set</th>
-                            <th style={{ padding: '10px', border: '1px solid #ddd' }}>Usage Value</th>
+                            <th style={{ padding: '10px', border: '1px solid #ddd' }}>Stint</th>
+                            <th style={{ padding: '10px', border: '1px solid #ddd' }}>Note</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {[
-                            { set: 'Set#1', value: calc.AE15 },
-                            { set: 'Set#2', value: calc.AE16 },
-                            { set: 'Set#3', value: calc.AE17 },
-                            { set: 'Set#4', value: calc.AE18 },
-                            { set: 'Set#5', value: calc.AE19 },
-                            { set: 'Set#6', value: calc.AE20 },
-                            { set: 'Set#7', value: calc.AE21 },
-                            { set: 'Set#8', value: calc.AE22 },
-                            { set: 'Set#9', value: calc.AE23 },
-                            { set: 'Set#10', value: calc.AE24 },
-                            { set: 'Set#11', value: calc.AE25 },
-                            { set: 'Set#12', value: calc.AE26 },
-                        ].map(({ set, value }) => (
-                            <tr key={set} style={{ backgroundColor: value > 0 ? '#e8f5e9' : 'transparent' }}>
-                                <td style={{ padding: '8px', border: '1px solid #ddd' }}>{set}</td>
-                                <td style={{ padding: '8px', border: '1px solid #ddd' }}>{value.toFixed(2)}</td>
-                            </tr>
-                        ))}
+                        <tr>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>1</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{data.NOTE1 || '-'}</td>
+                        </tr>
+                        <tr>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>2</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{data.NOTE2 || '-'}</td>
+                        </tr>
+                        <tr>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>3</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{data.NOTE3 || '-'}</td>
+                        </tr>
+                        <tr>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>4</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{data.NOTE4 || '-'}</td>
+                        </tr>
+                        <tr>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>5</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{data.NOTE5 || '-'}</td>
+                        </tr>
                     </tbody>
                 </table>
 

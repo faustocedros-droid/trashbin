@@ -317,14 +317,41 @@ function RunPlanSheet() {
         NOTE5: '',
     });
 
+    const [showHistory, setShowHistory] = useState(false);
+    const [runplanHistory, setRunplanHistory] = useState<any[]>([]);
+
     const handleInputChange = (field: keyof RunPlanData, value: string | number) => {
         const newData = {
             ...data,
             [field]: value,
         };
         setData(newData);
-        // Auto-save to localStorage
+        // Auto-save to localStorage (current working copy)
         localStorage.setItem('runPlanSheet_data', JSON.stringify(newData));
+    };
+
+    // Save current runplan to history
+    const saveToHistory = () => {
+        const historyKey = 'runPlanSheet_history';
+        const existingHistory = localStorage.getItem(historyKey);
+        const history = existingHistory ? JSON.parse(existingHistory) : [];
+        
+        // Create a unique identifier for this runplan
+        const timestamp = new Date().toISOString();
+        const runplanEntry = {
+            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            timestamp,
+            eventName: data.O4,
+            trackName: data.D4,
+            sessionName: data.O5,
+            data: data
+        };
+        
+        // Add to history
+        history.push(runplanEntry);
+        localStorage.setItem(historyKey, JSON.stringify(history));
+        
+        return runplanEntry.id;
     };
 
     // Load data from localStorage on component mount
@@ -337,10 +364,51 @@ function RunPlanSheet() {
                 console.error('Error loading saved data:', error);
             }
         }
+        
+        // Load history
+        loadHistory();
     }, []);
+
+    // Load runplan history
+    const loadHistory = () => {
+        const historyKey = 'runPlanSheet_history';
+        const existingHistory = localStorage.getItem(historyKey);
+        if (existingHistory) {
+            try {
+                const history = JSON.parse(existingHistory);
+                setRunplanHistory(history);
+            } catch (error) {
+                console.error('Error loading history:', error);
+            }
+        }
+    };
+
+    // Load a specific runplan from history
+    const loadFromHistory = (historyItem: any) => {
+        setData(historyItem.data);
+        localStorage.setItem('runPlanSheet_data', JSON.stringify(historyItem.data));
+        setShowHistory(false);
+        alert(`RunPlan caricato: ${historyItem.eventName} - ${historyItem.sessionName}`);
+    };
+
+    // Delete a runplan from history
+    const deleteFromHistory = (id: string) => {
+        const historyKey = 'runPlanSheet_history';
+        const updatedHistory = runplanHistory.filter(item => item.id !== id);
+        setRunplanHistory(updatedHistory);
+        localStorage.setItem(historyKey, JSON.stringify(updatedHistory));
+        alert('RunPlan eliminato dallo storico');
+    };
 
     // Save data to file
     const handleSaveToFile = () => {
+        // First, save to history
+        const runplanId = saveToHistory();
+        
+        // Refresh history display
+        loadHistory();
+        
+        // Then save to file
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -352,6 +420,8 @@ function RunPlanSheet() {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
+        
+        alert(`RunPlan salvato con successo! ID: ${runplanId.substring(0, 8)}...`);
     };
 
     // Load data from file
@@ -1121,7 +1191,108 @@ function RunPlanSheet() {
                 >
                     🖨️ Print RunPlan Sheet
                 </button>
+                <button
+                    onClick={() => setShowHistory(!showHistory)}
+                    style={{
+                        padding: '15px 30px',
+                        fontSize: '16px',
+                        backgroundColor: '#6c757d',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                    }}
+                >
+                    📚 {showHistory ? 'Nascondi' : 'Mostra'} Storico RunPlan ({runplanHistory.length})
+                </button>
             </div>
+
+            {/* RunPlan History Section */}
+            {showHistory && (
+                <div style={{ 
+                    marginTop: '30px', 
+                    padding: '20px', 
+                    backgroundColor: '#f8f9fa', 
+                    borderRadius: '8px',
+                    border: '2px solid #dee2e6'
+                }}>
+                    <h2 style={{ marginTop: 0 }}>📚 Storico RunPlan Salvati</h2>
+                    {runplanHistory.length === 0 ? (
+                        <p style={{ color: '#666' }}>Nessun RunPlan salvato nello storico.</p>
+                    ) : (
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ 
+                                width: '100%', 
+                                borderCollapse: 'collapse',
+                                backgroundColor: 'white'
+                            }}>
+                                <thead>
+                                    <tr style={{ backgroundColor: '#2c5282', color: 'white' }}>
+                                        <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>Data/Ora</th>
+                                        <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>Evento</th>
+                                        <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>Pista</th>
+                                        <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>Sessione</th>
+                                        <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>Azioni</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {runplanHistory.slice().reverse().map((item, index) => (
+                                        <tr key={item.id} style={{ backgroundColor: index % 2 === 0 ? '#ffffff' : '#f8f9fa' }}>
+                                            <td style={{ padding: '10px', border: '1px solid #ddd' }}>
+                                                {new Date(item.timestamp).toLocaleString()}
+                                            </td>
+                                            <td style={{ padding: '10px', border: '1px solid #ddd' }}>
+                                                {item.eventName}
+                                            </td>
+                                            <td style={{ padding: '10px', border: '1px solid #ddd' }}>
+                                                {item.trackName}
+                                            </td>
+                                            <td style={{ padding: '10px', border: '1px solid #ddd' }}>
+                                                {item.sessionName}
+                                            </td>
+                                            <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>
+                                                <button
+                                                    onClick={() => loadFromHistory(item)}
+                                                    style={{
+                                                        padding: '8px 16px',
+                                                        marginRight: '8px',
+                                                        fontSize: '14px',
+                                                        backgroundColor: '#007bff',
+                                                        color: 'white',
+                                                        border: 'none',
+                                                        borderRadius: '4px',
+                                                        cursor: 'pointer',
+                                                    }}
+                                                >
+                                                    📂 Carica
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        if (window.confirm('Sei sicuro di voler eliminare questo RunPlan dallo storico?')) {
+                                                            deleteFromHistory(item.id);
+                                                        }
+                                                    }}
+                                                    style={{
+                                                        padding: '8px 16px',
+                                                        fontSize: '14px',
+                                                        backgroundColor: '#dc3545',
+                                                        color: 'white',
+                                                        border: 'none',
+                                                        borderRadius: '4px',
+                                                        cursor: 'pointer',
+                                                    }}
+                                                >
+                                                    🗑️ Elimina
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            )}
 
             <style>
                 {`

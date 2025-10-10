@@ -25,7 +25,6 @@ import {
   calculateLapTimeFromSectors,
   calculateRemainingFuel,
   calculateTheoreticalBestLap,
-  calculateSessionPace,
 } from '../eventUtils';
 
 const EventFullDemo: React.FC = () => {
@@ -515,7 +514,7 @@ const EventFullDemo: React.FC = () => {
           </div>
 
           {/* Informazioni sopra la lista giri */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
             {/* Carburante Residuo */}
             {selectedSession.fuel_start !== undefined && selectedSession.fuel_per_lap !== undefined && selectedSession.fuel_per_lap > 0 && (
               <div style={{ 
@@ -570,26 +569,6 @@ const EventFullDemo: React.FC = () => {
                 </div>
                 <div style={{ color: '#2e7d32' }}>
                   {calculateTheoreticalBestLap(selectedSession.laps)}
-                </div>
-              </div>
-            )}
-
-            {/* Passo sessione - Media mobile ultimi 3 giri */}
-            {selectedSession.laps.length >= 4 && calculateSessionPace(selectedSession.laps) && (
-              <div style={{ 
-                padding: '15px',
-                borderRadius: '6px',
-                textAlign: 'center',
-                fontWeight: 'bold',
-                fontSize: '18px',
-                background: '#40E0D0',
-                color: '#333'
-              }}>
-                <div style={{ fontSize: '14px', fontWeight: 'normal', marginBottom: '5px' }}>
-                  Passo sessione
-                </div>
-                <div style={{ color: '#006666' }}>
-                  {calculateSessionPace(selectedSession.laps)}
                 </div>
               </div>
             )}

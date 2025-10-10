@@ -233,3 +233,45 @@ export const calculateLapTimeFromSectors = (
   
   return `${minutes}:${paddedSeconds}`;
 };
+
+/**
+ * Calcola la media mobile degli ultimi 3 giri (passo sessione)
+ * A partire dal quarto giro, calcola la media dei tempi degli ultimi 3 giri
+ * @param laps - Array di giri
+ * @returns Tempo medio in formato MM:SS.mmm o undefined se ci sono meno di 4 giri
+ */
+export const calculateSessionPace = (laps: Lap[]): string | undefined => {
+  // Serve almeno il quarto giro per calcolare la media mobile degli ultimi 3
+  if (laps.length < 4) return undefined;
+  
+  // Ordina i giri per numero di giro
+  const sortedLaps = [...laps].sort((a, b) => a.lapNumber - b.lapNumber);
+  
+  // Prendi gli ultimi 3 giri
+  const lastThreeLaps = sortedLaps.slice(-3);
+  
+  // Converte un tempo in formato MM:SS.mmm in secondi
+  const timeToSeconds = (time: string): number => {
+    if (!time || time.trim() === '') return 0;
+    const parts = time.split(':');
+    if (parts.length !== 2) return 0;
+    const [minutes, seconds] = parts;
+    return parseInt(minutes) * 60 + parseFloat(seconds);
+  };
+  
+  // Filtra i giri con tempi validi
+  const validTimes = lastThreeLaps
+    .map(lap => timeToSeconds(lap.lapTime))
+    .filter(time => time > 0);
+  
+  if (validTimes.length === 0) return undefined;
+  
+  // Calcola la media
+  const averageSeconds = validTimes.reduce((sum, time) => sum + time, 0) / validTimes.length;
+  
+  const minutes = Math.floor(averageSeconds / 60);
+  const seconds = (averageSeconds % 60).toFixed(3);
+  const paddedSeconds = parseFloat(seconds) < 10 ? `0${seconds}` : seconds;
+  
+  return `${minutes}:${paddedSeconds}`;
+};

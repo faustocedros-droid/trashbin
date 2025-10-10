@@ -15,6 +15,7 @@ export interface Lap {
   fuelConsumed?: number; // litri consumati in questo giro
   tireSet?: string;
   lapStatus?: 'RF' | 'FCY' | 'SC' | 'TFC' | null; // stato del giro
+  pace?: string; // PACE: media mobile degli ultimi 3 giri (disponibile dal 4° giro)
   notes?: string;
 }
 

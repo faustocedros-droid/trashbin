@@ -277,3 +277,65 @@ export const calculateSessionPace = (laps: Lap[]): string | undefined => {
   
   return `${minutes}:${paddedSeconds}`;
 };
+
+/**
+ * Calcola il PACE (media mobile degli ultimi 3 giri) per un giro specifico
+ * @param laps - Array di tutti i giri
+ * @param lapNumber - Numero del giro per cui calcolare il PACE
+ * @returns Tempo medio in formato MM:SS.mmm o undefined se non ci sono abbastanza dati
+ */
+export const calculatePaceForLap = (laps: Lap[], lapNumber: number): string | undefined => {
+  // Il PACE è disponibile solo dal 4° giro in poi
+  if (lapNumber < 4) return undefined;
+  
+  // Ordina i giri per numero
+  const sortedLaps = [...laps].sort((a, b) => a.lapNumber - b.lapNumber);
+  
+  // Trova i 3 giri precedenti (lapNumber-3, lapNumber-2, lapNumber-1)
+  const previousThreeLaps = sortedLaps.filter(
+    lap => lap.lapNumber >= lapNumber - 3 && lap.lapNumber < lapNumber
+  );
+  
+  // Devono esserci esattamente 3 giri precedenti
+  if (previousThreeLaps.length !== 3) return undefined;
+  
+  // Converte il tempo del giro in secondi
+  const lapTimeToSeconds = (time: string): number => {
+    if (!time || time.trim() === '') return 0;
+    const parts = time.split(':');
+    if (parts.length !== 2) return 0;
+    const [minutes, seconds] = parts;
+    const totalSeconds = parseInt(minutes) * 60 + parseFloat(seconds);
+    return isNaN(totalSeconds) ? 0 : totalSeconds;
+  };
+  
+  // Calcola i tempi in secondi dei 3 giri precedenti
+  const lapTimes = previousThreeLaps
+    .map(lap => lapTimeToSeconds(lap.lapTime))
+    .filter(time => time > 0);
+  
+  // Deve avere esattamente 3 tempi validi
+  if (lapTimes.length !== 3) return undefined;
+  
+  // Calcola la media
+  const averageSeconds = lapTimes.reduce((sum, time) => sum + time, 0) / lapTimes.length;
+  
+  // Converte in formato MM:SS.mmm
+  const minutes = Math.floor(averageSeconds / 60);
+  const seconds = (averageSeconds % 60).toFixed(3);
+  const paddedSeconds = parseFloat(seconds) < 10 ? `0${seconds}` : seconds;
+  
+  return `${minutes}:${paddedSeconds}`;
+};
+
+/**
+ * Ricalcola il PACE per tutti i giri nella sessione
+ * @param laps - Array di giri da aggiornare
+ * @returns Array di giri con PACE aggiornato
+ */
+export const recalculateAllPaces = (laps: Lap[]): Lap[] => {
+  return laps.map(lap => ({
+    ...lap,
+    pace: calculatePaceForLap(laps, lap.lapNumber)
+  }));
+};

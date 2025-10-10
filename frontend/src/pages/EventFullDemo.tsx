@@ -26,6 +26,8 @@ import {
   calculateRemainingFuel,
   calculateTheoreticalBestLap,
   calculateSessionPace,
+  calculatePaceForLap,
+  recalculateAllPaces,
 } from '../eventUtils';
 
 const EventFullDemo: React.FC = () => {
@@ -233,6 +235,9 @@ const EventFullDemo: React.FC = () => {
       lapFormData.sector4
     );
 
+    // Calcola il PACE per questo giro (disponibile dal 4° giro)
+    const pace = calculatePaceForLap(selectedSession.laps, lapFormData.lapNumber);
+
     const lapData: Lap = {
       id: editingLap?.id || generateId(),
       lapNumber: lapFormData.lapNumber,
@@ -244,6 +249,7 @@ const EventFullDemo: React.FC = () => {
       fuelConsumed: lapFormData.fuelConsumed,
       tireSet: lapFormData.tireSet,
       lapStatus: lapFormData.lapStatus,
+      pace: pace,
       notes: lapFormData.notes,
     };
 
@@ -266,6 +272,18 @@ const EventFullDemo: React.FC = () => {
       }
     }
 
+    // Ricarica l'evento per ottenere i dati aggiornati
+    const updatedEvent = loadEventFromStorage(event.id);
+    if (updatedEvent) {
+      const updatedSession = updatedEvent.sessions.find(s => s.id === selectedSession.id);
+      if (updatedSession) {
+        // Ricalcola tutti i PACE
+        updatedSession.laps = recalculateAllPaces(updatedSession.laps);
+        // Salva di nuovo con i PACE aggiornati
+        updateSessionInStorage(event.id, updatedSession);
+      }
+    }
+
     reloadEvent();
     setShowLapForm(false);
     setEditingLap(null);
@@ -279,6 +297,19 @@ const EventFullDemo: React.FC = () => {
     if (!window.confirm(`Sei sicuro di voler eliminare il giro ${lap.lapNumber}?`)) return;
 
     deleteLapFromSession(event.id, selectedSession.id, lap.id);
+    
+    // Ricarica l'evento per ottenere i dati aggiornati
+    const updatedEvent = loadEventFromStorage(event.id);
+    if (updatedEvent) {
+      const updatedSession = updatedEvent.sessions.find(s => s.id === selectedSession.id);
+      if (updatedSession) {
+        // Ricalcola tutti i PACE
+        updatedSession.laps = recalculateAllPaces(updatedSession.laps);
+        // Salva di nuovo con i PACE aggiornati
+        updateSessionInStorage(event.id, updatedSession);
+      }
+    }
+
     reloadEvent();
   };
 
@@ -763,6 +794,7 @@ const EventFullDemo: React.FC = () => {
                     <th>Settore 4</th>
                     <th>Carburante (L)</th>
                     <th>Set Gomme</th>
+                    <th style={{ background: '#40e0d0' }}>PACE</th>
                     <th>Note</th>
                     <th>Azioni</th>
                   </tr>
@@ -803,6 +835,13 @@ const EventFullDemo: React.FC = () => {
                             : '-'}
                         </td>
                         <td>{lap.tireSet || '-'}</td>
+                        <td style={{ 
+                          background: lap.pace ? '#40e0d0' : 'transparent',
+                          fontWeight: lap.pace ? 'bold' : 'normal',
+                          color: lap.pace ? '#006666' : 'inherit'
+                        }}>
+                          {lap.pace || '-'}
+                        </td>
                         <td>{lap.notes || '-'}</td>
                         <td>
                           <div style={{ display: 'flex', gap: '5px' }}>

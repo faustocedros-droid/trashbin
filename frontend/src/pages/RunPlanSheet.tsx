@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 /**
- * RunPlan Sheet - FP1 (Free Practice 1)
- * Replicates the Excel RunPlanFP1 sheet with all formulas
+ * RunPlan Sheet Generator
+ * Replicates the Excel RunPlan sheet with all formulas
  */
 
 interface RunPlanData {
@@ -318,10 +318,59 @@ function RunPlanSheet() {
     });
 
     const handleInputChange = (field: keyof RunPlanData, value: string | number) => {
-        setData({
+        const newData = {
             ...data,
             [field]: value,
-        });
+        };
+        setData(newData);
+        // Auto-save to localStorage
+        localStorage.setItem('runPlanSheet_data', JSON.stringify(newData));
+    };
+
+    // Load data from localStorage on component mount
+    useEffect(() => {
+        const savedData = localStorage.getItem('runPlanSheet_data');
+        if (savedData) {
+            try {
+                setData(JSON.parse(savedData));
+            } catch (error) {
+                console.error('Error loading saved data:', error);
+            }
+        }
+    }, []);
+
+    // Save data to file
+    const handleSaveToFile = () => {
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        const eventName = data.O4.replace(/[^a-zA-Z0-9]/g, '_');
+        const sessionName = data.O5.replace(/[^a-zA-Z0-9]/g, '_');
+        link.download = `runplan_${eventName}_${sessionName}.rpln`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
+    // Load data from file
+    const handleLoadFromFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const loadedData = JSON.parse(event.target?.result as string);
+                setData(loadedData);
+                localStorage.setItem('runPlanSheet_data', JSON.stringify(loadedData));
+            } catch (error) {
+                console.error('Error loading file:', error);
+                alert('Errore nel caricamento del file! Assicurati che sia un file .rpln valido.');
+            }
+        };
+        reader.readAsText(file);
     };
 
     // VLOOKUP simulation - returns tire compound based on set name
@@ -597,7 +646,7 @@ function RunPlanSheet() {
     return (
         <div style={{ padding: '20px', maxWidth: '1400px', margin: '0 auto' }}>
             <div className="card" style={{ marginBottom: '20px', backgroundColor: '#f8f9fa' }}>
-                <h1 style={{ margin: 0, color: '#2c5282' }}>🏁 RunPlan Sheet Generator</h1>
+                <h1 style={{ margin: 0, color: '#2c5282' }}>🏁 Run Plan Generator</h1>
                 <p style={{ margin: '10px 0 0 0', color: '#666' }}>
                     Generate printable RunPlan sheets for race sessions
                 </p>
@@ -1024,8 +1073,40 @@ function RunPlanSheet() {
                 </div>
             </div>
 
-            {/* Print Button */}
-            <div style={{ textAlign: 'center', marginTop: '20px' }}>
+            {/* Action Buttons */}
+            <div style={{ textAlign: 'center', marginTop: '20px', display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button
+                    onClick={handleSaveToFile}
+                    style={{
+                        padding: '15px 30px',
+                        fontSize: '16px',
+                        backgroundColor: '#28a745',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                    }}
+                >
+                    💾 Salva evento
+                </button>
+                <label style={{
+                    padding: '15px 30px',
+                    fontSize: '16px',
+                    backgroundColor: '#007bff',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    display: 'inline-block',
+                }}>
+                    📂 Carica evento
+                    <input
+                        type="file"
+                        accept=".rpln"
+                        onChange={handleLoadFromFile}
+                        style={{ display: 'none' }}
+                    />
+                </label>
                 <button
                     onClick={() => window.print()}
                     style={{

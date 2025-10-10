@@ -57,7 +57,7 @@ function App() {
                       }}>
                         <li style={{ padding: '5px 0' }}>
                           <Link to="/runplan/fp1" onClick={() => { setMenuOpen(false); setRunPlanSubmenuOpen(false); }}>
-                            FP1 RunPlan Generator
+                            Run Plan Generator
                           </Link>
                         </li>
                       </ul>

@@ -11,6 +11,10 @@ interface RunPlanData {
     D4: string;  // Track name (F3)
     O5: string;  // Session name (K3)
 
+    // General Information
+    circuitImage: string;  // Base64 encoded circuit image
+    scheduleData: string[][];  // 15 rows x 7 columns for days of week
+
     // Input cells
     D5: number;  // Starting fuel
     I5: number;  // Fuel consumption per lap
@@ -261,6 +265,8 @@ function RunPlanSheet() {
         O4: 'Imola 25-29 Sept 2025',
         D4: 'Autodromo Enzo e Dino Ferrari',
         O5: 'FP1',
+        circuitImage: '',
+        scheduleData: Array(15).fill(null).map(() => Array(7).fill('')),
         D5: 50,
         I5: 1.8,
         TRACK_LENGTH: 4.909,  // Imola track length in km
@@ -330,6 +336,36 @@ function RunPlanSheet() {
         localStorage.setItem('runPlanSheet_data', JSON.stringify(newData));
     };
 
+    // Handle circuit image upload
+    const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const newData = {
+                    ...data,
+                    circuitImage: reader.result as string,
+                };
+                setData(newData);
+                localStorage.setItem('runPlanSheet_data', JSON.stringify(newData));
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    // Handle schedule table cell update
+    const handleScheduleUpdate = (row: number, col: number, value: string) => {
+        const newScheduleData = data.scheduleData.map((r, i) => 
+            i === row ? r.map((c, j) => j === col ? value : c) : r
+        );
+        const newData = {
+            ...data,
+            scheduleData: newScheduleData,
+        };
+        setData(newData);
+        localStorage.setItem('runPlanSheet_data', JSON.stringify(newData));
+    };
+
     // Save current runplan to history
     const saveToHistory = () => {
         const historyKey = 'runPlanSheet_history';
@@ -359,7 +395,14 @@ function RunPlanSheet() {
         const savedData = localStorage.getItem('runPlanSheet_data');
         if (savedData) {
             try {
-                setData(JSON.parse(savedData));
+                const parsedData = JSON.parse(savedData);
+                // Ensure new fields exist for backward compatibility
+                const migratedData = {
+                    ...parsedData,
+                    circuitImage: parsedData.circuitImage || '',
+                    scheduleData: parsedData.scheduleData || Array(15).fill(null).map(() => Array(7).fill('')),
+                };
+                setData(migratedData);
             } catch (error) {
                 console.error('Error loading saved data:', error);
             }
@@ -754,6 +797,86 @@ function RunPlanSheet() {
                             style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
                         />
                     </div>
+                </div>
+
+                {/* General Information Section */}
+                <h3 style={{ color: '#2c5282', marginTop: '30px', marginBottom: '15px' }}>📋 General Information</h3>
+                
+                {/* Circuit Image Upload */}
+                <div style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>Circuit Image:</label>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        style={{ 
+                            padding: '8px', 
+                            border: '1px solid #ddd', 
+                            borderRadius: '4px',
+                            width: '100%',
+                            maxWidth: '400px'
+                        }}
+                    />
+                    {data.circuitImage && (
+                        <div style={{ marginTop: '15px', textAlign: 'center' }}>
+                            <img 
+                                src={data.circuitImage} 
+                                alt="Circuit Layout" 
+                                style={{ 
+                                    maxWidth: '100%', 
+                                    maxHeight: '400px', 
+                                    border: '2px solid #ddd', 
+                                    borderRadius: '8px',
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                }}
+                            />
+                        </div>
+                    )}
+                </div>
+
+                {/* Schedule Table */}
+                <div style={{ marginTop: '30px', overflowX: 'auto' }}>
+                    <h4 style={{ color: '#2c5282', marginBottom: '10px', fontWeight: 'bold' }}>SCHEDULE</h4>
+                    <table style={{ 
+                        width: '100%', 
+                        borderCollapse: 'collapse',
+                        border: '2px solid #2c5282'
+                    }}>
+                        <thead>
+                            <tr style={{ backgroundColor: '#2c5282', color: 'white' }}>
+                                <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>Monday</th>
+                                <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>Tuesday</th>
+                                <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>Wednesday</th>
+                                <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>Thursday</th>
+                                <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>Friday</th>
+                                <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>Saturday</th>
+                                <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>Sunday</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {data.scheduleData.map((row, rowIndex) => (
+                                <tr key={rowIndex} style={{ backgroundColor: rowIndex % 2 === 0 ? '#ffffff' : '#f8f9fa' }}>
+                                    {row.map((cell, colIndex) => (
+                                        <td key={colIndex} style={{ padding: '5px', border: '1px solid #ddd' }}>
+                                            <input
+                                                type="text"
+                                                value={cell}
+                                                onChange={(e) => handleScheduleUpdate(rowIndex, colIndex, e.target.value)}
+                                                style={{
+                                                    width: '100%',
+                                                    padding: '6px',
+                                                    border: 'none',
+                                                    backgroundColor: 'transparent',
+                                                    fontSize: '14px'
+                                                }}
+                                                placeholder="..."
+                                            />
+                                        </td>
+                                    ))}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
 
                 <h3 style={{ color: '#2c5282', marginTop: '30px', marginBottom: '15px' }}>⛽ Fuel & Timing Parameters</h3>

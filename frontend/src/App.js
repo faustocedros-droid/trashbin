@@ -4,7 +4,6 @@ import './App.css';
 import Dashboard from './pages/Dashboard';
 import Events from './pages/Events';
 import EventDetail from './pages/EventDetail';
-import EventFullDemo from './pages/EventFullDemo';
 import TirePressure from './pages/TirePressure';
 import TirePressureSetsManagement from './pages/TirePressureSetsManagement';
 import TirePressureSetup from './pages/TirePressureSetup';
@@ -100,7 +99,6 @@ function App() {
                     )}
                   </div>
                 </li>
-                <li><Link to="/demo" onClick={() => setMenuOpen(false)}>Demo</Link></li>
                 <li><Link to="/weather" onClick={() => setMenuOpen(false)}>Meteo</Link></li>
                 <li><Link to="/settings" onClick={() => setMenuOpen(false)}>Impostazioni</Link></li>
               </ul>
@@ -118,7 +116,6 @@ function App() {
             <Route path="/tire-pressure/setup" element={<TirePressureSetup />} />
             <Route path="/tire-pressure/database" element={<TirePressureDatabase />} />
             <Route path="/runplan/fp1" element={<RunPlanSheet />} />
-            <Route path="/demo" element={<EventFullDemo />} />
             <Route path="/weather" element={<Weather />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>

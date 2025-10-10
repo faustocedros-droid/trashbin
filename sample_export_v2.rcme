@@ -1,0 +1,166 @@
+{
+  "event": {
+    "name": "GP Test Monza",
+    "track": "Autodromo Nazionale di Monza",
+    "date_start": "2024-10-10T00:00:00Z",
+    "date_end": "2024-10-12T23:59:59Z",
+    "weather": "Sunny",
+    "notes": "Test event with all data",
+    "track_length": 5.793
+  },
+  "sessions": [
+    {
+      "id": 1,
+      "session_type": "FP1",
+      "session_number": 1,
+      "duration": 60,
+      "fuel_start": 50,
+      "fuel_per_lap": 2.5,
+      "tire_set": "Set#1",
+      "session_status": null,
+      "notes": "Free Practice 1",
+      "laps": [
+        {
+          "lap_number": 1,
+          "lap_time": "1:42.345",
+          "sector1": "25.123",
+          "sector2": "28.456",
+          "sector3": "30.789",
+          "sector4": "22.012",
+          "fuel_consumed": 2.5,
+          "tire_set": "Set#1",
+          "lap_status": null,
+          "notes": "Good lap"
+        },
+        {
+          "lap_number": 2,
+          "lap_time": "1:41.892",
+          "sector1": "25.001",
+          "sector2": "28.234",
+          "sector3": "30.567",
+          "sector4": "21.890",
+          "fuel_consumed": 2.5,
+          "tire_set": "Set#1",
+          "lap_status": null,
+          "notes": "Personal best"
+        }
+      ]
+    }
+  ],
+  "runPlans": [
+    {
+      "id": "1728563799740-abc123def",
+      "timestamp": "2024-10-10T10:36:39.740Z",
+      "eventName": "GP Test Monza",
+      "trackName": "Autodromo Nazionale di Monza",
+      "sessionName": "FP1",
+      "data": {
+        "O4": "GP Test Monza",
+        "D4": "Autodromo Nazionale di Monza",
+        "O5": "FP1",
+        "D5": 50,
+        "I5": 2.5,
+        "TRACK_LENGTH": 5.793,
+        "OUTLAP_TIME": "02:30",
+        "INLAP_TIME": "02:45",
+        "PACE": "01:42",
+        "START_TIME": "10:00:00",
+        "DURATION": "1:00:00",
+        "D7": 100,
+        "E11": 0,
+        "E19": 0,
+        "E27": 0,
+        "E35": 0,
+        "E43": 0,
+        "B13": 1,
+        "B14": 10,
+        "B15": 1,
+        "B16": "00:45",
+        "D16": 0,
+        "H11": "Set#1",
+        "REFUEL1": 25,
+        "NOTE1": "First stint",
+        "B21": 1,
+        "B22": 8,
+        "B23": 1,
+        "B24": "00:40",
+        "C24": 0,
+        "H19": "Set#2",
+        "REFUEL2": 20,
+        "NOTE2": "Second stint",
+        "B29": 0,
+        "B30": 0,
+        "B31": 0,
+        "B32": "00:00",
+        "C32": 0,
+        "H27": "",
+        "REFUEL3": 0,
+        "NOTE3": "",
+        "B37": 0,
+        "B38": 0,
+        "B39": 0,
+        "B40": "00:00",
+        "C40": 0,
+        "H35": "",
+        "REFUEL4": 0,
+        "NOTE4": "",
+        "B45": 0,
+        "B46": 0,
+        "B47": 0,
+        "B48": "00:00",
+        "C48": 0,
+        "H43": "",
+        "REFUEL5": 0,
+        "NOTE5": ""
+      }
+    }
+  ],
+  "tirePressureDatabase": [
+    {
+      "id": "1728563799740",
+      "session": "FP1",
+      "tireSet": "Set#1",
+      "coldPressures": {
+        "FL": "2.0",
+        "FR": "2.0",
+        "RL": "2.0",
+        "RR": "2.0"
+      },
+      "coldSetTemp": "20",
+      "hotPressures": {
+        "FL": "2.3",
+        "FR": "2.3",
+        "RL": "2.3",
+        "RR": "2.3"
+      },
+      "laps": "10",
+      "airTemp": "25",
+      "trackTemp": "35",
+      "initialKm": "100"
+    },
+    {
+      "id": "1728563899850",
+      "session": "FP1",
+      "tireSet": "Set#2",
+      "coldPressures": {
+        "FL": "2.1",
+        "FR": "2.1",
+        "RL": "2.1",
+        "RR": "2.1"
+      },
+      "coldSetTemp": "22",
+      "hotPressures": {
+        "FL": "2.4",
+        "FR": "2.4",
+        "RL": "2.4",
+        "RR": "2.4"
+      },
+      "laps": "8",
+      "airTemp": "26",
+      "trackTemp": "37",
+      "initialKm": "158"
+    }
+  ],
+  "exportDate": "2024-10-10T10:36:39.740Z",
+  "version": "2.0"
+}

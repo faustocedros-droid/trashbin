@@ -255,12 +255,22 @@ function EventDetail() {
         })
       );
 
+      // Get all runplans from localStorage
+      const runPlanHistoryData = localStorage.getItem('runPlanSheet_history');
+      const runPlans = runPlanHistoryData ? JSON.parse(runPlanHistoryData) : [];
+
+      // Get tire pressure database from localStorage
+      const tirePressureData = localStorage.getItem('tirePressureDatabase');
+      const tirePressureDatabase = tirePressureData ? JSON.parse(tirePressureData) : [];
+
       // Create export object with event and all sessions/laps
       const exportData = {
         event: event,
         sessions: sessionsWithLaps,
+        runPlans: runPlans,
+        tirePressureDatabase: tirePressureDatabase,
         exportDate: new Date().toISOString(),
-        version: '1.0'
+        version: '2.0'
       };
 
       // Create and download file
@@ -298,10 +308,21 @@ function EventDetail() {
           throw new Error('File non valido: struttura dati mancante');
         }
 
-        if (!window.confirm(
-          `Vuoi importare l'evento "${importData.event.name}"?\n\n` +
-          `Questo creerà un nuovo evento con ${importData.sessions.length} sessioni e tutti i loro giri.`
-        )) {
+        // Build confirmation message
+        let confirmMessage = `Vuoi importare l'evento "${importData.event.name}"?\n\n` +
+          `Questo creerà un nuovo evento con ${importData.sessions.length} sessioni e tutti i loro giri.`;
+        
+        // Add info about runplans if present
+        if (importData.runPlans && importData.runPlans.length > 0) {
+          confirmMessage += `\n\nRunPlans inclusi: ${importData.runPlans.length}`;
+        }
+        
+        // Add info about tire pressure database if present
+        if (importData.tirePressureDatabase && importData.tirePressureDatabase.length > 0) {
+          confirmMessage += `\nDatabase pressioni pneumatici: ${importData.tirePressureDatabase.length} entry`;
+        }
+
+        if (!window.confirm(confirmMessage)) {
           return;
         }
 
@@ -353,6 +374,39 @@ function EventDetail() {
               await sessionAPI.createLap(newSessionId, lapData);
             }
           }
+        }
+
+        // Import runplans if present
+        if (importData.runPlans && importData.runPlans.length > 0) {
+          const existingRunPlans = localStorage.getItem('runPlanSheet_history');
+          const runPlanHistory = existingRunPlans ? JSON.parse(existingRunPlans) : [];
+          
+          // Add imported runplans to history
+          const importedRunPlans = importData.runPlans.map(rp => ({
+            ...rp,
+            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            timestamp: new Date().toISOString(),
+            imported: true
+          }));
+          
+          runPlanHistory.push(...importedRunPlans);
+          localStorage.setItem('runPlanSheet_history', JSON.stringify(runPlanHistory));
+        }
+
+        // Import tire pressure database if present
+        if (importData.tirePressureDatabase && importData.tirePressureDatabase.length > 0) {
+          const existingTirePressure = localStorage.getItem('tirePressureDatabase');
+          const tirePressureDb = existingTirePressure ? JSON.parse(existingTirePressure) : [];
+          
+          // Add imported entries to tire pressure database
+          const importedEntries = importData.tirePressureDatabase.map(entry => ({
+            ...entry,
+            id: Date.now().toString() + '-' + Math.random().toString(36).substr(2, 9),
+            imported: true
+          }));
+          
+          tirePressureDb.push(...importedEntries);
+          localStorage.setItem('tirePressureDatabase', JSON.stringify(tirePressureDb));
         }
 
         alert('Evento importato con successo! Verrai reindirizzato alla lista eventi.');

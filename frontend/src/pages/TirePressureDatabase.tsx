@@ -23,10 +23,25 @@ interface PressureEntry {
   initialKm: string;
 }
 
+interface SessionRow {
+  T1: string;
+  T2: string;
+  T3: string;
+  T4: string;
+  FP1: string;
+  FP2: string;
+  FP3: string;
+  Q: string;
+  R1: string;
+  R2: string;
+  R3: string;
+}
+
 function TirePressureDatabase() {
   const [entries, setEntries] = useState<PressureEntry[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [trackLength, setTrackLength] = useState<number>(0);
+  const [sessionTable, setSessionTable] = useState<SessionRow[]>([]);
   const [formData, setFormData] = useState<PressureEntry>({
     id: '',
     session: 'FP1',
@@ -52,6 +67,27 @@ function TirePressureDatabase() {
     const savedTrackLength = localStorage.getItem('currentTrackLength');
     if (savedTrackLength) {
       setTrackLength(parseFloat(savedTrackLength));
+    }
+    // Load session table from localStorage
+    const savedSessionTable = localStorage.getItem('tirePressureSessionTable');
+    if (savedSessionTable) {
+      setSessionTable(JSON.parse(savedSessionTable));
+    } else {
+      // Initialize with 10 empty rows
+      const initialRows: SessionRow[] = Array.from({ length: 10 }, () => ({
+        T1: '',
+        T2: '',
+        T3: '',
+        T4: '',
+        FP1: '',
+        FP2: '',
+        FP3: '',
+        Q: '',
+        R1: '',
+        R2: '',
+        R3: '',
+      }));
+      setSessionTable(initialRows);
     }
   }, []);
 
@@ -120,6 +156,28 @@ function TirePressureDatabase() {
     return initial + (trackLength * numLaps);
   };
 
+  // Handle session table cell change
+  const handleSessionTableChange = (rowIndex: number, column: keyof SessionRow, value: string) => {
+    const newTable = [...sessionTable];
+    newTable[rowIndex] = { ...newTable[rowIndex], [column]: value };
+    setSessionTable(newTable);
+    localStorage.setItem('tirePressureSessionTable', JSON.stringify(newTable));
+  };
+
+  // Calculate row total
+  const calculateRowTotal = (row: SessionRow): number => {
+    const values = [row.T1, row.T2, row.T3, row.T4, row.FP1, row.FP2, row.FP3, row.Q, row.R1, row.R2, row.R3];
+    return values.reduce((sum, val) => {
+      const num = parseFloat(val) || 0;
+      return sum + num;
+    }, 0);
+  };
+
+  // Print session table
+  const handlePrintSessionTable = () => {
+    window.print();
+  };
+
   return (
     <div className="container" style={{ paddingTop: '40px' }}>
       <h1>🗄️ Tire Pressure Database</h1>
@@ -158,6 +216,208 @@ function TirePressureDatabase() {
               Lunghezza del circuito in chilometri (usata per calcolare i KM finali)
             </small>
           </div>
+        </div>
+      </div>
+
+      {/* Session Table - New Section */}
+      <div className="card" id="session-table-printable" style={{ marginBottom: '30px', backgroundColor: '#fff' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+          <h2 style={{ margin: 0 }}>📊 Tabella Sessioni</h2>
+          <button onClick={handlePrintSessionTable} className="btn btn-primary no-print">
+            🖨️ Stampa Tabella
+          </button>
+        </div>
+        <div style={{ overflowX: 'auto' }}>
+          <table className="table" style={{ minWidth: '800px' }}>
+            <thead>
+              <tr>
+                <th style={{ textAlign: 'center', backgroundColor: '#2c5282', color: '#fff' }}>Riga</th>
+                <th style={{ textAlign: 'center', backgroundColor: '#2c5282', color: '#fff' }}>T1</th>
+                <th style={{ textAlign: 'center', backgroundColor: '#2c5282', color: '#fff' }}>T2</th>
+                <th style={{ textAlign: 'center', backgroundColor: '#2c5282', color: '#fff' }}>T3</th>
+                <th style={{ textAlign: 'center', backgroundColor: '#2c5282', color: '#fff' }}>T4</th>
+                <th style={{ textAlign: 'center', backgroundColor: '#2c5282', color: '#fff' }}>FP1</th>
+                <th style={{ textAlign: 'center', backgroundColor: '#2c5282', color: '#fff' }}>FP2</th>
+                <th style={{ textAlign: 'center', backgroundColor: '#2c5282', color: '#fff' }}>FP3</th>
+                <th style={{ textAlign: 'center', backgroundColor: '#2c5282', color: '#fff' }}>Q</th>
+                <th style={{ textAlign: 'center', backgroundColor: '#2c5282', color: '#fff' }}>R1</th>
+                <th style={{ textAlign: 'center', backgroundColor: '#2c5282', color: '#fff' }}>R2</th>
+                <th style={{ textAlign: 'center', backgroundColor: '#2c5282', color: '#fff' }}>R3</th>
+                <th style={{ textAlign: 'center', backgroundColor: '#FFD700', color: '#000', fontWeight: 'bold' }}>TOTAL</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sessionTable.map((row, rowIndex) => (
+                <tr key={rowIndex}>
+                  <td style={{ textAlign: 'center', fontWeight: 'bold', backgroundColor: '#f5f5f5' }}>
+                    {rowIndex + 1}
+                  </td>
+                  <td style={{ padding: '4px' }}>
+                    <input
+                      type="text"
+                      value={row.T1}
+                      onChange={(e) => handleSessionTableChange(rowIndex, 'T1', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '6px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        textAlign: 'center',
+                      }}
+                    />
+                  </td>
+                  <td style={{ padding: '4px' }}>
+                    <input
+                      type="text"
+                      value={row.T2}
+                      onChange={(e) => handleSessionTableChange(rowIndex, 'T2', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '6px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        textAlign: 'center',
+                      }}
+                    />
+                  </td>
+                  <td style={{ padding: '4px' }}>
+                    <input
+                      type="text"
+                      value={row.T3}
+                      onChange={(e) => handleSessionTableChange(rowIndex, 'T3', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '6px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        textAlign: 'center',
+                      }}
+                    />
+                  </td>
+                  <td style={{ padding: '4px' }}>
+                    <input
+                      type="text"
+                      value={row.T4}
+                      onChange={(e) => handleSessionTableChange(rowIndex, 'T4', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '6px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        textAlign: 'center',
+                      }}
+                    />
+                  </td>
+                  <td style={{ padding: '4px' }}>
+                    <input
+                      type="text"
+                      value={row.FP1}
+                      onChange={(e) => handleSessionTableChange(rowIndex, 'FP1', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '6px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        textAlign: 'center',
+                      }}
+                    />
+                  </td>
+                  <td style={{ padding: '4px' }}>
+                    <input
+                      type="text"
+                      value={row.FP2}
+                      onChange={(e) => handleSessionTableChange(rowIndex, 'FP2', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '6px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        textAlign: 'center',
+                      }}
+                    />
+                  </td>
+                  <td style={{ padding: '4px' }}>
+                    <input
+                      type="text"
+                      value={row.FP3}
+                      onChange={(e) => handleSessionTableChange(rowIndex, 'FP3', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '6px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        textAlign: 'center',
+                      }}
+                    />
+                  </td>
+                  <td style={{ padding: '4px' }}>
+                    <input
+                      type="text"
+                      value={row.Q}
+                      onChange={(e) => handleSessionTableChange(rowIndex, 'Q', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '6px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        textAlign: 'center',
+                      }}
+                    />
+                  </td>
+                  <td style={{ padding: '4px' }}>
+                    <input
+                      type="text"
+                      value={row.R1}
+                      onChange={(e) => handleSessionTableChange(rowIndex, 'R1', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '6px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        textAlign: 'center',
+                      }}
+                    />
+                  </td>
+                  <td style={{ padding: '4px' }}>
+                    <input
+                      type="text"
+                      value={row.R2}
+                      onChange={(e) => handleSessionTableChange(rowIndex, 'R2', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '6px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        textAlign: 'center',
+                      }}
+                    />
+                  </td>
+                  <td style={{ padding: '4px' }}>
+                    <input
+                      type="text"
+                      value={row.R3}
+                      onChange={(e) => handleSessionTableChange(rowIndex, 'R3', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '6px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        textAlign: 'center',
+                      }}
+                    />
+                  </td>
+                  <td style={{ 
+                    padding: '6px',
+                    textAlign: 'center',
+                    fontWeight: 'bold',
+                    backgroundColor: '#FFFACD',
+                  }}>
+                    {calculateRowTotal(row).toFixed(2)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -643,6 +903,29 @@ function TirePressureDatabase() {
           </div>
         )}
       </div>
+
+      {/* Print Styles */}
+      <style>
+        {`
+          @media print {
+            body * {
+              visibility: hidden;
+            }
+            #session-table-printable, #session-table-printable * {
+              visibility: visible;
+            }
+            #session-table-printable {
+              position: absolute;
+              left: 0;
+              top: 0;
+              width: 100%;
+            }
+            .no-print {
+              display: none !important;
+            }
+          }
+        `}
+      </style>
     </div>
   );
 }

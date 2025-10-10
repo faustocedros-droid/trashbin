@@ -26,6 +26,11 @@ interface CalculatedOutputs {
   J4: number;  // =(H4+F4*(F3+273.15)/(E3+273.15))-F4
 }
 
+interface SetNames {
+  set3: string;  // Name for row 3
+  set4: string;  // Name for row 4
+}
+
 function TirePressureSetsManagement() {
   const [inputData, setInputData] = useState<TireInputData>({
     E3: 20,    // Temp Ambiente
@@ -39,6 +44,11 @@ function TirePressureSetsManagement() {
   });
 
   const [outputs, setOutputs] = useState<CalculatedOutputs | null>(null);
+  
+  const [setNames, setSetNames] = useState<SetNames>({
+    set3: 'Set 3',
+    set4: 'Set 4',
+  });
 
   /**
    * Calculate outputs based on Excel formulas
@@ -64,6 +74,13 @@ function TirePressureSetsManagement() {
   const handleInputChange = (field: keyof TireInputData, value: number) => {
     setInputData({
       ...inputData,
+      [field]: value,
+    });
+  };
+
+  const handleSetNameChange = (field: keyof SetNames, value: string) => {
+    setSetNames({
+      ...setNames,
       [field]: value,
     });
   };
@@ -249,7 +266,7 @@ function TirePressureSetsManagement() {
             }}>
               <thead>
                 <tr style={{ backgroundColor: '#4472C4', color: 'white' }}>
-                  <th style={{ padding: '12px', border: '2px solid #333', textAlign: 'center' }}>Colonna</th>
+                  <th style={{ padding: '12px', border: '2px solid #333', textAlign: 'center' }}>SET</th>
                   <th style={{ padding: '12px', border: '2px solid #333', textAlign: 'center' }}>I</th>
                   <th style={{ padding: '12px', border: '2px solid #333', textAlign: 'center' }}>J</th>
                 </tr>
@@ -258,13 +275,25 @@ function TirePressureSetsManagement() {
                 {/* Row 3 outputs */}
                 <tr>
                   <td style={{ 
-                    padding: '12px', 
+                    padding: '8px', 
                     border: '2px solid #333', 
                     backgroundColor: '#D9E1F2',
-                    fontWeight: 'bold',
                     textAlign: 'center'
                   }}>
-                    Riga 3
+                    <input
+                      type="text"
+                      value={setNames.set3}
+                      onChange={(e) => handleSetNameChange('set3', e.target.value)}
+                      style={{ 
+                        width: '100%', 
+                        padding: '6px', 
+                        fontSize: '14px', 
+                        border: '1px solid #ccc',
+                        fontWeight: 'bold',
+                        textAlign: 'center',
+                        backgroundColor: 'transparent'
+                      }}
+                    />
                   </td>
                   <td style={{ 
                     padding: '15px', 
@@ -299,13 +328,25 @@ function TirePressureSetsManagement() {
                 {/* Row 4 outputs */}
                 <tr>
                   <td style={{ 
-                    padding: '12px', 
+                    padding: '8px', 
                     border: '2px solid #333', 
                     backgroundColor: '#D9E1F2',
-                    fontWeight: 'bold',
                     textAlign: 'center'
                   }}>
-                    Riga 4
+                    <input
+                      type="text"
+                      value={setNames.set4}
+                      onChange={(e) => handleSetNameChange('set4', e.target.value)}
+                      style={{ 
+                        width: '100%', 
+                        padding: '6px', 
+                        fontSize: '14px', 
+                        border: '1px solid #ccc',
+                        fontWeight: 'bold',
+                        textAlign: 'center',
+                        backgroundColor: 'transparent'
+                      }}
+                    />
                   </td>
                   <td style={{ 
                     padding: '15px', 

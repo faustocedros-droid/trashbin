@@ -11,6 +11,7 @@ import TirePressureSetup from './pages/TirePressureSetup';
 import TirePressureDatabase from './pages/TirePressureDatabase';
 import Settings from './pages/Settings';
 import RunPlanSheet from './pages/RunPlanSheet';
+import Weather from './pages/Weather';
 
 function App() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -100,6 +101,7 @@ function App() {
                   </div>
                 </li>
                 <li><Link to="/demo" onClick={() => setMenuOpen(false)}>Demo</Link></li>
+                <li><Link to="/weather" onClick={() => setMenuOpen(false)}>Meteo</Link></li>
                 <li><Link to="/settings" onClick={() => setMenuOpen(false)}>Impostazioni</Link></li>
               </ul>
             </div>
@@ -117,6 +119,7 @@ function App() {
             <Route path="/tire-pressure/database" element={<TirePressureDatabase />} />
             <Route path="/runplan/fp1" element={<RunPlanSheet />} />
             <Route path="/demo" element={<EventFullDemo />} />
+            <Route path="/weather" element={<Weather />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
         </main>

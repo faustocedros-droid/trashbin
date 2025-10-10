@@ -129,6 +129,13 @@ function createMenu() {
             mainWindow.webContents.send('menu-action', 'tires');
           }
         },
+        {
+          label: 'Meteo',
+          accelerator: 'CmdOrCtrl+W',
+          click: () => {
+            mainWindow.webContents.send('menu-action', 'weather');
+          }
+        },
         { type: 'separator' },
         { role: 'reload', label: 'Ricarica' },
         { role: 'forceReload', label: 'Ricarica Forzata' },

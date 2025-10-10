@@ -240,6 +240,133 @@ function EventDetail() {
     }
   };
 
+  // Export event with all sessions and laps to file
+  const handleExportEvent = async () => {
+    try {
+      // Fetch all sessions with their laps
+      const sessionsWithLaps = await Promise.all(
+        sessions.map(async (session) => {
+          const lapsResponse = await sessionAPI.getLaps(session.id);
+          return {
+            ...session,
+            laps: lapsResponse.data
+          };
+        })
+      );
+
+      // Create export object with event and all sessions/laps
+      const exportData = {
+        event: event,
+        sessions: sessionsWithLaps,
+        exportDate: new Date().toISOString(),
+        version: '1.0'
+      };
+
+      // Create and download file
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const eventName = event.name.replace(/[^a-zA-Z0-9]/g, '_');
+      const dateStr = new Date().toISOString().split('T')[0];
+      link.download = `event_${eventName}_${dateStr}.rcme`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      alert('Evento esportato con successo!');
+    } catch (error) {
+      console.error('Error exporting event:', error);
+      alert('Errore durante l\'esportazione dell\'evento');
+    }
+  };
+
+  // Import event from file
+  const handleImportEvent = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const importData = JSON.parse(event.target?.result);
+        
+        // Validate import data
+        if (!importData.event || !importData.sessions) {
+          throw new Error('File non valido: struttura dati mancante');
+        }
+
+        if (!window.confirm(
+          `Vuoi importare l'evento "${importData.event.name}"?\n\n` +
+          `Questo creerà un nuovo evento con ${importData.sessions.length} sessioni e tutti i loro giri.`
+        )) {
+          return;
+        }
+
+        // Create new event
+        const newEventData = {
+          name: importData.event.name + ' (Importato)',
+          track: importData.event.track,
+          date_start: importData.event.date_start,
+          date_end: importData.event.date_end,
+          weather: importData.event.weather,
+          notes: importData.event.notes,
+          track_length: importData.event.track_length
+        };
+        
+        const eventResponse = await eventAPI.create(newEventData);
+        const newEventId = eventResponse.data.id;
+
+        // Create sessions and laps
+        for (const session of importData.sessions) {
+          const sessionData = {
+            session_type: session.session_type,
+            session_number: session.session_number,
+            duration: session.duration,
+            fuel_start: session.fuel_start,
+            fuel_per_lap: session.fuel_per_lap,
+            tire_set: session.tire_set,
+            session_status: session.session_status,
+            notes: session.notes
+          };
+
+          const sessionResponse = await eventAPI.createSession(newEventId, sessionData);
+          const newSessionId = sessionResponse.data.id;
+
+          // Create laps for this session
+          if (session.laps && session.laps.length > 0) {
+            for (const lap of session.laps) {
+              const lapData = {
+                lap_number: lap.lap_number,
+                lap_time: lap.lap_time,
+                sector1: lap.sector1,
+                sector2: lap.sector2,
+                sector3: lap.sector3,
+                sector4: lap.sector4,
+                fuel_consumed: lap.fuel_consumed,
+                tire_set: lap.tire_set,
+                lap_status: lap.lap_status,
+                notes: lap.notes
+              };
+              await sessionAPI.createLap(newSessionId, lapData);
+            }
+          }
+        }
+
+        alert('Evento importato con successo! Verrai reindirizzato alla lista eventi.');
+        navigate('/events');
+      } catch (error) {
+        console.error('Error importing event:', error);
+        alert('Errore durante l\'importazione: ' + (error.message || 'File non valido'));
+      }
+    };
+    reader.readAsText(file);
+    
+    // Reset input to allow importing the same file again
+    e.target.value = '';
+  };
+
   if (loading) {
     return <div className="container"><div className="loading">Caricamento...</div></div>;
   }
@@ -266,9 +393,23 @@ function EventDetail() {
             <p><strong>Meteo:</strong> {event.weather || 'Non specificato'}</p>
             {event.notes && <p><strong>Note:</strong> {event.notes}</p>}
           </div>
-          <button className="btn btn-primary" onClick={handleArchive}>
-            📦 Archivia su OneDrive
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <button className="btn btn-primary" onClick={handleExportEvent}>
+              💾 Esporta Evento
+            </button>
+            <label className="btn btn-primary" style={{ margin: 0, cursor: 'pointer', textAlign: 'center' }}>
+              📂 Importa Evento
+              <input
+                type="file"
+                accept=".rcme"
+                onChange={handleImportEvent}
+                style={{ display: 'none' }}
+              />
+            </label>
+            <button className="btn btn-primary" onClick={handleArchive}>
+              📦 Archivia su OneDrive
+            </button>
+          </div>
         </div>
       </div>
 

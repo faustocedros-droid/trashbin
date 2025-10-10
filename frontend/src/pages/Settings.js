@@ -37,17 +37,19 @@ function Settings() {
     // Get all data from localStorage
     const eventsData = localStorage.getItem('racingCarManager_events');
     const tirePressureData = localStorage.getItem('tirePressureDatabase');
+    const runPlanData = localStorage.getItem('runPlanSheet_data');
     
     // Create a comprehensive archive object
     const archiveData = {
       version: '1.0',
       exportDate: new Date().toISOString(),
       events: eventsData ? JSON.parse(eventsData) : [],
-      tirePressureDatabase: tirePressureData ? JSON.parse(tirePressureData) : null
+      tirePressureDatabase: tirePressureData ? JSON.parse(tirePressureData) : null,
+      runPlanSheet: runPlanData ? JSON.parse(runPlanData) : null
     };
     
     // Check if there's any data to save
-    if (!eventsData && !tirePressureData) {
+    if (!eventsData && !tirePressureData && !runPlanData) {
       setMessage('Nessun dato da salvare!');
       setTimeout(() => setMessage(''), 3000);
       return;
@@ -87,12 +89,15 @@ function Settings() {
         
         // Check if this is the new format (with version) or old format
         if (archiveData.version) {
-          // New format - restore both events and tire pressure data
+          // New format - restore all data including RunPlanSheet
           if (archiveData.events) {
             localStorage.setItem('racingCarManager_events', JSON.stringify(archiveData.events));
           }
           if (archiveData.tirePressureDatabase) {
             localStorage.setItem('tirePressureDatabase', JSON.stringify(archiveData.tirePressureDatabase));
+          }
+          if (archiveData.runPlanSheet) {
+            localStorage.setItem('runPlanSheet_data', JSON.stringify(archiveData.runPlanSheet));
           }
           setMessage('Archivio caricato con successo! Tutti i dati sono stati ripristinati.');
         } else {
@@ -196,7 +201,7 @@ function Settings() {
         <h2>📁 Gestione Archivio Dati</h2>
         
         <div style={{ marginTop: '20px' }}>
-          <h3>Salva Archivio</h3>
+          <h3>Salva evento</h3>
           <p style={{ color: '#666', marginBottom: '15px' }}>
             Salva tutti i dati dell'applicazione (eventi, sessioni, giri e database pressioni pneumatici) in un file .tpdb
           </p>
@@ -237,13 +242,13 @@ function Settings() {
               onClick={handleSaveArchive}
               className="btn btn-primary"
             >
-              📥 Scarica Archivio
+              📥 Salva evento
             </button>
           </div>
 
           <hr style={{ margin: '30px 0' }} />
 
-          <h3>Carica Archivio</h3>
+          <h3>Carica evento</h3>
           <p style={{ color: '#666', marginBottom: '15px' }}>
             Carica un file .tpdb precedentemente salvato
           </p>

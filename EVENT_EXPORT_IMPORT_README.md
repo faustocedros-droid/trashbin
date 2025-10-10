@@ -14,6 +14,8 @@ The Event Detail page now includes functionality to export and import complete e
   - Event metadata (name, track, dates, weather, notes)
   - All sessions with their configurations
   - All laps for each session with complete timing data
+  - All RunPlans generated for the event (from localStorage)
+  - Complete Tire Pressure database (from localStorage)
   - Export date and version information
 
 ### Import Event
@@ -24,6 +26,8 @@ The Event Detail page now includes functionality to export and import complete e
   - Creates a new event with "(Importato)" suffix
   - Recreates all sessions with their original configuration
   - Recreates all laps with complete timing data
+  - Imports all RunPlans into the RunPlan history (localStorage)
+  - Imports all Tire Pressure database entries (localStorage)
   - Redirects to Events list after successful import
 
 ## Usage
@@ -90,8 +94,47 @@ The `.rcme` file is a JSON file with the following structure:
       ]
     }
   ],
+  "runPlans": [
+    {
+      "id": "runplan-id",
+      "timestamp": "2024-10-10T10:36:39.740Z",
+      "eventName": "Event Name",
+      "trackName": "Track Name",
+      "sessionName": "FP1",
+      "data": {
+        "O4": "Event Name",
+        "D4": "Track Name",
+        "O5": "FP1",
+        ...
+      }
+    }
+  ],
+  "tirePressureDatabase": [
+    {
+      "id": "entry-id",
+      "session": "FP1",
+      "tireSet": "Set#1",
+      "coldPressures": {
+        "FL": "2.0",
+        "FR": "2.0",
+        "RL": "2.0",
+        "RR": "2.0"
+      },
+      "coldSetTemp": "20",
+      "hotPressures": {
+        "FL": "2.3",
+        "FR": "2.3",
+        "RL": "2.3",
+        "RR": "2.3"
+      },
+      "laps": "10",
+      "airTemp": "25",
+      "trackTemp": "35",
+      "initialKm": "100"
+    }
+  ],
   "exportDate": "2024-10-10T10:36:39.740Z",
-  "version": "1.0"
+  "version": "2.0"
 }
 ```
 
@@ -100,6 +143,8 @@ The `.rcme` file is a JSON file with the following structure:
 ### Export Implementation
 - Fetches all sessions for the event
 - For each session, fetches all laps
+- Retrieves all RunPlans from localStorage (key: 'runPlanSheet_history')
+- Retrieves complete Tire Pressure database from localStorage (key: 'tirePressureDatabase')
 - Combines data into a single JSON structure
 - Creates a downloadable Blob with the JSON data
 - Generates a descriptive filename based on event name and date
@@ -110,6 +155,8 @@ The `.rcme` file is a JSON file with the following structure:
 - Creates a new event via the API
 - Creates sessions sequentially
 - Creates laps for each session
+- Imports RunPlans into localStorage history with unique IDs
+- Imports Tire Pressure database entries into localStorage with unique IDs
 - Handles errors with user-friendly messages
 
 ### Error Handling

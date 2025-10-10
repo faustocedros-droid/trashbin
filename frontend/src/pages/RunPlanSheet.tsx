@@ -323,8 +323,32 @@ function RunPlanSheet() {
             [field]: value,
         };
         setData(newData);
-        // Auto-save to localStorage
+        // Auto-save to localStorage (current working copy)
         localStorage.setItem('runPlanSheet_data', JSON.stringify(newData));
+    };
+
+    // Save current runplan to history
+    const saveToHistory = () => {
+        const historyKey = 'runPlanSheet_history';
+        const existingHistory = localStorage.getItem(historyKey);
+        const history = existingHistory ? JSON.parse(existingHistory) : [];
+        
+        // Create a unique identifier for this runplan
+        const timestamp = new Date().toISOString();
+        const runplanEntry = {
+            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            timestamp,
+            eventName: data.O4,
+            trackName: data.D4,
+            sessionName: data.O5,
+            data: data
+        };
+        
+        // Add to history
+        history.push(runplanEntry);
+        localStorage.setItem(historyKey, JSON.stringify(history));
+        
+        return runplanEntry.id;
     };
 
     // Load data from localStorage on component mount
@@ -341,6 +365,10 @@ function RunPlanSheet() {
 
     // Save data to file
     const handleSaveToFile = () => {
+        // First, save to history
+        const runplanId = saveToHistory();
+        
+        // Then save to file
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -352,6 +380,8 @@ function RunPlanSheet() {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
+        
+        alert(`RunPlan salvato con successo! ID: ${runplanId.substring(0, 8)}...`);
     };
 
     // Load data from file

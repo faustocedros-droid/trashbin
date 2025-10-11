@@ -12,6 +12,7 @@ import Settings from './pages/Settings';
 import RunPlanSheet from './pages/RunPlanSheet';
 import Weather from './pages/Weather';
 import GeneralInformation from './pages/GeneralInformation';
+import Setup from './pages/Setup';
 
 function App() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -39,6 +40,7 @@ function App() {
               <ul className={`nav-links ${menuOpen ? 'open' : ''}`}>
                 <li><Link to="/events" onClick={() => setMenuOpen(false)}>Eventi</Link></li>
                 <li><Link to="/general-information" onClick={() => setMenuOpen(false)}>General Information</Link></li>
+                <li><Link to="/setup" onClick={() => setMenuOpen(false)}>Setup</Link></li>
                 <li>
                   <div style={{ position: 'relative' }}>
                     <span 
@@ -114,6 +116,7 @@ function App() {
             <Route path="/events" element={<Events />} />
             <Route path="/events/:id" element={<EventDetail />} />
             <Route path="/general-information" element={<GeneralInformation />} />
+            <Route path="/setup" element={<Setup />} />
             <Route path="/tire-pressure" element={<TirePressure />} />
             <Route path="/tire-pressure/sets-management" element={<TirePressureSetsManagement />} />
             <Route path="/tire-pressure/setup" element={<TirePressureSetup />} />

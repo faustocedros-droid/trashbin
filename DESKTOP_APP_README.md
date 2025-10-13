@@ -181,9 +181,26 @@ Quick fixes:
 - The backend needs this port to run
 
 ### Black/blank window
-- Wait a few seconds for the app to load
-- Check the DevTools console (View → Toggle DevTools)
-- Make sure the backend started successfully
+
+**Update (2025-10-13): This issue has been fixed!**
+
+If you're seeing a blank white screen when launching `start-desktop-prod.bat`:
+
+**Solution**: This was caused by the backend not starting correctly. The issue has been fixed in the latest version.
+
+**What was fixed**:
+- Electron now properly activates the Python virtual environment before starting the backend
+- Increased backend startup timeout from 2s to 5s for reliability
+- Added venv existence check with helpful error messages
+
+**What to do**:
+1. **Always use the provided start scripts**:
+   - Windows: `start-desktop-prod.bat`
+   - Linux/macOS: `./start-desktop-prod.sh`
+2. **Never run** `npm run electron` directly from the frontend folder
+3. If you still see issues, check the console output for error messages
+
+For detailed information about this fix, see [RISOLUZIONE_SCHERMATA_BIANCA.md](RISOLUZIONE_SCHERMATA_BIANCA.md)
 
 ## Comparison with Web App
 

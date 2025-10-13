@@ -1,24 +1,29 @@
 # Summary: Fix for Blank Screen Issue in start-desktop-prod.bat
 
 ## Issue Description (Italian)
-**Problema**: "Quando lancio start-desktop-prod.bat mi appare una schermata bianca e vuota."
+**Problema**: "Continuo a vedere la schermata bianca e vuota se lancio start-desktop-prod.bat"
 
-**Translation**: When launching start-desktop-prod.bat, a blank white screen appears.
+**Translation**: Continue seeing blank white screen when launching start-desktop-prod.bat
 
 ## Root Cause
 
-The blank screen was caused by a bug in the Electron application's backend startup logic:
+The blank screen was caused by TWO bugs:
 
+### Bug 1: Backend startup (Fixed in previous PR)
 1. The `electron.js` file attempted to start the Flask backend using `python app.py`
 2. It did NOT activate the Python virtual environment (venv) first
 3. Without the venv activated, Python dependencies (Flask, SQLAlchemy, etc.) were not available
 4. The backend failed to start silently (no visible error to the user)
-5. The frontend loaded but could not connect to the API
-6. Result: blank white screen with no data or interface
+
+### Bug 2: Mode detection (NEW - Fixed in this PR)
+1. The `electron-is-dev` package ALWAYS returns `true` for non-packaged apps
+2. This meant Electron ALWAYS tried to load `http://localhost:3000` (dev server)
+3. In production mode, the React dev server is NOT running
+4. Result: blank white screen because there's nothing at `localhost:3000`
 
 ## Solution Implemented
 
-### 1. Fixed Backend Startup in electron.js
+### 1. Fixed Backend Startup in electron.js (Previous PR)
 
 **File**: `frontend/public/electron.js`
 
@@ -28,41 +33,42 @@ The blank screen was caused by a bug in the Electron application's backend start
 - ✅ Added venv existence check with helpful error messages
 - ✅ Increased backend startup timeout from 2s to 5s
 
+### 2. Fixed Mode Detection (THIS PR - NEW)
+
+**Problem**: `electron-is-dev` package can't distinguish between:
+- Running `npm run electron` (should be production)
+- Running `npm run electron-dev` (should be development)
+
+Both are "non-packaged" so `electron-is-dev` returns `true` for both!
+
+**Solution**: Use explicit environment variable instead
+
 **Code Changes**:
 ```javascript
 // BEFORE
-function startBackend() {
-  const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
-  backendProcess = spawn(pythonCmd, ['app.py'], { ... });
-}
+const isDev = require('electron-is-dev'); // ALWAYS true!
 
-// AFTER
-function startBackend() {
-  // Check if venv exists
-  if (!fs.existsSync(venvPath)) {
-    console.error('❌ Virtual environment not found!');
-    return;
-  }
-  
-  // Activate venv and run backend
-  let command;
-  if (process.platform === 'win32') {
-    command = 'venv\\Scripts\\activate.bat && python app.py';
-  } else {
-    command = 'source venv/bin/activate && python3 app.py';
-  }
-  
-  backendProcess = spawn(command, [], { ... });
+// AFTER  
+const isDev = process.env.ELECTRON_MODE === 'dev'; // Explicit control
+```
+
+**Package.json Changes**:
+```json
+{
+  "electron": "cross-env ELECTRON_MODE=production electron .",
+  "electron-dev": "... cross-env ELECTRON_MODE=dev electron ."
 }
 ```
 
-### 2. Created Comprehensive Documentation
+**Result**: 
+- Production mode (`npm run electron`) → loads `file://build/index.html` ✅
+- Development mode (`npm run electron-dev`) → loads `http://localhost:3000` ✅
 
-**New Files**:
-- `RISOLUZIONE_SCHERMATA_BIANCA.md` - Detailed Italian troubleshooting guide
+### 3. Updated Documentation
 
 **Updated Files**:
-- `DESKTOP_APP_README.md` - Added fix information to troubleshooting section
+- `RISOLUZIONE_SCHERMATA_BIANCA.md` - Updated with new fix details
+- `FIX_SUMMARY_BLANK_SCREEN.md` - This file
 
 ## How to Use the Fixed Application
 
@@ -82,7 +88,8 @@ These scripts will:
 1. Create virtual environment if needed
 2. Install Python dependencies
 3. Build React application
-4. Start Electron with working backend
+4. Start Electron with `ELECTRON_MODE=production` environment variable
+5. Electron loads from `build/` folder instead of dev server
 
 ### ❌ INCORRECT Way (Never do this)
 
@@ -92,25 +99,27 @@ cd frontend
 npm run electron
 ```
 
-This will fail because:
+While this now works (sets ELECTRON_MODE=production), it's still wrong because:
 - No venv setup
 - No dependencies installed
-- Backend won't start properly
+- No React build created
+- You won't see latest changes
 
 ## Testing Performed
 
-✅ Verified venv activation command works on Linux
+✅ Verified environment variable approach works correctly
+✅ Tested ELECTRON_MODE=production loads from build folder
+✅ Tested ELECTRON_MODE=dev loads from dev server  
 ✅ Confirmed backend starts successfully with venv activated
 ✅ Tested build process completes successfully
-✅ Verified updated electron.js is included in build folder
-✅ Confirmed timeout increase (2s → 5s)
-✅ Validated venv existence check logic
+✅ Verified cross-env package is already installed
 
 ## Files Changed
 
-1. **frontend/public/electron.js** - Backend startup logic fixed
-2. **RISOLUZIONE_SCHERMATA_BIANCA.md** - New troubleshooting guide (Italian)
-3. **DESKTOP_APP_README.md** - Updated troubleshooting section
+1. **frontend/public/electron.js** - Use ELECTRON_MODE env var instead of electron-is-dev
+2. **frontend/package.json** - Updated scripts to set ELECTRON_MODE
+3. **RISOLUZIONE_SCHERMATA_BIANCA.md** - Updated troubleshooting guide (Italian)
+4. **FIX_SUMMARY_BLANK_SCREEN.md** - This summary (English)
 
 ## Compatibility
 
@@ -121,17 +130,19 @@ This fix works on:
 
 ## Impact
 
-### Before Fix:
-- ❌ Blank white screen when launching production mode
-- ❌ Backend failed silently
-- ❌ No error messages for users
+### Before This Fix:
+- ❌ Blank white screen when launching production mode (even after PR #67)
+- ❌ electron-is-dev always returned true
+- ❌ Always tried to load from localhost:3000 (dev server)
+- ❌ No way to actually use production mode
 - ❌ Confusing user experience
 
-### After Fix:
-- ✅ Application starts correctly
-- ✅ Backend uses virtual environment properly
-- ✅ Clear error messages if venv missing
-- ✅ Better startup reliability (5s timeout)
+### After This Fix:
+- ✅ Application starts correctly in production mode
+- ✅ Explicit mode control via environment variable
+- ✅ Production mode loads from build/ folder
+- ✅ Development mode loads from dev server
+- ✅ Clear console messages showing which mode is active
 - ✅ Smooth user experience
 
 ## Verification Steps for User

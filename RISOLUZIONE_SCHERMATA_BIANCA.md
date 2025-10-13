@@ -6,48 +6,46 @@ Quando si lancia `start-desktop-prod.bat` (o `start-desktop-prod.sh`), l'applica
 
 ## Causa del Problema
 
-Il problema era causato dal fatto che Electron tentava di avviare il backend Flask senza attivare l'ambiente virtuale Python (venv). Questo causava:
+Il problema aveva DUE cause principali:
 
-1. **Backend non si avvia**: Il comando `python app.py` falliva perché le dipendenze (Flask, SQLAlchemy, ecc.) non erano disponibili
-2. **Backend si chiude silenziosamente**: Non c'erano errori visibili all'utente
-3. **Frontend non può connettersi**: L'applicazione React si caricava ma non poteva comunicare con il backend
-4. **Schermata bianca**: L'interfaccia non si caricava correttamente senza dati dal backend
+### 1. Backend non si avviava correttamente
+Il backend Flask tentava di avviarsi senza attivare l'ambiente virtuale Python (venv), causando:
+- **Backend falliva**: Il comando `python app.py` non trovava le dipendenze (Flask, SQLAlchemy, ecc.)
+- **Nessun errore visibile**: Il backend si chiudeva silenziosamente
+- **Frontend senza dati**: L'applicazione React non poteva comunicare con il backend
+
+### 2. Electron caricava sempre la modalità sviluppo (NUOVO PROBLEMA)
+Anche dopo aver corretto il backend, la schermata rimaneva bianca perché:
+- **electron-is-dev sempre true**: Questo pacchetto restituiva sempre `true` per app non impacchettate
+- **Caricamento errato**: Electron cercava di caricare `http://localhost:3000` invece dei file in `build/`
+- **Server dev non attivo**: Il server di sviluppo React non era in esecuzione in modalità produzione
+- **Schermata bianca**: Il browser non trovava nulla da caricare
 
 ## Soluzione Implementata
 
-È stato corretto il file `frontend/public/electron.js` per:
+### Fix 1: Backend con venv (già implementato)
+Il file `frontend/public/electron.js` è stato corretto per attivare il venv prima di avviare il backend.
 
-1. **Attivare automaticamente il venv** prima di avviare il backend
-2. **Verificare l'esistenza del venv** e mostrare un messaggio di errore chiaro se mancante
-3. **Aumentare il timeout di avvio** da 2 a 5 secondi per dare più tempo al backend di inizializzarsi
-
-### Modifiche Tecniche
+### Fix 2: Rilevamento corretto della modalità (NUOVO)
+Invece di usare `electron-is-dev`, ora usiamo una **variabile d'ambiente esplicita**:
 
 #### Prima:
 ```javascript
-function startBackend() {
-  const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
-  backendProcess = spawn(pythonCmd, ['app.py'], {
-    cwd: backendPath,
-    stdio: 'inherit',
-    shell: true
-  });
-}
+const isDev = require('electron-is-dev'); // SEMPRE true per app non impacchettate!
 ```
 
 #### Dopo:
 ```javascript
-function startBackend() {
-  // Verifica esistenza venv
-  if (!fs.existsSync(venvPath)) {
-    console.error('❌ Virtual environment not found!');
-    return;
-  }
-  
-  // Attiva venv e avvia backend
-  let command;
-  if (process.platform === 'win32') {
-    command = 'venv\\Scripts\\activate.bat && python app.py';
+const isDev = process.env.ELECTRON_MODE === 'dev'; // Controllato esplicitamente
+```
+
+#### Script npm aggiornati:
+```json
+{
+  "electron": "cross-env ELECTRON_MODE=production electron .",
+  "electron-dev": "... cross-env ELECTRON_MODE=dev electron ."
+}
+```
   } else {
     command = 'source venv/bin/activate && python3 app.py';
   }
@@ -59,6 +57,23 @@ function startBackend() {
   });
 }
 ```
+
+## Come Funziona Ora
+
+Quando esegui gli script corretti:
+
+1. **Script di avvio** (`start-desktop-prod.bat` o `.sh`):
+   - Crea il venv se mancante
+   - Installa dipendenze Python
+   - Costruisce l'app React (`npm run build`)
+   - Avvia `npm run electron` con `ELECTRON_MODE=production`
+
+2. **Electron si avvia** in modalità produzione:
+   - Legge `ELECTRON_MODE=production`
+   - Carica `file://build/index.html` (file compilati)
+   - Attiva il venv e avvia il backend
+
+3. **L'app funziona** correttamente! 🎉
 
 ## Come Usare l'App Ora
 
@@ -78,7 +93,8 @@ Questi script:
 1. ✅ Creano il venv se non esiste
 2. ✅ Installano le dipendenze Python
 3. ✅ Costruiscono l'app React
-4. ✅ Avviano Electron che userà il venv
+4. ✅ Avviano Electron in modalità produzione (ELECTRON_MODE=production)
+5. ✅ Il backend usa correttamente il venv
 
 ### Modo NON Corretto (NON fare questo)
 
@@ -88,24 +104,37 @@ cd frontend
 npm run electron
 ```
 
-Questo non funzionerà perché:
+Anche se ora impostiamo ELECTRON_MODE=production, questo approccio è sconsigliato perché:
 - Non crea il venv
 - Non installa le dipendenze
 - Non costruisce l'app React
-- Il backend non si avvierà correttamente
+- Potresti non vedere le ultime modifiche
 
 ## Risoluzione dei Problemi
 
 ### Se vedi ancora una schermata bianca:
 
-1. **Verifica che il venv esista**:
+1. **Verifica che la cartella build esista**:
+   ```bash
+   cd frontend
+   ls build/  # Linux/macOS
+   dir build\  # Windows
+   ```
+   
+   Se manca, ricostruisci:
+   ```bash
+   cd frontend
+   npm run build
+   ```
+
+2. **Verifica che il venv esista**:
    ```bash
    cd backend
    ls venv/  # Linux/macOS
    dir venv\  # Windows
    ```
 
-2. **Ricrea il venv se necessario**:
+3. **Ricrea il venv se necessario**:
    ```bash
    cd backend
    rm -rf venv  # Linux/macOS
@@ -114,7 +143,7 @@ Questo non funzionerà perché:
    # python -m venv venv  # Windows
    ```
 
-3. **Riavvia usando lo script corretto**:
+4. **Riavvia usando lo script corretto**:
    ```bash
    ./start-desktop-prod.sh  # Linux/macOS
    # start-desktop-prod.bat  # Windows
@@ -124,6 +153,7 @@ Questo non funzionerà perché:
 
 Controlla i messaggi nella console. Dovresti vedere:
 ```
+Loading app in PRODUCTION mode from: file://...build/index.html
 Starting Flask backend from: /path/to/backend
  * Serving Flask app 'app'
  * Running on http://127.0.0.1:5000
@@ -132,6 +162,7 @@ Starting Flask backend from: /path/to/backend
 Se vedi errori come:
 - `ModuleNotFoundError: No module named 'flask'` → Il venv non è attivato
 - `❌ Virtual environment not found!` → Esegui lo script di avvio invece di `npm run electron`
+- Schermata bianca ma backend funziona → Verifica che `frontend/build/` esista
 
 ### Per sviluppo quotidiano:
 
@@ -150,6 +181,7 @@ start-desktop.bat
 ## Vantaggi della Correzione
 
 ✅ L'app si avvia correttamente in modalità produzione  
+✅ Rilevamento corretto della modalità (dev vs production)  
 ✅ Il backend usa automaticamente il venv  
 ✅ Messaggi di errore chiari se qualcosa non va  
 ✅ Più tempo per il backend di inizializzarsi  
@@ -157,6 +189,8 @@ start-desktop.bat
 
 ## Note Tecniche
 
+- **ELECTRON_MODE**: Variabile d'ambiente esplicita per controllare la modalità (`dev` o `production`)
+- **cross-env**: Pacchetto npm per impostare variabili d'ambiente in modo cross-platform
 - **Virtual Environment (venv)**: Isolata l'installazione di Python per evitare conflitti con altri progetti
 - **Timeout aumentato**: Da 2s a 5s per dare tempo al backend di avviarsi completamente
 - **Controllo venv**: Verifica che il venv esista prima di tentare di usarlo
@@ -164,7 +198,9 @@ start-desktop.bat
 
 ## File Modificati
 
-- `frontend/public/electron.js` - Logica di avvio del backend corretta
+- `frontend/public/electron.js` - Rilevamento modalità corretto (usa ELECTRON_MODE invece di electron-is-dev)
+- `frontend/package.json` - Script npm aggiornati per impostare ELECTRON_MODE
+- `RISOLUZIONE_SCHERMATA_BIANCA.md` - Documentazione aggiornata con la nuova soluzione
 
 ## Compatibilità
 

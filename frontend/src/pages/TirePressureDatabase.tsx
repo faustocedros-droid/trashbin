@@ -25,6 +25,7 @@ interface PressureEntry {
 
 interface SessionRow {
   SET: string;
+  kmStart: string;
   T1: string;
   T2: string;
   T3: string;
@@ -77,6 +78,7 @@ function TirePressureDatabase() {
       // Initialize with 10 empty rows
       const initialRows: SessionRow[] = Array.from({ length: 10 }, () => ({
         SET: '',
+        kmStart: '',
         T1: '',
         T2: '',
         T3: '',
@@ -234,6 +236,7 @@ function TirePressureDatabase() {
             <thead>
               <tr>
                 <th style={{ textAlign: 'center', backgroundColor: '#2c5282', color: '#fff' }}>SET</th>
+                <th style={{ textAlign: 'center', backgroundColor: '#2c5282', color: '#fff' }}>KM Start</th>
                 <th style={{ textAlign: 'center', backgroundColor: '#2c5282', color: '#fff' }}>T1</th>
                 <th style={{ textAlign: 'center', backgroundColor: '#2c5282', color: '#fff' }}>T2</th>
                 <th style={{ textAlign: 'center', backgroundColor: '#2c5282', color: '#fff' }}>T3</th>
@@ -256,6 +259,20 @@ function TirePressureDatabase() {
                       type="text"
                       value={row.SET}
                       onChange={(e) => handleSessionTableChange(rowIndex, 'SET', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '6px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        textAlign: 'center',
+                      }}
+                    />
+                  </td>
+                  <td style={{ padding: '4px' }}>
+                    <input
+                      type="text"
+                      value={row.kmStart}
+                      onChange={(e) => handleSessionTableChange(rowIndex, 'kmStart', e.target.value)}
                       style={{
                         width: '100%',
                         padding: '6px',

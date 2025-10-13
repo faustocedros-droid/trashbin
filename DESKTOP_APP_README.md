@@ -74,6 +74,29 @@ The start-desktop scripts run the app in development mode, which:
 
 ## Building for Production
 
+### Quick Production Test (without packaging)
+
+To test the production build without creating an installer:
+
+**Linux/macOS:**
+```bash
+./start-desktop-prod.sh
+```
+
+**Windows:**
+```cmd
+start-desktop-prod.bat
+```
+
+These scripts will:
+1. Build the React app (`npm run build`)
+2. Start Electron in production mode (using the `build/` folder)
+3. Auto-start the backend
+
+**Important:** After code changes, run these scripts again to rebuild.
+
+### Creating Distributable Installers
+
 To create a standalone distributable app:
 
 ### Windows
@@ -133,6 +156,15 @@ Creates:
 - Informazioni (About)
 
 ## Troubleshooting
+
+### App doesn't show latest changes after merging code
+
+**See [DESKTOP_MODES_GUIDE.md](DESKTOP_MODES_GUIDE.md) for detailed explanation and solutions.**
+
+Quick fixes:
+- **Development mode** (`start-desktop.sh`): Restart the app, it should auto-reload
+- **Production build**: Run `./start-desktop-prod.sh` which rebuilds first
+- **Packaged app**: Must rebuild with `npm run electron-build-*` commands
 
 ### Backend doesn't start
 - Make sure Python 3.9+ is installed

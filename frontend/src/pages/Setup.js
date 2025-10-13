@@ -25,6 +25,7 @@ function Setup() {
       'set ammortizzatore B / R - Hi Sp.',
       'D. barra a/r (mm)',
       'Pos. coltelli barra',
+      'asse ant',
       'asse post.',
       'altezza punti FIA (mm)',
       'altezza fondo (mm)',
@@ -37,6 +38,7 @@ function Setup() {
       'set ammortizzatore B / R - Hi Sp.',
       'D. e Sp. barra a/r (mm)',
       'Pos. coltelli barra',
+      'Generale',
       'ammortizzatori',
       'valvolaggio ammortizzatore',
       'tamponi',
@@ -285,7 +287,7 @@ function Setup() {
             </thead>
             <tbody>
               {setupData.rows.map((row, rowIndex) => {
-                const isHeaderRow = row.parameter === 'asse post.';
+                const isHeaderRow = row.parameter === 'asse ant' || row.parameter === 'asse post.' || row.parameter === 'Generale';
                 return (
                   <tr key={rowIndex} style={{ 
                     backgroundColor: isHeaderRow ? '#E7E6E6' : (rowIndex % 2 === 0 ? '#ffffff' : '#f9f9f9')

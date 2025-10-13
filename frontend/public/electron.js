@@ -1,7 +1,9 @@
 const { app, BrowserWindow, Menu, shell } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
-const isDev = require('electron-is-dev');
+
+// Use environment variable to determine mode, fallback to checking if running from dev server
+const isDev = process.env.ELECTRON_MODE === 'dev';
 
 let mainWindow;
 let backendProcess;
@@ -67,6 +69,7 @@ function createWindow() {
     ? 'http://localhost:3000'
     : `file://${path.join(__dirname, '../build/index.html')}`;
 
+  console.log(`Loading app in ${isDev ? 'DEVELOPMENT' : 'PRODUCTION'} mode from: ${startUrl}`);
   mainWindow.loadURL(startUrl);
 
   // Open DevTools in development

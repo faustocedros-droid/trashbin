@@ -65,9 +65,11 @@ function createWindow() {
   });
 
   // Load the app
+  // In production, electron.js is copied to build/ folder, so index.html is in the same directory
+  // In dev mode with electron-dev, electron.js is in public/ folder, so we load from dev server
   const startUrl = isDev
     ? 'http://localhost:3000'
-    : `file://${path.join(__dirname, '../build/index.html')}`;
+    : `file://${path.join(__dirname, 'index.html')}`;
 
   console.log(`Loading app in ${isDev ? 'DEVELOPMENT' : 'PRODUCTION'} mode from: ${startUrl}`);
   mainWindow.loadURL(startUrl);

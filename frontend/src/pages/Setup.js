@@ -14,6 +14,7 @@ function Setup() {
   // Initialize setup data matching SetupSheet.xlsx structure
   const initializeSetupData = () => {
     const setupParameters = [
+      'asse ant',
       'altezza punti FIA (mm)',
       'altezza fondo (mm)',
       'rigid. molla / precarico / HPush (mm)',
@@ -25,7 +26,6 @@ function Setup() {
       'set ammortizzatore B / R - Hi Sp.',
       'D. barra a/r (mm)',
       'Pos. coltelli barra',
-      'asse ant',
       'asse post.',
       'altezza punti FIA (mm)',
       'altezza fondo (mm)',

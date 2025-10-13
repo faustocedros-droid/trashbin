@@ -65,11 +65,13 @@ console.log(`Loading app in ${isDev ? 'DEVELOPMENT' : 'PRODUCTION'} mode from: $
 ```json
 {
   "scripts": {
-    "electron": "cross-env ELECTRON_MODE=production electron .",
+    "electron": "cross-env ELECTRON_MODE=production electron ./build/electron.js",
     "electron-dev": "concurrently \"cross-env BROWSER=none npm start\" \"wait-on http://localhost:3000 && cross-env ELECTRON_MODE=dev electron .\""
   }
 }
 ```
+
+**Critical fix:** The production script now explicitly runs `electron ./build/electron.js` instead of `electron .` to ensure Electron starts from the build folder where the compiled files are located.
 
 ### How It Works Now
 

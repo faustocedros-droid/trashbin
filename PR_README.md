@@ -37,9 +37,13 @@ Replace `electron-is-dev` with an explicit `ELECTRON_MODE` environment variable 
 ```diff
 -"electron": "electron .",
 -"electron-dev": "concurrently \"cross-env BROWSER=none npm start\" \"wait-on http://localhost:3000 && electron .\"",
-+"electron": "cross-env ELECTRON_MODE=production electron .",
++"electron": "cross-env ELECTRON_MODE=production electron ./build/electron.js",
 +"electron-dev": "concurrently \"cross-env BROWSER=none npm start\" \"wait-on http://localhost:3000 && cross-env ELECTRON_MODE=dev electron .\"",
 ```
+
+**Key changes:**
+- Production script now explicitly runs `electron ./build/electron.js` to ensure it loads from the build folder
+- Both scripts set `ELECTRON_MODE` environment variable for explicit mode control
 
 #### 3. Documentation Updated
 - `RISOLUZIONE_SCHERMATA_BIANCA.md` - Complete explanation in Italian

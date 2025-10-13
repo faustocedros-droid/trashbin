@@ -138,6 +138,15 @@ function Setup() {
     localStorage.setItem('generalInfo_setup', JSON.stringify(updatedSetup));
   };
 
+  // Handle reset of setup data
+  const handleResetSetup = () => {
+    if (window.confirm('Sei sicuro di voler resettare tutti i dati della tabella Setup? Questa azione non può essere annullata.')) {
+      localStorage.removeItem('generalInfo_setup');
+      const initialData = initializeSetupData();
+      setSetupData(initialData);
+    }
+  };
+
   return (
     <div className="container" style={{ paddingTop: '40px' }}>
       <h1>🏎️ Setup</h1>
@@ -146,20 +155,37 @@ function Setup() {
       <div className="card" style={{ marginTop: '30px' }} id="printable-setup">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <h2 style={{ margin: 0 }}>SETUP</h2>
-          <button
-            onClick={() => window.print()}
-            style={{
-              padding: '10px 20px',
-              fontSize: '14px',
-              backgroundColor: '#2c5282',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-            }}
-          >
-            🖨️ Stampa Setup
-          </button>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              onClick={handleResetSetup}
+              style={{
+                padding: '10px 20px',
+                fontSize: '14px',
+                backgroundColor: '#dc3545',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+              }}
+              title="Resetta tutti i dati della tabella Setup"
+            >
+              🔄 Reset Dati
+            </button>
+            <button
+              onClick={() => window.print()}
+              style={{
+                padding: '10px 20px',
+                fontSize: '14px',
+                backgroundColor: '#2c5282',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+              }}
+            >
+              🖨️ Stampa Setup
+            </button>
+          </div>
         </div>
         
         {/* Metadata Fields */}

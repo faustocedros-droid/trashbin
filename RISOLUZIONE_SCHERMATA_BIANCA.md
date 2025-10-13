@@ -42,10 +42,12 @@ const isDev = process.env.ELECTRON_MODE === 'dev'; // Controllato esplicitamente
 #### Script npm aggiornati:
 ```json
 {
-  "electron": "cross-env ELECTRON_MODE=production electron .",
+  "electron": "cross-env ELECTRON_MODE=production electron ./build/electron.js",
   "electron-dev": "... cross-env ELECTRON_MODE=dev electron ."
 }
 ```
+
+**IMPORTANTE**: Lo script `electron` ora punta esplicitamente a `./build/electron.js` per garantire che Electron carichi i file compilati dalla cartella `build/`.
   } else {
     command = 'source venv/bin/activate && python3 app.py';
   }

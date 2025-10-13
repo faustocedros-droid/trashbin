@@ -9,8 +9,19 @@ let backendProcess;
 // Auto-start backend server
 function startBackend() {
   const backendPath = path.join(__dirname, '..', '..', 'backend');
+  const venvPath = path.join(backendPath, 'venv');
+  const fs = require('fs');
   
   console.log('Starting Flask backend from:', backendPath);
+  
+  // Check if venv exists
+  if (!fs.existsSync(venvPath)) {
+    console.error('❌ Virtual environment not found!');
+    console.error('Please run the appropriate start script first:');
+    console.error('  Windows: start-desktop.bat or start-desktop-prod.bat');
+    console.error('  Linux/macOS: ./start-desktop.sh or ./start-desktop-prod.sh');
+    return;
+  }
   
   // Determine the command to activate venv and run the backend
   let command;

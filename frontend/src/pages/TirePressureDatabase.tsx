@@ -170,7 +170,7 @@ function TirePressureDatabase() {
 
   // Calculate row total
   const calculateRowTotal = (row: SessionRow): number => {
-    const values = [row.T1, row.T2, row.T3, row.T4, row.FP1, row.FP2, row.FP3, row.Q, row.R1, row.R2, row.R3];
+    const values = [row.kmStart, row.T1, row.T2, row.T3, row.T4, row.FP1, row.FP2, row.FP3, row.Q, row.R1, row.R2, row.R3];
     return values.reduce((sum, val) => {
       const num = parseFloat(val) || 0;
       return sum + num;

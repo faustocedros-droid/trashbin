@@ -9,11 +9,20 @@ let backendProcess;
 // Auto-start backend server
 function startBackend() {
   const backendPath = path.join(__dirname, '..', '..', 'backend');
-  const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
   
   console.log('Starting Flask backend from:', backendPath);
   
-  backendProcess = spawn(pythonCmd, ['app.py'], {
+  // Determine the command to activate venv and run the backend
+  let command;
+  if (process.platform === 'win32') {
+    // Windows: activate venv and run app.py
+    command = 'venv\\Scripts\\activate.bat && python app.py';
+  } else {
+    // Linux/macOS: activate venv and run app.py
+    command = 'source venv/bin/activate && python3 app.py';
+  }
+  
+  backendProcess = spawn(command, [], {
     cwd: backendPath,
     stdio: 'inherit',
     shell: true
@@ -177,10 +186,11 @@ app.whenReady().then(() => {
   // Start backend server
   startBackend();
 
-  // Wait a bit for backend to start, then create window
+  // Wait for backend to start, then create window
+  // Increased timeout to ensure backend is fully ready
   setTimeout(() => {
     createWindow();
-  }, 2000);
+  }, 5000);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

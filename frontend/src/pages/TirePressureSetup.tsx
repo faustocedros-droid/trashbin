@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 /**
  * Cold Tire Pressure Setup
@@ -122,11 +122,75 @@ function TirePressureSetup() {
         K31: 0,
     });
 
+    // Load data from localStorage on component mount
+    useEffect(() => {
+        const saved = localStorage.getItem('tirePressureSetup');
+        if (saved) {
+            try {
+                setInputData(JSON.parse(saved));
+            } catch (error) {
+                console.error('Error loading tire pressure setup:', error);
+            }
+        }
+    }, []);
+
     const handleInputChange = (field: keyof SetupInputData, value: number) => {
-        setInputData({
+        const newData = {
             ...inputData,
             [field]: value,
-        });
+        };
+        setInputData(newData);
+        // Auto-save to localStorage
+        localStorage.setItem('tirePressureSetup', JSON.stringify(newData));
+    };
+
+    // Export setup data to file
+    const handleExportData = () => {
+        const dataToExport = {
+            version: '1.0',
+            exportDate: new Date().toISOString(),
+            inputData: inputData
+        };
+        
+        const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `tire_pressure_setup_${new Date().toISOString().split('T')[0]}.tpsetup`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
+    // Import setup data from file
+    const handleImportData = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const importedData = JSON.parse(event.target?.result as string);
+                
+                if (!importedData.inputData) {
+                    throw new Error('File non valido: struttura dati mancante');
+                }
+
+                if (window.confirm('Vuoi importare questi dati? I dati attuali saranno sostituiti.')) {
+                    setInputData(importedData.inputData);
+                    localStorage.setItem('tirePressureSetup', JSON.stringify(importedData.inputData));
+                    alert('Dati importati con successo!');
+                }
+            } catch (error) {
+                console.error('Error importing data:', error);
+                alert('Errore nel caricamento del file! Assicurati che sia un file .tpsetup valido.');
+            }
+        };
+        reader.readAsText(file);
+        
+        // Reset input to allow importing the same file again
+        if (e.target) e.target.value = '';
     };
 
     // Calculate all outputs based on formulas
@@ -544,10 +608,49 @@ function TirePressureSetup() {
 
     return (
         <div className="container" style={{ paddingTop: '40px' }}>
-            <h1>🏎️ Cold Tire Pressure Setup</h1>
-            <p style={{ color: '#666', marginBottom: '30px' }}>
-                Configurazione parametri per il setup delle pressioni a freddo
-            </p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <div>
+                    <h1 style={{ margin: 0, marginBottom: '8px' }}>🏎️ Cold Tire Pressure Setup</h1>
+                    <p style={{ color: '#666', margin: 0 }}>
+                        Configurazione parametri per il setup delle pressioni a freddo
+                    </p>
+                </div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <button
+                        onClick={handleExportData}
+                        style={{
+                            padding: '10px 20px',
+                            fontSize: '14px',
+                            backgroundColor: '#28a745',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                        }}
+                    >
+                        💾 Esporta
+                    </button>
+                    <label
+                        style={{
+                            padding: '10px 20px',
+                            fontSize: '14px',
+                            backgroundColor: '#17a2b8',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                        }}
+                    >
+                        📂 Importa
+                        <input
+                            type="file"
+                            accept=".tpsetup"
+                            onChange={handleImportData}
+                            style={{ display: 'none' }}
+                        />
+                    </label>
+                </div>
+            </div>
 
             <h2 style={{ color: '#2c5282', marginTop: '30px', marginBottom: '20px' }}>
                 📥 Tire cold pressure setup

@@ -148,6 +148,68 @@ function TirePressureDatabase() {
     });
   };
 
+  // Export tire pressure database to file
+  const handleExportData = () => {
+    const dataToExport = {
+      version: '1.0',
+      exportDate: new Date().toISOString(),
+      entries: entries,
+      sessionTable: sessionTable,
+      trackLength: trackLength
+    };
+    
+    const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `tire_pressure_db_${new Date().toISOString().split('T')[0]}.tpdb`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // Import tire pressure database from file
+  const handleImportData = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const importedData = JSON.parse(event.target?.result as string);
+        
+        if (!importedData.entries) {
+          throw new Error('File non valido: struttura dati mancante');
+        }
+
+        if (window.confirm('Vuoi importare questi dati? I dati attuali saranno sostituiti.')) {
+          setEntries(importedData.entries);
+          localStorage.setItem('tirePressureDatabase', JSON.stringify(importedData.entries));
+          
+          if (importedData.sessionTable) {
+            setSessionTable(importedData.sessionTable);
+            localStorage.setItem('tirePressureSessionTable', JSON.stringify(importedData.sessionTable));
+          }
+          
+          if (importedData.trackLength) {
+            setTrackLength(importedData.trackLength);
+            localStorage.setItem('currentTrackLength', importedData.trackLength.toString());
+          }
+          
+          alert('Dati importati con successo!');
+        }
+      } catch (error) {
+        console.error('Error importing data:', error);
+        alert('Errore nel caricamento del file! Assicurati che sia un file .tpdb valido.');
+      }
+    };
+    reader.readAsText(file);
+    
+    // Reset input to allow importing the same file again
+    if (e.target) e.target.value = '';
+  };
+
   const handleCancelEdit = () => {
     setEditingId(null);
     resetForm();
@@ -184,10 +246,49 @@ function TirePressureDatabase() {
 
   return (
     <div className="container" style={{ paddingTop: '40px' }}>
-      <h1>🗄️ Tire Pressure Database</h1>
-      <p style={{ color: '#666', marginBottom: '30px' }}>
-        Database completo delle pressioni pneumatici per sessione
-      </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <div>
+          <h1 style={{ margin: 0, marginBottom: '8px' }}>🗄️ Tire Pressure Database</h1>
+          <p style={{ color: '#666', margin: 0 }}>
+            Database completo delle pressioni pneumatici per sessione
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button
+            onClick={handleExportData}
+            style={{
+              padding: '10px 20px',
+              fontSize: '14px',
+              backgroundColor: '#28a745',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+            }}
+          >
+            💾 Esporta
+          </button>
+          <label
+            style={{
+              padding: '10px 20px',
+              fontSize: '14px',
+              backgroundColor: '#17a2b8',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+            }}
+          >
+            📂 Importa
+            <input
+              type="file"
+              accept=".tpdb"
+              onChange={handleImportData}
+              style={{ display: 'none' }}
+            />
+          </label>
+        </div>
+      </div>
 
       {/* Track Length Configuration */}
       <div className="card" style={{ marginBottom: '20px', backgroundColor: '#f0f8ff' }}>

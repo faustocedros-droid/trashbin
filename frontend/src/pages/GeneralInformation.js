@@ -77,6 +77,60 @@ function GeneralInformation() {
     localStorage.setItem('generalInfo_schedule', JSON.stringify(updatedSchedule));
   };
 
+  // Export general information to file
+  const handleExportData = () => {
+    const dataToExport = {
+      version: '1.0',
+      exportDate: new Date().toISOString(),
+      circuitImage: imagePreview,
+      schedule: scheduleData
+    };
+    
+    const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `general_info_${new Date().toISOString().split('T')[0]}.geninfo`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // Import general information from file
+  const handleImportData = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const importedData = JSON.parse(event.target?.result);
+        
+        if (!importedData.schedule) {
+          throw new Error('File non valido: struttura dati mancante');
+        }
+
+        if (window.confirm('Vuoi importare questi dati? I dati attuali saranno sostituiti.')) {
+          if (importedData.circuitImage) {
+            setImagePreview(importedData.circuitImage);
+            localStorage.setItem('generalInfo_circuitImage', importedData.circuitImage);
+          }
+          setScheduleData(importedData.schedule);
+          localStorage.setItem('generalInfo_schedule', JSON.stringify(importedData.schedule));
+          alert('Dati importati con successo!');
+        }
+      } catch (error) {
+        console.error('Error importing data:', error);
+        alert('Errore nel caricamento del file! Assicurati che sia un file .geninfo valido.');
+      }
+    };
+    reader.readAsText(file);
+    
+    // Reset input to allow importing the same file again
+    e.target.value = '';
+  };
+
   const daysOfWeek = [
     { label: 'Lunedì', key: 'monday' },
     { label: 'Martedì', key: 'tuesday' },
@@ -89,7 +143,30 @@ function GeneralInformation() {
 
   return (
     <div className="container" style={{ paddingTop: '40px' }}>
-      <h1>ℹ️ General Information</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <h1 style={{ margin: 0 }}>ℹ️ General Information</h1>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button
+            onClick={handleExportData}
+            className="btn btn-primary"
+            style={{ backgroundColor: '#28a745', borderColor: '#28a745' }}
+          >
+            💾 Esporta Dati
+          </button>
+          <label
+            className="btn btn-primary"
+            style={{ margin: 0, cursor: 'pointer', backgroundColor: '#17a2b8', borderColor: '#17a2b8' }}
+          >
+            📂 Importa Dati
+            <input
+              type="file"
+              accept=".geninfo"
+              onChange={handleImportData}
+              style={{ display: 'none' }}
+            />
+          </label>
+        </div>
+      </div>
       
       {/* Circuit Image Upload Section */}
       <div className="card" style={{ marginTop: '30px' }}>

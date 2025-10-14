@@ -147,6 +147,56 @@ function Setup() {
     }
   };
 
+  // Export setup data to file
+  const handleExportSetup = () => {
+    const dataToExport = {
+      version: '1.0',
+      exportDate: new Date().toISOString(),
+      setupData: setupData
+    };
+    
+    const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    const eventName = setupData.metadata.evento.replace(/[^a-zA-Z0-9]/g, '_') || 'setup';
+    link.download = `setup_${eventName}_${new Date().toISOString().split('T')[0]}.setup`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // Import setup data from file
+  const handleImportSetup = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const importedData = JSON.parse(event.target?.result);
+        
+        if (!importedData.setupData) {
+          throw new Error('File non valido: struttura dati mancante');
+        }
+
+        if (window.confirm('Vuoi importare questi dati di setup? I dati attuali saranno sostituiti.')) {
+          setSetupData(importedData.setupData);
+          localStorage.setItem('generalInfo_setup', JSON.stringify(importedData.setupData));
+          alert('Setup importato con successo!');
+        }
+      } catch (error) {
+        console.error('Error importing setup:', error);
+        alert('Errore nel caricamento del file! Assicurati che sia un file .setup valido.');
+      }
+    };
+    reader.readAsText(file);
+    
+    // Reset input to allow importing the same file again
+    e.target.value = '';
+  };
+
   return (
     <div className="container" style={{ paddingTop: '40px' }}>
       <h1>🏎️ Setup</h1>
@@ -156,6 +206,41 @@ function Setup() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <h2 style={{ margin: 0 }}>SETUP</h2>
           <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              onClick={handleExportSetup}
+              style={{
+                padding: '10px 20px',
+                fontSize: '14px',
+                backgroundColor: '#28a745',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+              }}
+              title="Esporta dati Setup in file"
+            >
+              💾 Esporta
+            </button>
+            <label
+              style={{
+                padding: '10px 20px',
+                fontSize: '14px',
+                backgroundColor: '#17a2b8',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+              }}
+              title="Importa dati Setup da file"
+            >
+              📂 Importa
+              <input
+                type="file"
+                accept=".setup"
+                onChange={handleImportSetup}
+                style={{ display: 'none' }}
+              />
+            </label>
             <button
               onClick={handleResetSetup}
               style={{

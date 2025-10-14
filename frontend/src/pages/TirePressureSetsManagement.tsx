@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 /**
  * Cold Tire Pressure Sets Management
@@ -40,6 +40,20 @@ function TirePressureSetsManagement() {
 
   const [outputs, setOutputs] = useState<CalculatedOutputs | null>(null);
 
+  // Load data from localStorage on component mount
+  useEffect(() => {
+    const saved = localStorage.getItem('tirePressureSetsManagement');
+    if (saved) {
+      try {
+        const savedData = JSON.parse(saved);
+        setInputData(savedData.inputData);
+        setOutputs(savedData.outputs);
+      } catch (error) {
+        console.error('Error loading tire pressure sets management:', error);
+      }
+    }
+  }, []);
+
   /**
    * Calculate outputs based on Excel formulas
    */
@@ -58,7 +72,14 @@ function TirePressureSetsManagement() {
     // Formula: =(H4+F4*(F3+273.15)/(E3+273.15))-F4
     const J4 = (H4 + F4 * (F3 + 273.15) / (E3 + 273.15)) - F4;
 
-    setOutputs({ I3, J3, I4, J4 });
+    const newOutputs = { I3, J3, I4, J4 };
+    setOutputs(newOutputs);
+    
+    // Save to localStorage
+    localStorage.setItem('tirePressureSetsManagement', JSON.stringify({
+      inputData,
+      outputs: newOutputs
+    }));
   };
 
   const handleInputChange = (field: keyof TireInputData, value: number) => {
@@ -68,12 +89,105 @@ function TirePressureSetsManagement() {
     });
   };
 
+  // Export data to file
+  const handleExportData = () => {
+    const dataToExport = {
+      version: '1.0',
+      exportDate: new Date().toISOString(),
+      inputData: inputData,
+      outputs: outputs
+    };
+    
+    const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `tire_pressure_sets_${new Date().toISOString().split('T')[0]}.tpsets`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // Import data from file
+  const handleImportData = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const importedData = JSON.parse(event.target?.result as string);
+        
+        if (!importedData.inputData) {
+          throw new Error('File non valido: struttura dati mancante');
+        }
+
+        if (window.confirm('Vuoi importare questi dati? I dati attuali saranno sostituiti.')) {
+          setInputData(importedData.inputData);
+          setOutputs(importedData.outputs || null);
+          localStorage.setItem('tirePressureSetsManagement', JSON.stringify({
+            inputData: importedData.inputData,
+            outputs: importedData.outputs
+          }));
+          alert('Dati importati con successo!');
+        }
+      } catch (error) {
+        console.error('Error importing data:', error);
+        alert('Errore nel caricamento del file! Assicurati che sia un file .tpsets valido.');
+      }
+    };
+    reader.readAsText(file);
+    
+    // Reset input to allow importing the same file again
+    if (e.target) e.target.value = '';
+  };
+
   return (
     <div className="container" style={{ paddingTop: '40px' }}>
-      <h1>🏎️ Cold Tire Pressure Sets Management</h1>
-      <p style={{ color: '#666', marginBottom: '30px' }}>
-        Gestione delle pressioni pneumatici - Replica del worksheet Excel "Pressioni"
-      </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <div>
+          <h1 style={{ margin: 0, marginBottom: '8px' }}>🏎️ Cold Tire Pressure Sets Management</h1>
+          <p style={{ color: '#666', margin: 0 }}>
+            Gestione delle pressioni pneumatici - Replica del worksheet Excel "Pressioni"
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button
+            onClick={handleExportData}
+            style={{
+              padding: '10px 20px',
+              fontSize: '14px',
+              backgroundColor: '#28a745',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+            }}
+          >
+            💾 Esporta
+          </button>
+          <label
+            style={{
+              padding: '10px 20px',
+              fontSize: '14px',
+              backgroundColor: '#17a2b8',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+            }}
+          >
+            📂 Importa
+            <input
+              type="file"
+              accept=".tpsets"
+              onChange={handleImportData}
+              style={{ display: 'none' }}
+            />
+          </label>
+        </div>
+      </div>
 
       <div className="card" style={{ marginBottom: '30px' }}>
         <h2>Dati di Input</h2>

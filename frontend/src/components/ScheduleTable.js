@@ -47,9 +47,9 @@ function ScheduleTable() {
         const key5 = `${time}-${index}-5`;
 
         // Check for 10-minute warning
-        if (diffMinutes <= 10 && diffMinutes > 9 && !checkedTimes.has(key10)) {
+        if (diffMinutes <= 10 && diffMinutes >= 9 && !checkedTimes.has(key10)) {
           setNotifications(prev => [...prev, {
-            id: Date.now() + Math.random(),
+            id: `${Date.now()}-${index}-10`,
             message: `⚠️ Attenzione: Mancano 10 minuti alla sessione "${scheduleData.sessions[index] || 'Senza nome'}" alle ore ${time}`,
             time: time,
             session: scheduleData.sessions[index]
@@ -58,9 +58,9 @@ function ScheduleTable() {
         }
 
         // Check for 5-minute warning
-        if (diffMinutes <= 5 && diffMinutes > 4 && !checkedTimes.has(key5)) {
+        if (diffMinutes <= 5 && diffMinutes >= 4 && !checkedTimes.has(key5)) {
           setNotifications(prev => [...prev, {
-            id: Date.now() + Math.random(),
+            id: `${Date.now()}-${index}-5`,
             message: `⚠️ AVVISO URGENTE: Mancano 5 minuti alla sessione "${scheduleData.sessions[index] || 'Senza nome'}" alle ore ${time}`,
             time: time,
             session: scheduleData.sessions[index]
@@ -68,7 +68,7 @@ function ScheduleTable() {
           setCheckedTimes(prev => new Set([...prev, key5]));
         }
       });
-    }, 30000); // Check every 30 seconds
+    }, 60000); // Check every 60 seconds
 
     return () => clearInterval(checkInterval);
   }, [scheduleData, checkedTimes]);

@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { eventAPI, sessionAPI } from '../services/api';
+import Clock from '../components/Clock';
+import ScheduleTable from '../components/ScheduleTable';
 
 function Events() {
   const [events, setEvents] = useState([]);
@@ -162,7 +164,13 @@ function Events() {
 
   return (
     <div className="container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      {/* Clock Component */}
+      <Clock />
+
+      {/* Schedule Table Component */}
+      <ScheduleTable />
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', marginTop: '30px' }}>
         <h1>Eventi di Gara</h1>
         <div style={{ display: 'flex', gap: '10px' }}>
           <label className="btn btn-primary" style={{ margin: 0, cursor: 'pointer', textAlign: 'center' }}>

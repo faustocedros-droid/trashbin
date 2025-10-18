@@ -72,7 +72,7 @@ Questo PR implementa un sistema di notifiche push native per avvisare l'utente 1
 
 ## Architettura
 
-```
+```text
 ┌─────────────────────┐
 │  ScheduleTable.js   │
 │  (User Input)       │
@@ -128,9 +128,9 @@ Consultare `NOTIFICATION_TESTING_GUIDE.md` per istruzioni dettagliate su come te
 - ✅ Windows
 - ✅ macOS
 - ✅ Linux
-- ⚠️ Browser Web (notifiche in-app funzionano, native no)
+- ℹ️ Browser Web: Le notifiche in-app funzionano completamente. Le notifiche push native non sono disponibili nel browser per restrizioni di sicurezza del browser stesso - questo è un comportamento atteso.
 
-**Nota**: Le notifiche push native funzionano solo in Electron Desktop App, non nella versione web browser.
+**Nota**: Per la migliore esperienza con notifiche push native di sistema, utilizzare l'applicazione Desktop Electron.
 
 ## Sicurezza
 

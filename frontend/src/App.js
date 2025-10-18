@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import './App.css';
 import Dashboard from './pages/Dashboard';
@@ -14,15 +14,120 @@ import Weather from './pages/Weather';
 import GeneralInformation from './pages/GeneralInformation';
 import Setup from './pages/Setup';
 import FuelConsumption from './pages/FuelConsumption';
+import notificationService from './services/notificationService';
 
 function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [tirePressureSubmenuOpen, setTirePressureSubmenuOpen] = useState(false);
   const [runPlanSubmenuOpen, setRunPlanSubmenuOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+
+  // Monitor schedule data for notifications
+  useEffect(() => {
+    // Load schedule data from localStorage
+    const loadScheduleData = () => {
+      const saved = localStorage.getItem('eventSchedule');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+      return {
+        sessions: Array(10).fill(''),
+        times: Array(10).fill('')
+      };
+    };
+
+    const scheduleData = loadScheduleData();
+
+    // Callback function for handling notifications
+    const handleNotification = (notification) => {
+      // Show native OS notification
+      if (window.electron && window.electron.showNotification) {
+        window.electron.showNotification(notification.title, notification.body);
+      }
+      
+      // Also show in-app notification
+      setNotifications(prev => [...prev, notification]);
+
+      // Auto-remove notification after 30 seconds
+      setTimeout(() => {
+        setNotifications(prev => prev.filter(n => n.id !== notification.id));
+      }, 30000);
+    };
+
+    // Start monitoring for upcoming sessions
+    notificationService.startMonitoring(scheduleData, handleNotification);
+
+    // Listen for schedule data changes
+    const handleScheduleChange = (e) => {
+      const newData = e.detail || loadScheduleData();
+      notificationService.stopMonitoring();
+      notificationService.startMonitoring(newData, handleNotification);
+    };
+
+    window.addEventListener('scheduleDataChanged', handleScheduleChange);
+
+    // Cleanup on unmount
+    return () => {
+      notificationService.stopMonitoring();
+      window.removeEventListener('scheduleDataChanged', handleScheduleChange);
+    };
+  }, []);
+
+  const closeNotification = (id) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
 
   return (
     <Router>
       <div className="App">
+        {/* Global Notifications */}
+        {notifications.length > 0 && (
+          <div style={{
+            position: 'fixed',
+            top: '80px',
+            right: '20px',
+            zIndex: 10000,
+            maxWidth: '400px'
+          }}>
+            {notifications.map(notification => (
+              <div
+                key={notification.id}
+                style={{
+                  backgroundColor: notification.type === '5min' ? '#d32f2f' : '#ff9800',
+                  color: 'white',
+                  padding: '15px 20px',
+                  borderRadius: '8px',
+                  marginBottom: '10px',
+                  boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+                  position: 'relative',
+                  animation: 'slideIn 0.3s ease-out'
+                }}
+              >
+                <button
+                  onClick={() => closeNotification(notification.id)}
+                  style={{
+                    position: 'absolute',
+                    top: '8px',
+                    right: '8px',
+                    background: 'none',
+                    border: 'none',
+                    color: 'white',
+                    fontSize: '20px',
+                    cursor: 'pointer',
+                    padding: '0 5px',
+                    lineHeight: '1'
+                  }}
+                >
+                  ×
+                </button>
+                <div style={{ marginRight: '25px', fontWeight: 'bold' }}>
+                  {notification.message}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         <header className="App-header">
           <nav className="navbar">
             <div className="container">
@@ -135,6 +240,22 @@ function App() {
             <p>&copy; 2025 Racing Car Manager - Sistema di Gestione Vettura da Gara</p>
           </div>
         </footer>
+
+        {/* CSS Animation for notifications */}
+        <style>
+          {`
+            @keyframes slideIn {
+              from {
+                transform: translateX(100%);
+                opacity: 0;
+              }
+              to {
+                transform: translateX(0);
+                opacity: 1;
+              }
+            }
+          `}
+        </style>
       </div>
     </Router>
   );

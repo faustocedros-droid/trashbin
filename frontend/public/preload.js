@@ -11,7 +11,7 @@ contextBridge.exposeInMainWorld('electron', {
   // Send messages to main process
   send: (channel, data) => {
     // Whitelist channels
-    const validChannels = ['toMain'];
+    const validChannels = ['toMain', 'show-notification'];
     if (validChannels.includes(channel)) {
       ipcRenderer.send(channel, data);
     }
@@ -23,6 +23,11 @@ contextBridge.exposeInMainWorld('electron', {
     if (validChannels.includes(channel)) {
       ipcRenderer.on(channel, (event, ...args) => callback(...args));
     }
+  },
+  
+  // Show native notification
+  showNotification: (title, body) => {
+    ipcRenderer.send('show-notification', { title, body });
   },
   
   // Platform info

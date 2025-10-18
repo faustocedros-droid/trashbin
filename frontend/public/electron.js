@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, shell } = require('electron');
+const { app, BrowserWindow, Menu, shell, ipcMain, Notification } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 
@@ -230,6 +230,29 @@ app.on('before-quit', () => {
   // Kill backend process
   if (backendProcess) {
     backendProcess.kill();
+  }
+});
+
+// Handle notification requests from renderer process
+ipcMain.on('show-notification', (event, { title, body }) => {
+  if (Notification.isSupported()) {
+    const notification = new Notification({
+      title: title,
+      body: body,
+      icon: path.join(__dirname, '../build/icon.png'), // Optional: add icon if available
+      urgency: 'critical', // Make it high priority
+      timeoutType: 'never' // Don't auto-dismiss
+    });
+    
+    notification.show();
+    
+    // Optionally bring window to focus on notification click
+    notification.on('click', () => {
+      if (mainWindow) {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.focus();
+      }
+    });
   }
 });
 

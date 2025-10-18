@@ -38,8 +38,8 @@ function App() {
 
     const scheduleData = loadScheduleData();
 
-    // Start monitoring for upcoming sessions
-    notificationService.startMonitoring(scheduleData, (notification) => {
+    // Callback function for handling notifications
+    const handleNotification = (notification) => {
       // Show native OS notification
       if (window.electron && window.electron.showNotification) {
         window.electron.showNotification(notification.title, notification.body);
@@ -52,31 +52,24 @@ function App() {
       setTimeout(() => {
         setNotifications(prev => prev.filter(n => n.id !== notification.id));
       }, 30000);
-    });
-
-    // Listen for localStorage changes to update schedule monitoring
-    const handleStorageChange = (e) => {
-      if (e.key === 'eventSchedule') {
-        const newData = e.newValue ? JSON.parse(e.newValue) : { sessions: Array(10).fill(''), times: Array(10).fill('') };
-        notificationService.stopMonitoring();
-        notificationService.startMonitoring(newData, (notification) => {
-          if (window.electron && window.electron.showNotification) {
-            window.electron.showNotification(notification.title, notification.body);
-          }
-          setNotifications(prev => [...prev, notification]);
-          setTimeout(() => {
-            setNotifications(prev => prev.filter(n => n.id !== notification.id));
-          }, 30000);
-        });
-      }
     };
 
-    window.addEventListener('storage', handleStorageChange);
+    // Start monitoring for upcoming sessions
+    notificationService.startMonitoring(scheduleData, handleNotification);
+
+    // Listen for schedule data changes
+    const handleScheduleChange = (e) => {
+      const newData = e.detail || loadScheduleData();
+      notificationService.stopMonitoring();
+      notificationService.startMonitoring(newData, handleNotification);
+    };
+
+    window.addEventListener('scheduleDataChanged', handleScheduleChange);
 
     // Cleanup on unmount
     return () => {
       notificationService.stopMonitoring();
-      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('scheduleDataChanged', handleScheduleChange);
     };
   }, []);
 

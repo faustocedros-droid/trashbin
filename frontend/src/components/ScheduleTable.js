@@ -18,10 +18,9 @@ function ScheduleTable() {
   useEffect(() => {
     localStorage.setItem('eventSchedule', JSON.stringify(scheduleData));
     
-    // Trigger storage event manually for same-window updates
-    window.dispatchEvent(new StorageEvent('storage', {
-      key: 'eventSchedule',
-      newValue: JSON.stringify(scheduleData)
+    // Dispatch custom event to notify App.js about schedule changes
+    window.dispatchEvent(new CustomEvent('scheduleDataChanged', {
+      detail: scheduleData
     }));
   }, [scheduleData]);
 

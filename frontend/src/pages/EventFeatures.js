@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 function EventFeatures() {
   const STORAGE_KEY = 'eventFeatures_filePaths';
+  const MESSAGE_TIMEOUT = 3000; // Consistent timeout duration for all messages
   
   // Define the document types as per requirements
   const documentTypes = [
@@ -31,6 +32,14 @@ function EventFeatures() {
     }
   }, []);
 
+  // Cleanup effect for message timeout
+  useEffect(() => {
+    if (message) {
+      const timeoutId = setTimeout(() => setMessage(''), MESSAGE_TIMEOUT);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [message]);
+
   // Save file paths to localStorage whenever they change
   const saveFilePaths = (newFilePaths) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newFilePaths));
@@ -47,12 +56,10 @@ function EventFeatures() {
           const newFilePaths = { ...filePaths, [documentType]: filePath };
           saveFilePaths(newFilePaths);
           setMessage(`File path saved for ${documentType}`);
-          setTimeout(() => setMessage(''), 3000);
         }
       } catch (error) {
         console.error('Error selecting file:', error);
         setMessage('Error selecting file. Please try again.');
-        setTimeout(() => setMessage(''), 3000);
       }
     } else {
       // Fallback for browser mode - show input dialog
@@ -61,7 +68,6 @@ function EventFeatures() {
         const newFilePaths = { ...filePaths, [documentType]: filePath.trim() };
         saveFilePaths(newFilePaths);
         setMessage(`File path saved for ${documentType}`);
-        setTimeout(() => setMessage(''), 3000);
       }
     }
   };
@@ -72,7 +78,6 @@ function EventFeatures() {
     
     if (!filePath) {
       setMessage(`No file path specified for ${documentType}`);
-      setTimeout(() => setMessage(''), 3000);
       return;
     }
 
@@ -82,20 +87,16 @@ function EventFeatures() {
         const result = await window.electron.openFile(filePath);
         if (result.success) {
           setMessage(`Opening ${documentType}...`);
-          setTimeout(() => setMessage(''), 3000);
         } else {
           setMessage(`Error: ${result.error || 'Could not open file'}`);
-          setTimeout(() => setMessage(''), 3000);
         }
       } catch (error) {
         console.error('Error opening file:', error);
         setMessage('Error opening file. Please try again.');
-        setTimeout(() => setMessage(''), 3000);
       }
     } else {
       // Browser mode - just show the path
       setMessage(`File path: ${filePath}`);
-      setTimeout(() => setMessage(''), 5000);
     }
   };
 

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, shell, ipcMain, Notification } = require('electron');
+const { app, BrowserWindow, Menu, shell, ipcMain, Notification, dialog } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 
@@ -253,6 +253,44 @@ ipcMain.on('show-notification', (event, { title, body }) => {
         mainWindow.focus();
       }
     });
+  }
+});
+
+// Handle file selection dialog
+ipcMain.handle('select-file', async (event) => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile'],
+    filters: [
+      { name: 'All Files', extensions: ['*'] },
+      { name: 'PDF Files', extensions: ['pdf'] },
+      { name: 'Word Documents', extensions: ['doc', 'docx'] },
+      { name: 'Excel Files', extensions: ['xls', 'xlsx'] },
+      { name: 'Text Files', extensions: ['txt'] }
+    ]
+  });
+  
+  if (!result.canceled && result.filePaths.length > 0) {
+    return result.filePaths[0];
+  }
+  return null;
+});
+
+// Handle opening file with default application
+ipcMain.handle('open-file', async (event, filePath) => {
+  try {
+    const fs = require('fs');
+    
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      return { success: false, error: 'File not found' };
+    }
+    
+    // Open file with default application
+    await shell.openPath(filePath);
+    return { success: true };
+  } catch (error) {
+    console.error('Error opening file:', error);
+    return { success: false, error: error.message };
   }
 });
 

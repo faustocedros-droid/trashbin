@@ -30,6 +30,10 @@ contextBridge.exposeInMainWorld('electron', {
     ipcRenderer.send('show-notification', { title, body });
   },
   
+  // File operations
+  selectFile: () => ipcRenderer.invoke('select-file'),
+  openFile: (filePath) => ipcRenderer.invoke('open-file', filePath),
+  
   // Platform info
   platform: process.platform,
   

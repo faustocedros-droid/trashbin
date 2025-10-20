@@ -34,6 +34,10 @@ contextBridge.exposeInMainWorld('electron', {
   selectFile: () => ipcRenderer.invoke('select-file'),
   openFile: (filePath) => ipcRenderer.invoke('open-file', filePath),
   
+  // Driver comment operations
+  saveDriverComment: (data) => ipcRenderer.invoke('save-driver-comment', data),
+  loadDriverComment: () => ipcRenderer.invoke('load-driver-comment'),
+  
   // Platform info
   platform: process.platform,
   

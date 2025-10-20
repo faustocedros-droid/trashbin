@@ -15,6 +15,7 @@ import GeneralInformation from './pages/GeneralInformation';
 import Setup from './pages/Setup';
 import FuelConsumption from './pages/FuelConsumption';
 import EventFeatures from './pages/EventFeatures';
+import DriversComments from './pages/DriversComments';
 import notificationService from './services/notificationService';
 
 function App() {
@@ -212,6 +213,7 @@ function App() {
                   </div>
                 </li>
                 <li><Link to="/fuel-consumption" onClick={() => setMenuOpen(false)}>Fuel Consumption</Link></li>
+                <li><Link to="/drivers-comments" onClick={() => setMenuOpen(false)}>Drivers Comments</Link></li>
                 <li><Link to="/weather" onClick={() => setMenuOpen(false)}>Meteo</Link></li>
                 <li><Link to="/settings" onClick={() => setMenuOpen(false)}>Impostazioni</Link></li>
               </ul>
@@ -233,6 +235,7 @@ function App() {
             <Route path="/tire-pressure/database" element={<TirePressureDatabase />} />
             <Route path="/runplan/fp1" element={<RunPlanSheet />} />
             <Route path="/fuel-consumption" element={<FuelConsumption />} />
+            <Route path="/drivers-comments" element={<DriversComments />} />
             <Route path="/weather" element={<Weather />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>

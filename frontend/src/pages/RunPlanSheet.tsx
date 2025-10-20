@@ -339,7 +339,7 @@ function RunPlanSheet() {
         // Create a unique identifier for this runplan
         const timestamp = new Date().toISOString();
         const runplanEntry = {
-            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            id: `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
             timestamp,
             eventName: data.O4,
             trackName: data.D4,

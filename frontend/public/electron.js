@@ -294,6 +294,54 @@ ipcMain.handle('open-file', async (event, filePath) => {
   }
 });
 
+// Handle saving driver comment
+ipcMain.handle('save-driver-comment', async (event, data) => {
+  try {
+    const fs = require('fs');
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: 'Salva Driver Comment',
+      defaultPath: `driver-comment-${data.event || 'untitled'}-${Date.now()}.json`,
+      filters: [
+        { name: 'JSON Files', extensions: ['json'] }
+      ]
+    });
+    
+    if (!result.canceled && result.filePath) {
+      fs.writeFileSync(result.filePath, JSON.stringify(data, null, 2));
+      return { success: true, filePath: result.filePath };
+    }
+    return { success: false };
+  } catch (error) {
+    console.error('Error saving driver comment:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Handle loading driver comment
+ipcMain.handle('load-driver-comment', async (event) => {
+  try {
+    const fs = require('fs');
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Carica Driver Comment',
+      properties: ['openFile'],
+      filters: [
+        { name: 'JSON Files', extensions: ['json'] }
+      ]
+    });
+    
+    if (!result.canceled && result.filePaths.length > 0) {
+      const filePath = result.filePaths[0];
+      const fileContent = fs.readFileSync(filePath, 'utf8');
+      const data = JSON.parse(fileContent);
+      return { success: true, data };
+    }
+    return { success: false };
+  } catch (error) {
+    console.error('Error loading driver comment:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // Handle crashes gracefully
 app.on('render-process-gone', (event, webContents, details) => {
   console.error('Render process gone:', details);

@@ -1,61 +1,82 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 function Settings() {
-  const STORAGE_PATH_KEY = 'racingCarManager_storagePath';
-  const ARCHIVE_PATH_KEY = 'racingCarManager_archivePath';
-  const [storagePath, setStoragePath] = useState('');
-  const [archivePath, setArchivePath] = useState('');
   const [message, setMessage] = useState('');
+  const [filename, setFilename] = useState('');
 
-  useEffect(() => {
-    // Carica il percorso salvato
-    const savedPath = localStorage.getItem(STORAGE_PATH_KEY);
-    if (savedPath) {
-      setStoragePath(savedPath);
-    }
-    const savedArchivePath = localStorage.getItem(ARCHIVE_PATH_KEY);
-    if (savedArchivePath) {
-      setArchivePath(savedArchivePath);
-    }
-  }, []);
-
-  const handleSave = (e) => {
-    e.preventDefault();
-    localStorage.setItem(STORAGE_PATH_KEY, storagePath);
-    setMessage('Percorso salvato con successo!');
-    setTimeout(() => setMessage(''), 3000);
-  };
-
-  const handleReset = () => {
-    localStorage.removeItem(STORAGE_PATH_KEY);
-    setStoragePath('');
-    setMessage('Percorso ripristinato al default!');
-    setTimeout(() => setMessage(''), 3000);
-  };
-
-  const handleSaveArchive = () => {
-    // Get all data from localStorage
+  const handleSaveAllData = () => {
+    // Get ALL data from localStorage - all sections and subsections
     const eventsData = localStorage.getItem('racingCarManager_events');
     const tirePressureData = localStorage.getItem('tirePressureDatabase');
     const runPlanData = localStorage.getItem('runPlanSheet_data');
     const runPlanHistory = localStorage.getItem('runPlanSheet_history');
     const trackLength = localStorage.getItem('currentTrackLength');
+    const eventSchedule = localStorage.getItem('eventSchedule');
+    const circuitImage = localStorage.getItem('generalInfo_circuitImage');
+    const generalSchedule = localStorage.getItem('generalInfo_schedule');
+    const setupData = localStorage.getItem('generalInfo_setup');
+    const fuelConsumption = localStorage.getItem('fuelConsumption_data');
+    const eventFeaturesPaths = localStorage.getItem('eventFeatures_filePaths');
+    const storagePath = localStorage.getItem('racingCarManager_storagePath');
+    const archivePath = localStorage.getItem('racingCarManager_archivePath');
     
-    // Create a comprehensive archive object
+    // Create a comprehensive archive object with ALL application data
     const archiveData = {
-      version: '1.1', // Updated version to reflect new format
+      version: '2.0', // Updated version for complete data export
       exportDate: new Date().toISOString(),
+      
+      // Events section
       events: eventsData ? JSON.parse(eventsData) : [],
-      tirePressureDatabase: tirePressureData ? JSON.parse(tirePressureData) : null,
-      runPlanSheet: runPlanData ? JSON.parse(runPlanData) : null,
-      runPlanHistory: runPlanHistory ? JSON.parse(runPlanHistory) : [],
-      currentTrackLength: trackLength ? parseFloat(trackLength) : null
+      
+      // Event Features section
+      eventFeatures: eventFeaturesPaths ? JSON.parse(eventFeaturesPaths) : null,
+      
+      // General Information section
+      generalInformation: {
+        circuitImage: circuitImage || null,
+        schedule: generalSchedule ? JSON.parse(generalSchedule) : null
+      },
+      
+      // Setup section
+      setup: setupData ? JSON.parse(setupData) : null,
+      
+      // RunPlan Sheets section and subsections
+      runPlan: {
+        currentSheet: runPlanData ? JSON.parse(runPlanData) : null,
+        history: runPlanHistory ? JSON.parse(runPlanHistory) : []
+      },
+      
+      // Tire Pressure Management section and all subsections
+      tirePressure: {
+        database: tirePressureData ? JSON.parse(tirePressureData) : null
+      },
+      
+      // Fuel Consumption section
+      fuelConsumption: fuelConsumption ? JSON.parse(fuelConsumption) : null,
+      
+      // Schedule/Event schedule
+      eventSchedule: eventSchedule ? JSON.parse(eventSchedule) : null,
+      
+      // Track configuration
+      trackConfiguration: {
+        currentTrackLength: trackLength ? parseFloat(trackLength) : null
+      },
+      
+      // Settings
+      settings: {
+        storagePath: storagePath || null,
+        archivePath: archivePath || null
+      }
     };
     
     // Check if there's any data to save
-    if (!eventsData && !tirePressureData && !runPlanData && !runPlanHistory) {
-      setMessage('Nessun dato da salvare!');
-      setTimeout(() => setMessage(''), 3000);
+    const hasData = eventsData || tirePressureData || runPlanData || runPlanHistory || 
+                     eventSchedule || circuitImage || generalSchedule || setupData || 
+                     fuelConsumption || eventFeaturesPaths;
+    
+    if (!hasData) {
+      setMessage('⚠️ Nessun dato da salvare! Aggiungi contenuti nelle diverse sezioni prima di salvare.');
+      setTimeout(() => setMessage(''), 4000);
       return;
     }
 
@@ -67,21 +88,19 @@ function Settings() {
     const link = document.createElement('a');
     link.href = url;
     
-    // Use archivePath as the filename for download
-    // Note: Browser security prevents direct filesystem access, 
-    // so this will trigger a download dialog with the specified filename
-    const filename = archivePath || 'racing_data_archive.tpdb';
-    link.download = filename.endsWith('.tpdb') ? filename : filename + '.tpdb';
+    // Use custom filename or default
+    const defaultFilename = `racing_data_complete_${new Date().toISOString().split('T')[0]}.rcmd`;
+    link.download = filename ? (filename.endsWith('.rcmd') ? filename : filename + '.rcmd') : defaultFilename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
-    setMessage('Archivio salvato con successo! Il file verrà scaricato nella cartella Download del browser.');
-    setTimeout(() => setMessage(''), 3000);
+    setMessage('✅ Tutti i dati sono stati salvati con successo! Il file è stato scaricato.');
+    setTimeout(() => setMessage(''), 4000);
   };
 
-  const handleLoadArchive = (e) => {
+  const handleLoadAllData = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -91,9 +110,89 @@ function Settings() {
         const data = event.target.result;
         const archiveData = JSON.parse(data);
         
-        // Check if this is the new format (with version) or old format
-        if (archiveData.version) {
-          // New format - restore all data including RunPlanSheet and RunPlan history
+        // Check version and restore all data
+        if (archiveData.version === '2.0') {
+          // New complete format - restore ALL application data
+          
+          // Events section
+          if (archiveData.events) {
+            localStorage.setItem('racingCarManager_events', JSON.stringify(archiveData.events));
+          }
+          
+          // Event Features section
+          if (archiveData.eventFeatures) {
+            localStorage.setItem('eventFeatures_filePaths', JSON.stringify(archiveData.eventFeatures));
+          }
+          
+          // General Information section
+          if (archiveData.generalInformation) {
+            if (archiveData.generalInformation.circuitImage) {
+              localStorage.setItem('generalInfo_circuitImage', archiveData.generalInformation.circuitImage);
+            }
+            if (archiveData.generalInformation.schedule) {
+              localStorage.setItem('generalInfo_schedule', JSON.stringify(archiveData.generalInformation.schedule));
+            }
+          }
+          
+          // Setup section
+          if (archiveData.setup) {
+            localStorage.setItem('generalInfo_setup', JSON.stringify(archiveData.setup));
+          }
+          
+          // RunPlan section
+          if (archiveData.runPlan) {
+            if (archiveData.runPlan.currentSheet) {
+              localStorage.setItem('runPlanSheet_data', JSON.stringify(archiveData.runPlan.currentSheet));
+            }
+            if (archiveData.runPlan.history) {
+              localStorage.setItem('runPlanSheet_history', JSON.stringify(archiveData.runPlan.history));
+            }
+          }
+          
+          // Tire Pressure section
+          if (archiveData.tirePressure && archiveData.tirePressure.database) {
+            localStorage.setItem('tirePressureDatabase', JSON.stringify(archiveData.tirePressure.database));
+          }
+          
+          // Fuel Consumption section
+          if (archiveData.fuelConsumption) {
+            localStorage.setItem('fuelConsumption_data', JSON.stringify(archiveData.fuelConsumption));
+          }
+          
+          // Event Schedule
+          if (archiveData.eventSchedule) {
+            localStorage.setItem('eventSchedule', JSON.stringify(archiveData.eventSchedule));
+          }
+          
+          // Track Configuration
+          if (archiveData.trackConfiguration && archiveData.trackConfiguration.currentTrackLength !== null) {
+            localStorage.setItem('currentTrackLength', archiveData.trackConfiguration.currentTrackLength.toString());
+          }
+          
+          // Settings
+          if (archiveData.settings) {
+            if (archiveData.settings.storagePath) {
+              localStorage.setItem('racingCarManager_storagePath', archiveData.settings.storagePath);
+            }
+            if (archiveData.settings.archivePath) {
+              localStorage.setItem('racingCarManager_archivePath', archiveData.settings.archivePath);
+            }
+          }
+          
+          // Count restored items
+          let itemsRestored = 0;
+          if (archiveData.events && archiveData.events.length > 0) itemsRestored++;
+          if (archiveData.eventFeatures) itemsRestored++;
+          if (archiveData.generalInformation) itemsRestored++;
+          if (archiveData.setup) itemsRestored++;
+          if (archiveData.runPlan) itemsRestored++;
+          if (archiveData.tirePressure) itemsRestored++;
+          if (archiveData.fuelConsumption) itemsRestored++;
+          if (archiveData.eventSchedule) itemsRestored++;
+          
+          setMessage(`✅ Tutti i dati sono stati caricati con successo! ${itemsRestored} sezioni ripristinate. La pagina verrà ricaricata.`);
+        } else if (archiveData.version === '1.1' || archiveData.version === '1.0') {
+          // Old format - restore partial data
           if (archiveData.events) {
             localStorage.setItem('racingCarManager_events', JSON.stringify(archiveData.events));
           }
@@ -110,175 +209,163 @@ function Settings() {
             localStorage.setItem('currentTrackLength', archiveData.currentTrackLength.toString());
           }
           
-          // Show success message with details
-          const historyCount = archiveData.runPlanHistory ? archiveData.runPlanHistory.length : 0;
-          setMessage(`Archivio caricato con successo! Tutti i dati sono stati ripristinati. RunPlan salvati: ${historyCount}`);
+          setMessage('✅ Dati caricati (formato precedente - dati parziali). La pagina verrà ricaricata.');
         } else {
-          // Old format - assume it's just tire pressure data
-          localStorage.setItem('tirePressureDatabase', data);
-          setMessage('Archivio caricato con successo! (formato vecchio - solo dati pressioni)');
+          // Unknown or very old format
+          setMessage('⚠️ Formato file non riconosciuto. Assicurati di utilizzare un file .rcmd valido.');
+          setTimeout(() => setMessage(''), 4000);
+          return;
         }
+        
         setTimeout(() => setMessage(''), 5000);
         
         // Reload the page to reflect the restored data
-        setTimeout(() => window.location.reload(), 1500);
+        setTimeout(() => window.location.reload(), 2000);
       } catch (error) {
         console.error('Error loading archive:', error);
-        setMessage('Errore nel caricamento del file! Assicurati che sia un file .tpdb valido.');
-        setTimeout(() => setMessage(''), 3000);
+        setMessage('❌ Errore nel caricamento del file! Assicurati che sia un file valido.');
+        setTimeout(() => setMessage(''), 4000);
       }
     };
     reader.readAsText(file);
-  };
-
-  const handleSaveArchivePath = () => {
-    localStorage.setItem(ARCHIVE_PATH_KEY, archivePath);
-    setMessage('Percorso archivio salvato!');
-    setTimeout(() => setMessage(''), 3000);
   };
 
   return (
     <div className="container" style={{ paddingTop: '40px' }}>
       <h1>⚙️ Impostazioni</h1>
       
-      <div className="card" style={{ marginTop: '30px', maxWidth: '800px' }}>
-        <h2>Percorso di Archiviazione Dati Sessione</h2>
+      <div className="card" style={{ marginTop: '30px', maxWidth: '900px' }}>
+        <h2>💾 Salva Tutti i Contenuti dell'Applicazione</h2>
         
-        <form onSubmit={handleSave} style={{ marginTop: '20px' }}>
-          <div className="form-group" style={{ marginBottom: '20px' }}>
-            <label htmlFor="storagePath" style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-              Percorso di Archiviazione
+        <div style={{ marginTop: '20px' }}>
+          <p style={{ color: '#666', marginBottom: '20px', lineHeight: '1.6' }}>
+            Salva <strong>TUTTI</strong> i contenuti di <strong>TUTTE</strong> le sezioni e sottosezioni del menu hamburger in un unico file:
+          </p>
+          
+          <ul style={{ color: '#666', lineHeight: '1.8', marginBottom: '25px' }}>
+            <li><strong>📅 Eventi:</strong> Tutti gli eventi e le sessioni</li>
+            <li><strong>🎯 Event Features:</strong> Percorsi dei file caricati</li>
+            <li><strong>ℹ️ General Information:</strong> Immagine del circuito e programma</li>
+            <li><strong>🔧 Setup:</strong> Dati di setup della vettura</li>
+            <li><strong>📋 RunPlan Sheets:</strong> Piano di lavoro corrente e storico</li>
+            <li><strong>🏁 Tire Pressure Management:</strong> Database completo pressioni gomme (tutte le sottosezioni)</li>
+            <li><strong>⛽ Fuel Consumption:</strong> Dati di consumo carburante</li>
+            <li><strong>📊 Event Schedule:</strong> Programma delle sessioni</li>
+            <li><strong>🛣️ Track Configuration:</strong> Lunghezza del tracciato</li>
+          </ul>
+          
+          <div className="form-group" style={{ marginBottom: '25px' }}>
+            <label htmlFor="filename" style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+              Nome File (opzionale)
             </label>
             <input
               type="text"
-              id="storagePath"
-              value={storagePath}
-              onChange={(e) => setStoragePath(e.target.value)}
-              placeholder="es. C:\RacingData o /Users/nome/RacingData"
+              id="filename"
+              value={filename}
+              onChange={(e) => setFilename(e.target.value)}
+              placeholder="es. mio_evento.rcmd (estensione .rcmd verrà aggiunta automaticamente)"
               style={{
                 width: '100%',
-                padding: '10px',
+                padding: '12px',
                 fontSize: '16px',
                 border: '1px solid #ddd',
                 borderRadius: '4px'
               }}
             />
             <small style={{ display: 'block', marginTop: '8px', color: '#666' }}>
-              Specifica il percorso dove salvare i dati delle sessioni. 
-              Se vuoto, verrà utilizzato il localStorage del browser.
+              Se non specificato, verrà generato automaticamente: <code>racing_data_complete_YYYY-MM-DD.rcmd</code>
             </small>
           </div>
 
           {message && (
             <div style={{
-              padding: '12px',
-              marginBottom: '20px',
-              backgroundColor: '#d4edda',
-              color: '#155724',
-              border: '1px solid #c3e6cb',
-              borderRadius: '4px'
+              padding: '15px',
+              marginBottom: '25px',
+              backgroundColor: message.includes('❌') || message.includes('⚠️') ? '#f8d7da' : '#d4edda',
+              color: message.includes('❌') || message.includes('⚠️') ? '#721c24' : '#155724',
+              border: `1px solid ${message.includes('❌') || message.includes('⚠️') ? '#f5c6cb' : '#c3e6cb'}`,
+              borderRadius: '4px',
+              fontSize: '15px'
             }}>
               {message}
             </div>
           )}
 
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button type="submit" className="btn btn-primary">
-              💾 Salva Percorso
-            </button>
-            <button type="button" className="btn btn-secondary" onClick={handleReset}>
-              🔄 Ripristina Default
-            </button>
-          </div>
-        </form>
-
-        <div style={{ marginTop: '40px', padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
-          <h3 style={{ marginTop: 0 }}>ℹ️ Informazioni</h3>
-          <ul style={{ lineHeight: '1.8' }}>
-            <li><strong>Percorso Corrente:</strong> {storagePath || 'localStorage (default)'}</li>
-            <li><strong>Modalità:</strong> {storagePath ? 'File System' : 'Browser Storage'}</li>
-            <li><strong>Backup:</strong> {storagePath ? 'Manuale sul percorso specificato' : 'Automatico nel browser'}</li>
-          </ul>
+          <button 
+            onClick={handleSaveAllData}
+            className="btn btn-primary"
+            style={{
+              padding: '15px 30px',
+              fontSize: '18px',
+              fontWeight: 'bold'
+            }}
+          >
+            💾 Salva Tutti i Dati
+          </button>
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: '30px', maxWidth: '800px' }}>
-        <h2>Altre Impostazioni</h2>
-        <p style={{ color: '#666' }}>
-          Ulteriori impostazioni saranno disponibili nelle prossime versioni.
-        </p>
-      </div>
-
-      {/* Archive Management Section */}
-      <div className="card" style={{ marginTop: '30px', maxWidth: '800px' }}>
-        <h2>📁 Gestione Archivio Dati</h2>
+      <div className="card" style={{ marginTop: '30px', maxWidth: '900px' }}>
+        <h2>📂 Carica Tutti i Contenuti dell'Applicazione</h2>
         
         <div style={{ marginTop: '20px' }}>
-          <h3>Salva evento</h3>
-          <p style={{ color: '#666', marginBottom: '15px' }}>
-            Salva tutti i dati dell'applicazione (eventi, sessioni, giri, database pressioni pneumatici, storico RunPlan e lunghezza pista) in un file .tpdb
+          <p style={{ color: '#666', marginBottom: '20px', lineHeight: '1.6' }}>
+            Carica un file precedentemente salvato per ripristinare <strong>TUTTI</strong> i contenuti di <strong>TUTTE</strong> le sezioni e sottosezioni.
           </p>
           
-          <div className="form-group" style={{ marginBottom: '20px' }}>
-            <label htmlFor="archivePath" style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-              Percorso/Nome File Archivio (opzionale)
-            </label>
-            <input
-              type="text"
-              id="archivePath"
-              value={archivePath}
-              onChange={(e) => setArchivePath(e.target.value)}
-              placeholder="es. C:\RacingData\my_archive.tpdb o my_archive.tpdb"
-              style={{
-                width: '100%',
-                padding: '10px',
-                fontSize: '16px',
-                border: '1px solid #ddd',
-                borderRadius: '4px'
-              }}
-            />
-            <small style={{ display: 'block', marginTop: '8px', color: '#666' }}>
-              Specifica il percorso completo o solo il nome file. Se non specificato, verrà utilizzato "racing_data_archive.tpdb".<br />
-              <strong>Nota:</strong> Per limitazioni del browser, il file verrà scaricato nella cartella Download. 
-              Per salvare in percorsi personalizzati, utilizzare una desktop app o backend.
-            </small>
+          <div style={{ 
+            padding: '15px', 
+            backgroundColor: '#fff3cd', 
+            border: '1px solid #ffeaa7',
+            borderRadius: '4px',
+            marginBottom: '20px'
+          }}>
+            <p style={{ margin: 0, color: '#856404' }}>
+              <strong>⚠️ Attenzione:</strong> Il caricamento di un file sostituirà tutti i dati attualmente presenti nell'applicazione. 
+              Assicurati di aver salvato i dati correnti prima di procedere.
+            </p>
           </div>
-
-          <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-            <button 
-              onClick={handleSaveArchivePath}
-              className="btn btn-secondary"
-            >
-              💾 Salva Percorso
-            </button>
-            <button 
-              onClick={handleSaveArchive}
-              className="btn btn-primary"
-            >
-              📥 Salva evento
-            </button>
-          </div>
-
-          <hr style={{ margin: '30px 0' }} />
-
-          <h3>Carica evento</h3>
-          <p style={{ color: '#666', marginBottom: '15px' }}>
-            Carica un file .tpdb precedentemente salvato
-          </p>
           
-          <div style={{ marginBottom: '20px' }}>
-            <input
-              type="file"
-              accept=".tpdb"
-              onChange={handleLoadArchive}
-              style={{
-                padding: '10px',
-                fontSize: '16px',
-                border: '1px solid #ddd',
-                borderRadius: '4px'
-              }}
-            />
-          </div>
+          <input
+            type="file"
+            accept=".rcmd,.tpdb"
+            onChange={handleLoadAllData}
+            style={{
+              padding: '12px',
+              fontSize: '16px',
+              border: '2px solid #007bff',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          />
+          
+          <small style={{ display: 'block', marginTop: '12px', color: '#666' }}>
+            Formati supportati: <code>.rcmd</code> (completo v2.0), <code>.tpdb</code> (parziale v1.x)
+          </small>
+        </div>
+      </div>
+
+      <div className="card" style={{ marginTop: '30px', maxWidth: '900px', backgroundColor: '#f8f9fa' }}>
+        <h2>ℹ️ Informazioni sul Salvataggio</h2>
+        
+        <div style={{ lineHeight: '1.8' }}>
+          <p><strong>Formato File:</strong> I dati vengono salvati in formato JSON con estensione <code>.rcmd</code> (Racing Car Manager Data)</p>
+          
+          <p><strong>Posizione:</strong> Il file viene scaricato nella cartella Download del browser</p>
+          
+          <p><strong>Backup Consigliati:</strong></p>
+          <ul>
+            <li>Salva i dati regolarmente durante le sessioni di lavoro</li>
+            <li>Crea backup prima di eventi importanti</li>
+            <li>Mantieni copie di sicurezza in più posizioni</li>
+            <li>Utilizza nomi file descrittivi (es. <code>imola_2025_setup.rcmd</code>)</li>
+          </ul>
+          
+          <p><strong>Compatibilità:</strong></p>
+          <ul>
+            <li><code>.rcmd v2.0</code> - Formato completo con tutti i dati (versione corrente)</li>
+            <li><code>.tpdb v1.x</code> - Formato parziale legacy (compatibile in lettura)</li>
+          </ul>
         </div>
       </div>
     </div>

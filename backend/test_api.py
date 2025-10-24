@@ -96,6 +96,26 @@ def test_api_endpoints():
             assert response.status_code == 200
             sessions = response.json
             print(f"✓ Get sessions endpoint working (found {len(sessions)} sessions)")
+            
+            # Test update session
+            if sessions:
+                session_id = sessions[0]['id']
+                update_data = {
+                    'session_type': 'FP2',
+                    'session_number': 2,
+                    'duration': 90,
+                    'notes': 'Updated session notes'
+                }
+                response = client.put(f'/api/sessions/{session_id}', 
+                                     json=update_data,
+                                     content_type='application/json')
+                assert response.status_code == 200
+                updated_session = response.json
+                assert updated_session['session_type'] == 'FP2'
+                assert updated_session['session_number'] == 2
+                assert updated_session['duration'] == 90
+                assert updated_session['notes'] == 'Updated session notes'
+                print(f"✓ Update session endpoint working")
 
 def run_all_tests():
     """Run all tests"""

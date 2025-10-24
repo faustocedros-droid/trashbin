@@ -18,6 +18,7 @@ function EventDetail() {
   const [sessionLaps, setSessionLaps] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showSessionForm, setShowSessionForm] = useState(false);
+  const [editingSession, setEditingSession] = useState(null);
   const [sessionFormData, setSessionFormData] = useState({
     session_type: 'Test',
     session_number: 1,
@@ -89,8 +90,15 @@ function EventDetail() {
   const handleSessionSubmit = async (e) => {
     e.preventDefault();
     try {
-      await eventAPI.createSession(id, sessionFormData);
+      if (editingSession) {
+        // Update existing session
+        await sessionAPI.update(editingSession.id, sessionFormData);
+      } else {
+        // Create new session
+        await eventAPI.createSession(id, sessionFormData);
+      }
       setShowSessionForm(false);
+      setEditingSession(null);
       setSessionFormData({
         session_type: 'Test',
         session_number: 1,
@@ -103,8 +111,8 @@ function EventDetail() {
       });
       loadEventData();
     } catch (error) {
-      console.error('Error creating session:', error);
-      alert('Errore nella creazione della sessione');
+      console.error('Error saving session:', error);
+      alert(editingSession ? 'Errore nell\'aggiornamento della sessione' : 'Errore nella creazione della sessione');
     }
   };
 
@@ -112,6 +120,36 @@ function EventDetail() {
     setSessionFormData({
       ...sessionFormData,
       [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleEditSession = (session) => {
+    setEditingSession(session);
+    setSessionFormData({
+      session_type: session.session_type,
+      session_number: session.session_number,
+      duration: session.duration || 60,
+      fuel_start: session.fuel_start || 0,
+      fuel_per_lap: session.fuel_per_lap || 0,
+      tire_set: session.tire_set || '',
+      session_status: session.session_status || null,
+      notes: session.notes || '',
+    });
+    setShowSessionForm(true);
+  };
+
+  const handleCancelSessionForm = () => {
+    setShowSessionForm(false);
+    setEditingSession(null);
+    setSessionFormData({
+      session_type: 'Test',
+      session_number: 1,
+      duration: 60,
+      fuel_start: 0,
+      fuel_per_lap: 0,
+      tire_set: '',
+      session_status: null,
+      notes: '',
     });
   };
 
@@ -471,14 +509,20 @@ function EventDetail() {
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <h2>Sessioni</h2>
-          <button className="btn btn-primary" onClick={() => setShowSessionForm(!showSessionForm)}>
+          <button className="btn btn-primary" onClick={() => {
+            if (showSessionForm) {
+              handleCancelSessionForm();
+            } else {
+              setShowSessionForm(true);
+            }
+          }}>
             {showSessionForm ? 'Annulla' : '+ Nuova Sessione'}
           </button>
         </div>
 
         {showSessionForm && (
           <form onSubmit={handleSessionSubmit} style={{ marginBottom: '30px', padding: '20px', background: '#f5f5f5', borderRadius: '8px' }}>
-            <h3>Crea Nuova Sessione</h3>
+            <h3>{editingSession ? 'Modifica Sessione' : 'Crea Nuova Sessione'}</h3>
             
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
               <div className="form-group">
@@ -584,7 +628,7 @@ function EventDetail() {
             </div>
 
             <button type="submit" className="btn btn-primary">
-              Crea Sessione
+              {editingSession ? 'Salva Modifiche' : 'Crea Sessione'}
             </button>
           </form>
         )}
@@ -620,16 +664,28 @@ function EventDetail() {
                   <td>{session.tire_set || '-'}</td>
                   <td>{session.best_lap_time || '-'}</td>
                   <td>
-                    <button
-                      className="btn btn-danger"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteSession(session.id);
-                      }}
-                      style={{ fontSize: '12px', padding: '6px 12px' }}
-                    >
-                      Elimina
-                    </button>
+                    <div style={{ display: 'flex', gap: '5px' }}>
+                      <button
+                        className="btn btn-secondary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditSession(session);
+                        }}
+                        style={{ fontSize: '12px', padding: '6px 12px' }}
+                      >
+                        ✏️ Modifica
+                      </button>
+                      <button
+                        className="btn btn-danger"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteSession(session.id);
+                        }}
+                        style={{ fontSize: '12px', padding: '6px 12px' }}
+                      >
+                        Elimina
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

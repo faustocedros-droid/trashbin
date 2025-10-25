@@ -284,19 +284,35 @@ function EventDetail() {
   // tirePressure, fuelConsumption, eventSchedule, trackConfiguration, settings
   const handleExportEvent = async () => {
     try {
-      // Fetch all sessions with their laps
-      const sessionsWithLaps = await Promise.all(
-        sessions.map(async (session) => {
-          const lapsResponse = await sessionAPI.getLaps(session.id);
+      // Fetch ALL events from backend with their sessions and laps
+      const eventsResponse = await eventAPI.getAll();
+      const allEvents = eventsResponse.data;
+      
+      // For each event, fetch sessions and laps
+      const eventsWithSessionsAndLaps = await Promise.all(
+        allEvents.map(async (evt) => {
+          const sessionsResponse = await eventAPI.getSessions(evt.id);
+          const sessionsData = sessionsResponse.data;
+          
+          // For each session, fetch laps
+          const sessionsWithLaps = await Promise.all(
+            sessionsData.map(async (session) => {
+              const lapsResponse = await sessionAPI.getLaps(session.id);
+              return {
+                ...session,
+                laps: lapsResponse.data
+              };
+            })
+          );
+          
           return {
-            ...session,
-            laps: lapsResponse.data
+            ...evt,
+            sessions: sessionsWithLaps
           };
         })
       );
 
       // Get ALL data from localStorage - all sections and subsections
-      const eventsData = localStorage.getItem('racingCarManager_events');
       const tirePressureData = localStorage.getItem('tirePressureDatabase');
       const runPlanData = localStorage.getItem('runPlanSheet_data');
       const runPlanHistory = localStorage.getItem('runPlanSheet_history');
@@ -310,19 +326,13 @@ function EventDetail() {
       const storagePath = localStorage.getItem('racingCarManager_storagePath');
       const archivePath = localStorage.getItem('racingCarManager_archivePath');
 
-      // Create comprehensive export object with current event/sessions AND all app data
+      // Create comprehensive export object with ALL events/sessions/laps AND all app data
       const exportData = {
         version: '2.0',
         exportDate: new Date().toISOString(),
         
-        // Current event being exported (with sessions and laps)
-        currentEvent: {
-          event: event,
-          sessions: sessionsWithLaps
-        },
-        
-        // All Events section (from localStorage)
-        events: eventsData ? JSON.parse(eventsData) : [],
+        // All Events section with sessions and laps from backend database
+        events: eventsWithSessionsAndLaps,
         
         // Event Features section
         eventFeatures: eventFeaturesPaths ? JSON.parse(eventFeaturesPaths) : null,
@@ -395,26 +405,45 @@ function EventDetail() {
       try {
         const importData = JSON.parse(event.target?.result);
         
-        // Determine if this is a new .rcdata format or old .rcme format
-        let eventData, sessionsData;
+        // Determine if this is new .rcdata format (with events array) or old formats
+        let eventsToImport = [];
         let hasAllAppData = false;
         
-        if (importData.currentEvent) {
-          // New .rcdata format with comprehensive data
-          eventData = importData.currentEvent.event;
-          sessionsData = importData.currentEvent.sessions;
+        if (importData.events && Array.isArray(importData.events) && importData.events.length > 0) {
+          // New .rcdata format with events array (each with sessions and laps)
+          // Check if first event has sessions property (new format with full data)
+          if (importData.events[0].sessions) {
+            eventsToImport = importData.events;
+            hasAllAppData = true;
+          } else {
+            // Legacy format - events without sessions
+            throw new Error('File non valido: eventi senza sessioni');
+          }
+        } else if (importData.currentEvent) {
+          // Old .rcdata format with single currentEvent
+          eventsToImport = [{
+            ...importData.currentEvent.event,
+            sessions: importData.currentEvent.sessions
+          }];
           hasAllAppData = true;
         } else if (importData.event && importData.sessions) {
-          // Old .rcme format
-          eventData = importData.event;
-          sessionsData = importData.sessions;
+          // Very old .rcme format
+          eventsToImport = [{
+            ...importData.event,
+            sessions: importData.sessions
+          }];
         } else {
           throw new Error('File non valido: struttura dati mancante');
         }
 
         // Build confirmation message
-        let confirmMessage = `Vuoi importare l'evento "${eventData.name}"?\n\n` +
-          `Questo creerà un nuovo evento con ${sessionsData.length} sessioni e tutti i loro giri.`;
+        const totalSessions = eventsToImport.reduce((sum, evt) => sum + (evt.sessions?.length || 0), 0);
+        const totalLaps = eventsToImport.reduce((sum, evt) => 
+          sum + evt.sessions.reduce((s, sess) => s + (sess.laps?.length || 0), 0), 0
+        );
+        
+        let confirmMessage = `Vuoi importare ${eventsToImport.length} evento/i?\n\n` +
+          `Totale: ${totalSessions} sessioni e ${totalLaps} giri.`;
         
         if (hasAllAppData) {
           confirmMessage += '\n\nATTENZIONE: Questo file contiene anche tutti i dati dell\'applicazione che verranno ripristinati.';
@@ -434,59 +463,64 @@ function EventDetail() {
           return;
         }
 
-        // Create new event
-        const newEventData = {
-          name: eventData.name + ' (Importato)',
-          track: eventData.track,
-          date_start: eventData.date_start,
-          date_end: eventData.date_end,
-          weather: eventData.weather,
-          notes: eventData.notes,
-          track_length: eventData.track_length
-        };
-        
-        const eventResponse = await eventAPI.create(newEventData);
-        const newEventId = eventResponse.data.id;
-
-        // Create sessions and laps
-        for (const session of sessionsData) {
-          const sessionData = {
-            session_type: session.session_type,
-            session_number: session.session_number,
-            duration: session.duration,
-            fuel_start: session.fuel_start,
-            fuel_per_lap: session.fuel_per_lap,
-            tire_set: session.tire_set,
-            session_status: session.session_status,
-            notes: session.notes
+        // Import all events
+        for (const eventData of eventsToImport) {
+          // Create new event
+          const newEventData = {
+            name: eventData.name + ' (Importato)',
+            track: eventData.track,
+            date_start: eventData.date_start,
+            date_end: eventData.date_end,
+            weather: eventData.weather,
+            notes: eventData.notes,
+            track_length: eventData.track_length
           };
+          
+          const eventResponse = await eventAPI.create(newEventData);
+          const newEventId = eventResponse.data.id;
 
-          const sessionResponse = await eventAPI.createSession(newEventId, sessionData);
-          const newSessionId = sessionResponse.data.id;
-
-          // Create laps for this session
-          if (session.laps && session.laps.length > 0) {
-            for (const lap of session.laps) {
-              const lapData = {
-                lap_number: lap.lap_number,
-                lap_time: lap.lap_time,
-                sector1: lap.sector1,
-                sector2: lap.sector2,
-                sector3: lap.sector3,
-                sector4: lap.sector4,
-                fuel_consumed: lap.fuel_consumed,
-                tire_set: lap.tire_set,
-                lap_status: lap.lap_status,
-                notes: lap.notes
+          // Create sessions and laps
+          if (eventData.sessions && eventData.sessions.length > 0) {
+            for (const session of eventData.sessions) {
+              const sessionData = {
+                session_type: session.session_type,
+                session_number: session.session_number,
+                duration: session.duration,
+                fuel_start: session.fuel_start,
+                fuel_per_lap: session.fuel_per_lap,
+                tire_set: session.tire_set,
+                session_status: session.session_status,
+                notes: session.notes
               };
-              await sessionAPI.createLap(newSessionId, lapData);
+
+              const sessionResponse = await eventAPI.createSession(newEventId, sessionData);
+              const newSessionId = sessionResponse.data.id;
+
+              // Create laps for this session
+              if (session.laps && session.laps.length > 0) {
+                for (const lap of session.laps) {
+                  const lapData = {
+                    lap_number: lap.lap_number,
+                    lap_time: lap.lap_time,
+                    sector1: lap.sector1,
+                    sector2: lap.sector2,
+                    sector3: lap.sector3,
+                    sector4: lap.sector4,
+                    fuel_consumed: lap.fuel_consumed,
+                    tire_set: lap.tire_set,
+                    lap_status: lap.lap_status,
+                    notes: lap.notes
+                  };
+                  await sessionAPI.createLap(newSessionId, lapData);
+                }
+              }
             }
           }
         }
 
         // If new .rcdata format, restore all app data
         if (hasAllAppData) {
-          // Events section (already in localStorage from API)
+          // Events section (already created in backend from above)
           
           // Event Features section
           if (importData.eventFeatures) {

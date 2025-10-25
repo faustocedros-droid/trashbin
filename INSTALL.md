@@ -180,19 +180,19 @@ python3 app.py
 Per personalizzare l'icona dell'applicazione:
 
 1. Crea un'icona in formato PNG (512x512 pixel raccomandati)
-2. Salva il file come `frontend/public/images/icon.png`
+2. Salva il file come `frontend/public/images/icon.png` (sostituendo il placeholder `icon.png.txt` se presente)
 3. Ricompila il pacchetto di installazione con `build-installer.bat` (Windows) o `./build-installer.sh` (Linux/macOS)
 
-L'icona personalizzata verrà utilizzata nell'installer e nell'applicazione installata.
+L'icona personalizzata verrà utilizzata nell'installer e nell'applicazione installata. Se non viene fornita un'icona personalizzata, verrà utilizzata l'icona predefinita di Electron.
 
 ### English
 To customize the application icon:
 
 1. Create an icon in PNG format (512x512 pixels recommended)
-2. Save the file as `frontend/public/images/icon.png`
+2. Save the file as `frontend/public/images/icon.png` (replacing the `icon.png.txt` placeholder if present)
 3. Rebuild the installation package with `build-installer.bat` (Windows) or `./build-installer.sh` (Linux/macOS)
 
-The custom icon will be used in the installer and installed application.
+The custom icon will be used in the installer and installed application. If no custom icon is provided, the default Electron icon will be used.
 
 ## Troubleshooting / Risoluzione Problemi
 

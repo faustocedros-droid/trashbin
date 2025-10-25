@@ -151,22 +151,9 @@ Edit `frontend/package.json`:
 
 1. Create a 512x512 PNG icon
 2. Save as `frontend/public/images/icon.png`
-3. Update `frontend/package.json` build configuration:
-```json
-{
-  "build": {
-    "win": {
-      "icon": "public/images/icon.png"
-    },
-    "mac": {
-      "icon": "public/images/icon.png"
-    },
-    "linux": {
-      "icon": "public/images/icon.png"
-    }
-  }
-}
-```
+3. Rebuild the installation package
+
+The electron-builder will automatically use the icon if present. If no icon is provided, electron-builder will use the default Electron icon.
 
 ### Signing (Optional)
 

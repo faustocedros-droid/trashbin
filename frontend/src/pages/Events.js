@@ -83,79 +83,103 @@ function Events() {
       try {
         const importData = JSON.parse(event.target?.result);
         
-        // Determine if this is a new .rcdata format or old .rcme format
-        let eventData, sessionsData;
+        // Determine if this is new .rcdata format (with events array) or old formats
+        let eventsToImport = [];
         
-        if (importData.currentEvent) {
-          // New .rcdata format with comprehensive data
-          eventData = importData.currentEvent.event;
-          sessionsData = importData.currentEvent.sessions;
+        if (importData.events && Array.isArray(importData.events) && importData.events.length > 0) {
+          // New .rcdata format with events array (each with sessions and laps)
+          // Check if first event has sessions property (new format with full data)
+          if (importData.events[0].sessions) {
+            eventsToImport = importData.events;
+          } else {
+            // Legacy format - events without sessions
+            throw new Error('File non valido: eventi senza sessioni');
+          }
+        } else if (importData.currentEvent) {
+          // Old .rcdata format with single currentEvent
+          eventsToImport = [{
+            ...importData.currentEvent.event,
+            sessions: importData.currentEvent.sessions
+          }];
         } else if (importData.event && importData.sessions) {
-          // Old .rcme format
-          eventData = importData.event;
-          sessionsData = importData.sessions;
+          // Very old .rcme format
+          eventsToImport = [{
+            ...importData.event,
+            sessions: importData.sessions
+          }];
         } else {
           throw new Error('File non valido: struttura dati mancante');
         }
 
-        if (!window.confirm(
-          `Vuoi importare l'evento "${eventData.name}"?\n\n` +
-          `Questo creerà un nuovo evento con ${sessionsData.length} sessioni e tutti i loro giri.`
-        )) {
+        // Build confirmation message
+        const totalSessions = eventsToImport.reduce((sum, evt) => sum + (evt.sessions?.length || 0), 0);
+        const totalLaps = eventsToImport.reduce((sum, evt) => 
+          sum + evt.sessions.reduce((s, sess) => s + (sess.laps?.length || 0), 0), 0
+        );
+        
+        const confirmMessage = `Vuoi importare ${eventsToImport.length} evento/i?\n\n` +
+          `Totale: ${totalSessions} sessioni e ${totalLaps} giri.`;
+
+        if (!window.confirm(confirmMessage)) {
           return;
         }
 
-        // Create new event
-        const newEventData = {
-          name: eventData.name + ' (Importato)',
-          track: eventData.track,
-          date_start: eventData.date_start,
-          date_end: eventData.date_end,
-          weather: eventData.weather,
-          notes: eventData.notes,
-          track_length: eventData.track_length
-        };
-        
-        const eventResponse = await eventAPI.create(newEventData);
-        const newEventId = eventResponse.data.id;
-
-        // Create sessions and laps
-        for (const session of sessionsData) {
-          const sessionData = {
-            session_type: session.session_type,
-            session_number: session.session_number,
-            duration: session.duration,
-            fuel_start: session.fuel_start,
-            fuel_per_lap: session.fuel_per_lap,
-            tire_set: session.tire_set,
-            session_status: session.session_status,
-            notes: session.notes
+        // Import all events
+        for (const eventData of eventsToImport) {
+          // Create new event
+          const newEventData = {
+            name: eventData.name + ' (Importato)',
+            track: eventData.track,
+            date_start: eventData.date_start,
+            date_end: eventData.date_end,
+            weather: eventData.weather,
+            notes: eventData.notes,
+            track_length: eventData.track_length
           };
+          
+          const eventResponse = await eventAPI.create(newEventData);
+          const newEventId = eventResponse.data.id;
 
-          const sessionResponse = await eventAPI.createSession(newEventId, sessionData);
-          const newSessionId = sessionResponse.data.id;
-
-          // Create laps for this session
-          if (session.laps && session.laps.length > 0) {
-            for (const lap of session.laps) {
-              const lapData = {
-                lap_number: lap.lap_number,
-                lap_time: lap.lap_time,
-                sector1: lap.sector1,
-                sector2: lap.sector2,
-                sector3: lap.sector3,
-                sector4: lap.sector4,
-                fuel_consumed: lap.fuel_consumed,
-                tire_set: lap.tire_set,
-                lap_status: lap.lap_status,
-                notes: lap.notes
+          // Create sessions and laps
+          if (eventData.sessions && eventData.sessions.length > 0) {
+            for (const session of eventData.sessions) {
+              const sessionData = {
+                session_type: session.session_type,
+                session_number: session.session_number,
+                duration: session.duration,
+                fuel_start: session.fuel_start,
+                fuel_per_lap: session.fuel_per_lap,
+                tire_set: session.tire_set,
+                session_status: session.session_status,
+                notes: session.notes
               };
-              await sessionAPI.createLap(newSessionId, lapData);
+
+              const sessionResponse = await eventAPI.createSession(newEventId, sessionData);
+              const newSessionId = sessionResponse.data.id;
+
+              // Create laps for this session
+              if (session.laps && session.laps.length > 0) {
+                for (const lap of session.laps) {
+                  const lapData = {
+                    lap_number: lap.lap_number,
+                    lap_time: lap.lap_time,
+                    sector1: lap.sector1,
+                    sector2: lap.sector2,
+                    sector3: lap.sector3,
+                    sector4: lap.sector4,
+                    fuel_consumed: lap.fuel_consumed,
+                    tire_set: lap.tire_set,
+                    lap_status: lap.lap_status,
+                    notes: lap.notes
+                  };
+                  await sessionAPI.createLap(newSessionId, lapData);
+                }
+              }
             }
           }
         }
 
-        alert('Evento importato con successo!');
+        alert('Evento/i importato/i con successo!');
         loadEvents();
       } catch (error) {
         console.error('Error importing event:', error);

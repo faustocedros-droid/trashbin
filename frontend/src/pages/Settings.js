@@ -1,103 +1,137 @@
 import React, { useState } from 'react';
+import { eventAPI, sessionAPI } from '../services/api';
 
 function Settings() {
   const [message, setMessage] = useState('');
   const [filename, setFilename] = useState('');
 
-  const handleSaveAllData = () => {
-    // Get ALL data from localStorage - all sections and subsections
-    const eventsData = localStorage.getItem('racingCarManager_events');
-    const tirePressureData = localStorage.getItem('tirePressureDatabase');
-    const runPlanData = localStorage.getItem('runPlanSheet_data');
-    const runPlanHistory = localStorage.getItem('runPlanSheet_history');
-    const trackLength = localStorage.getItem('currentTrackLength');
-    const eventSchedule = localStorage.getItem('eventSchedule');
-    const circuitImage = localStorage.getItem('generalInfo_circuitImage');
-    const generalSchedule = localStorage.getItem('generalInfo_schedule');
-    const setupData = localStorage.getItem('generalInfo_setup');
-    const fuelConsumption = localStorage.getItem('fuelConsumption_data');
-    const eventFeaturesPaths = localStorage.getItem('eventFeatures_filePaths');
-    const storagePath = localStorage.getItem('racingCarManager_storagePath');
-    const archivePath = localStorage.getItem('racingCarManager_archivePath');
-    
-    // Create a comprehensive archive object with ALL application data
-    const archiveData = {
-      version: '2.0', // Updated version for complete data export
-      exportDate: new Date().toISOString(),
+  const handleSaveAllData = async () => {
+    try {
+      // Fetch ALL events from backend with their sessions and laps
+      const eventsResponse = await eventAPI.getAll();
+      const allEvents = eventsResponse.data;
       
-      // Events section
-      events: eventsData ? JSON.parse(eventsData) : [],
+      // For each event, fetch sessions and laps
+      const eventsWithSessionsAndLaps = await Promise.all(
+        allEvents.map(async (event) => {
+          const sessionsResponse = await eventAPI.getSessions(event.id);
+          const sessions = sessionsResponse.data;
+          
+          // For each session, fetch laps
+          const sessionsWithLaps = await Promise.all(
+            sessions.map(async (session) => {
+              const lapsResponse = await sessionAPI.getLaps(session.id);
+              return {
+                ...session,
+                laps: lapsResponse.data
+              };
+            })
+          );
+          
+          return {
+            ...event,
+            sessions: sessionsWithLaps
+          };
+        })
+      );
       
-      // Event Features section
-      eventFeatures: eventFeaturesPaths ? JSON.parse(eventFeaturesPaths) : null,
+      // Get ALL data from localStorage - all sections and subsections
+      const tirePressureData = localStorage.getItem('tirePressureDatabase');
+      const runPlanData = localStorage.getItem('runPlanSheet_data');
+      const runPlanHistory = localStorage.getItem('runPlanSheet_history');
+      const trackLength = localStorage.getItem('currentTrackLength');
+      const eventSchedule = localStorage.getItem('eventSchedule');
+      const circuitImage = localStorage.getItem('generalInfo_circuitImage');
+      const generalSchedule = localStorage.getItem('generalInfo_schedule');
+      const setupData = localStorage.getItem('generalInfo_setup');
+      const fuelConsumption = localStorage.getItem('fuelConsumption_data');
+      const eventFeaturesPaths = localStorage.getItem('eventFeatures_filePaths');
+      const storagePath = localStorage.getItem('racingCarManager_storagePath');
+      const archivePath = localStorage.getItem('racingCarManager_archivePath');
       
-      // General Information section
-      generalInformation: {
-        circuitImage: circuitImage || null,
-        schedule: generalSchedule ? JSON.parse(generalSchedule) : null
-      },
+      // Create a comprehensive archive object with ALL application data
+      const archiveData = {
+        version: '2.0', // Updated version for complete data export
+        exportDate: new Date().toISOString(),
+        
+        // Events section with sessions and laps from backend database
+        events: eventsWithSessionsAndLaps,
+        
+        // Event Features section
+        eventFeatures: eventFeaturesPaths ? JSON.parse(eventFeaturesPaths) : null,
+        
+        // General Information section
+        generalInformation: {
+          circuitImage: circuitImage || null,
+          schedule: generalSchedule ? JSON.parse(generalSchedule) : null
+        },
+        
+        // Setup section
+        setup: setupData ? JSON.parse(setupData) : null,
+        
+        // RunPlan Sheets section and subsections
+        runPlan: {
+          currentSheet: runPlanData ? JSON.parse(runPlanData) : null,
+          history: runPlanHistory ? JSON.parse(runPlanHistory) : []
+        },
+        
+        // Tire Pressure Management section and all subsections
+        tirePressure: {
+          database: tirePressureData ? JSON.parse(tirePressureData) : null
+        },
+        
+        // Fuel Consumption section
+        fuelConsumption: fuelConsumption ? JSON.parse(fuelConsumption) : null,
+        
+        // Schedule/Event schedule
+        eventSchedule: eventSchedule ? JSON.parse(eventSchedule) : null,
+        
+        // Track configuration
+        trackConfiguration: {
+          currentTrackLength: trackLength ? parseFloat(trackLength) : null
+        },
+        
+        // Settings
+        settings: {
+          storagePath: storagePath || null,
+          archivePath: archivePath || null
+        }
+      };
       
-      // Setup section
-      setup: setupData ? JSON.parse(setupData) : null,
+      // Check if there's any data to save
+      const hasData = eventsWithSessionsAndLaps.length > 0 || tirePressureData || runPlanData || runPlanHistory || 
+                       eventSchedule || circuitImage || generalSchedule || setupData || 
+                       fuelConsumption || eventFeaturesPaths;
       
-      // RunPlan Sheets section and subsections
-      runPlan: {
-        currentSheet: runPlanData ? JSON.parse(runPlanData) : null,
-        history: runPlanHistory ? JSON.parse(runPlanHistory) : []
-      },
-      
-      // Tire Pressure Management section and all subsections
-      tirePressure: {
-        database: tirePressureData ? JSON.parse(tirePressureData) : null
-      },
-      
-      // Fuel Consumption section
-      fuelConsumption: fuelConsumption ? JSON.parse(fuelConsumption) : null,
-      
-      // Schedule/Event schedule
-      eventSchedule: eventSchedule ? JSON.parse(eventSchedule) : null,
-      
-      // Track configuration
-      trackConfiguration: {
-        currentTrackLength: trackLength ? parseFloat(trackLength) : null
-      },
-      
-      // Settings
-      settings: {
-        storagePath: storagePath || null,
-        archivePath: archivePath || null
+      if (!hasData) {
+        setMessage('⚠️ Nessun dato da salvare! Aggiungi contenuti nelle diverse sezioni prima di salvare.');
+        setTimeout(() => setMessage(''), 4000);
+        return;
       }
-    };
-    
-    // Check if there's any data to save
-    const hasData = eventsData || tirePressureData || runPlanData || runPlanHistory || 
-                     eventSchedule || circuitImage || generalSchedule || setupData || 
-                     fuelConsumption || eventFeaturesPaths;
-    
-    if (!hasData) {
-      setMessage('⚠️ Nessun dato da salvare! Aggiungi contenuti nelle diverse sezioni prima di salvare.');
+
+      // Create a blob with the comprehensive data
+      const blob = new Blob([JSON.stringify(archiveData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      // Create a download link
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Use custom filename or default
+      const defaultFilename = `racing_data_complete_${new Date().toISOString().split('T')[0]}.rcdata`;
+      link.download = filename ? (filename.endsWith('.rcdata') ? filename : filename + '.rcdata') : defaultFilename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      setMessage('✅ Tutti i dati sono stati salvati con successo! Il file è stato scaricato.');
       setTimeout(() => setMessage(''), 4000);
-      return;
+    } catch (error) {
+      console.error('Error saving data:', error);
+      setMessage('❌ Errore durante il salvataggio dei dati!');
+      setTimeout(() => setMessage(''), 4000);
     }
-
-    // Create a blob with the comprehensive data
-    const blob = new Blob([JSON.stringify(archiveData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    
-    // Create a download link
-    const link = document.createElement('a');
-    link.href = url;
-    
-    // Use custom filename or default
-    const defaultFilename = `racing_data_complete_${new Date().toISOString().split('T')[0]}.rcdata`;
-    link.download = filename ? (filename.endsWith('.rcdata') ? filename : filename + '.rcdata') : defaultFilename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
-    setMessage('✅ Tutti i dati sono stati salvati con successo! Il file è stato scaricato.');
-    setTimeout(() => setMessage(''), 4000);
   };
 
   const handleLoadAllData = (e) => {
@@ -105,7 +139,7 @@ function Settings() {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const data = event.target.result;
         const archiveData = JSON.parse(data);
@@ -114,9 +148,63 @@ function Settings() {
         if (archiveData.version === '2.0') {
           // New complete format - restore ALL application data
           
-          // Events section
-          if (archiveData.events) {
-            localStorage.setItem('racingCarManager_events', JSON.stringify(archiveData.events));
+          // Events section - recreate in backend database
+          if (archiveData.events && archiveData.events.length > 0) {
+            setMessage('⏳ Importazione eventi in corso...');
+            
+            for (const eventData of archiveData.events) {
+              // Create event in backend
+              const newEventData = {
+                name: eventData.name,
+                track: eventData.track,
+                date_start: eventData.date_start,
+                date_end: eventData.date_end,
+                weather: eventData.weather,
+                notes: eventData.notes,
+                track_length: eventData.track_length
+              };
+              
+              const eventResponse = await eventAPI.create(newEventData);
+              const newEventId = eventResponse.data.id;
+              
+              // Create sessions and laps for this event
+              if (eventData.sessions && eventData.sessions.length > 0) {
+                for (const session of eventData.sessions) {
+                  const sessionData = {
+                    session_type: session.session_type,
+                    session_number: session.session_number,
+                    duration: session.duration,
+                    fuel_start: session.fuel_start,
+                    fuel_per_lap: session.fuel_per_lap,
+                    tire_set: session.tire_set,
+                    session_status: session.session_status,
+                    notes: session.notes
+                  };
+                  
+                  const sessionResponse = await eventAPI.createSession(newEventId, sessionData);
+                  const newSessionId = sessionResponse.data.id;
+                  
+                  // Create laps for this session
+                  if (session.laps && session.laps.length > 0) {
+                    for (const lap of session.laps) {
+                      const lapData = {
+                        lap_number: lap.lap_number,
+                        lap_time: lap.lap_time,
+                        sector1: lap.sector1,
+                        sector2: lap.sector2,
+                        sector3: lap.sector3,
+                        sector4: lap.sector4,
+                        fuel_consumed: lap.fuel_consumed,
+                        tire_set: lap.tire_set,
+                        lap_status: lap.lap_status,
+                        notes: lap.notes
+                      };
+                      await sessionAPI.createLap(newSessionId, lapData);
+                    }
+                  }
+                }
+              }
+            }
           }
           
           // Event Features section

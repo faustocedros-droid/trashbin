@@ -279,7 +279,7 @@ function EventDetail() {
     }
   };
 
-  // Export event with all sessions and laps to file
+  // Export event with all sessions and laps to file, plus ALL app data
   const handleExportEvent = async () => {
     try {
       // Fetch all sessions with their laps
@@ -293,22 +293,74 @@ function EventDetail() {
         })
       );
 
-      // Get all runplans from localStorage
-      const runPlanHistoryData = localStorage.getItem('runPlanSheet_history');
-      const runPlans = runPlanHistoryData ? JSON.parse(runPlanHistoryData) : [];
-
-      // Get tire pressure database from localStorage
+      // Get ALL data from localStorage - all sections and subsections
+      const eventsData = localStorage.getItem('racingCarManager_events');
       const tirePressureData = localStorage.getItem('tirePressureDatabase');
-      const tirePressureDatabase = tirePressureData ? JSON.parse(tirePressureData) : [];
+      const runPlanData = localStorage.getItem('runPlanSheet_data');
+      const runPlanHistory = localStorage.getItem('runPlanSheet_history');
+      const trackLength = localStorage.getItem('currentTrackLength');
+      const eventSchedule = localStorage.getItem('eventSchedule');
+      const circuitImage = localStorage.getItem('generalInfo_circuitImage');
+      const generalSchedule = localStorage.getItem('generalInfo_schedule');
+      const setupData = localStorage.getItem('generalInfo_setup');
+      const fuelConsumption = localStorage.getItem('fuelConsumption_data');
+      const eventFeaturesPaths = localStorage.getItem('eventFeatures_filePaths');
+      const storagePath = localStorage.getItem('racingCarManager_storagePath');
+      const archivePath = localStorage.getItem('racingCarManager_archivePath');
 
-      // Create export object with event and all sessions/laps
+      // Create comprehensive export object with current event/sessions AND all app data
       const exportData = {
-        event: event,
-        sessions: sessionsWithLaps,
-        runPlans: runPlans,
-        tirePressureDatabase: tirePressureDatabase,
+        version: '2.0',
         exportDate: new Date().toISOString(),
-        version: '2.0'
+        
+        // Current event being exported (with sessions and laps)
+        currentEvent: {
+          event: event,
+          sessions: sessionsWithLaps
+        },
+        
+        // All Events section (from localStorage)
+        events: eventsData ? JSON.parse(eventsData) : [],
+        
+        // Event Features section
+        eventFeatures: eventFeaturesPaths ? JSON.parse(eventFeaturesPaths) : null,
+        
+        // General Information section
+        generalInformation: {
+          circuitImage: circuitImage || null,
+          schedule: generalSchedule ? JSON.parse(generalSchedule) : null
+        },
+        
+        // Setup section
+        setup: setupData ? JSON.parse(setupData) : null,
+        
+        // RunPlan Sheets section and subsections
+        runPlan: {
+          currentSheet: runPlanData ? JSON.parse(runPlanData) : null,
+          history: runPlanHistory ? JSON.parse(runPlanHistory) : []
+        },
+        
+        // Tire Pressure Management section and all subsections
+        tirePressure: {
+          database: tirePressureData ? JSON.parse(tirePressureData) : null
+        },
+        
+        // Fuel Consumption section
+        fuelConsumption: fuelConsumption ? JSON.parse(fuelConsumption) : null,
+        
+        // Schedule/Event schedule
+        eventSchedule: eventSchedule ? JSON.parse(eventSchedule) : null,
+        
+        // Track configuration
+        trackConfiguration: {
+          currentTrackLength: trackLength ? parseFloat(trackLength) : null
+        },
+        
+        // Settings
+        settings: {
+          storagePath: storagePath || null,
+          archivePath: archivePath || null
+        }
       };
 
       // Create and download file
@@ -318,7 +370,7 @@ function EventDetail() {
       link.href = url;
       const eventName = event.name.replace(/[^a-zA-Z0-9]/g, '_');
       const dateStr = new Date().toISOString().split('T')[0];
-      link.download = `event_${eventName}_${dateStr}.rcme`;
+      link.download = `event_${eventName}_${dateStr}.rcdata`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -341,22 +393,38 @@ function EventDetail() {
       try {
         const importData = JSON.parse(event.target?.result);
         
-        // Validate import data
-        if (!importData.event || !importData.sessions) {
+        // Determine if this is a new .rcdata format or old .rcme format
+        let eventData, sessionsData;
+        let hasAllAppData = false;
+        
+        if (importData.currentEvent) {
+          // New .rcdata format with comprehensive data
+          eventData = importData.currentEvent.event;
+          sessionsData = importData.currentEvent.sessions;
+          hasAllAppData = true;
+        } else if (importData.event && importData.sessions) {
+          // Old .rcme format
+          eventData = importData.event;
+          sessionsData = importData.sessions;
+        } else {
           throw new Error('File non valido: struttura dati mancante');
         }
 
         // Build confirmation message
-        let confirmMessage = `Vuoi importare l'evento "${importData.event.name}"?\n\n` +
-          `Questo creerà un nuovo evento con ${importData.sessions.length} sessioni e tutti i loro giri.`;
+        let confirmMessage = `Vuoi importare l'evento "${eventData.name}"?\n\n` +
+          `Questo creerà un nuovo evento con ${sessionsData.length} sessioni e tutti i loro giri.`;
         
-        // Add info about runplans if present
-        if (importData.runPlans && importData.runPlans.length > 0) {
+        if (hasAllAppData) {
+          confirmMessage += '\n\nATTENZIONE: Questo file contiene anche tutti i dati dell\'applicazione che verranno ripristinati.';
+        }
+        
+        // Add info about runplans if present (old format)
+        if (!hasAllAppData && importData.runPlans && importData.runPlans.length > 0) {
           confirmMessage += `\n\nRunPlans inclusi: ${importData.runPlans.length}`;
         }
         
-        // Add info about tire pressure database if present
-        if (importData.tirePressureDatabase && importData.tirePressureDatabase.length > 0) {
+        // Add info about tire pressure database if present (old format)
+        if (!hasAllAppData && importData.tirePressureDatabase && importData.tirePressureDatabase.length > 0) {
           confirmMessage += `\nDatabase pressioni pneumatici: ${importData.tirePressureDatabase.length} entry`;
         }
 
@@ -366,20 +434,20 @@ function EventDetail() {
 
         // Create new event
         const newEventData = {
-          name: importData.event.name + ' (Importato)',
-          track: importData.event.track,
-          date_start: importData.event.date_start,
-          date_end: importData.event.date_end,
-          weather: importData.event.weather,
-          notes: importData.event.notes,
-          track_length: importData.event.track_length
+          name: eventData.name + ' (Importato)',
+          track: eventData.track,
+          date_start: eventData.date_start,
+          date_end: eventData.date_end,
+          weather: eventData.weather,
+          notes: eventData.notes,
+          track_length: eventData.track_length
         };
         
         const eventResponse = await eventAPI.create(newEventData);
         const newEventId = eventResponse.data.id;
 
         // Create sessions and laps
-        for (const session of importData.sessions) {
+        for (const session of sessionsData) {
           const sessionData = {
             session_type: session.session_type,
             session_number: session.session_number,
@@ -414,37 +482,102 @@ function EventDetail() {
           }
         }
 
-        // Import runplans if present
-        if (importData.runPlans && importData.runPlans.length > 0) {
-          const existingRunPlans = localStorage.getItem('runPlanSheet_history');
-          const runPlanHistory = existingRunPlans ? JSON.parse(existingRunPlans) : [];
+        // If new .rcdata format, restore all app data
+        if (hasAllAppData) {
+          // Events section (already in localStorage from API)
           
-          // Add imported runplans to history
-          const importedRunPlans = importData.runPlans.map(rp => ({
-            ...rp,
-            id: `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
-            timestamp: new Date().toISOString(),
-            imported: true
-          }));
+          // Event Features section
+          if (importData.eventFeatures) {
+            localStorage.setItem('eventFeatures_filePaths', JSON.stringify(importData.eventFeatures));
+          }
           
-          runPlanHistory.push(...importedRunPlans);
-          localStorage.setItem('runPlanSheet_history', JSON.stringify(runPlanHistory));
-        }
+          // General Information section
+          if (importData.generalInformation) {
+            if (importData.generalInformation.circuitImage) {
+              localStorage.setItem('generalInfo_circuitImage', importData.generalInformation.circuitImage);
+            }
+            if (importData.generalInformation.schedule) {
+              localStorage.setItem('generalInfo_schedule', JSON.stringify(importData.generalInformation.schedule));
+            }
+          }
+          
+          // Setup section
+          if (importData.setup) {
+            localStorage.setItem('generalInfo_setup', JSON.stringify(importData.setup));
+          }
+          
+          // RunPlan section
+          if (importData.runPlan) {
+            if (importData.runPlan.currentSheet) {
+              localStorage.setItem('runPlanSheet_data', JSON.stringify(importData.runPlan.currentSheet));
+            }
+            if (importData.runPlan.history) {
+              localStorage.setItem('runPlanSheet_history', JSON.stringify(importData.runPlan.history));
+            }
+          }
+          
+          // Tire Pressure section
+          if (importData.tirePressure && importData.tirePressure.database) {
+            localStorage.setItem('tirePressureDatabase', JSON.stringify(importData.tirePressure.database));
+          }
+          
+          // Fuel Consumption section
+          if (importData.fuelConsumption) {
+            localStorage.setItem('fuelConsumption_data', JSON.stringify(importData.fuelConsumption));
+          }
+          
+          // Event Schedule
+          if (importData.eventSchedule) {
+            localStorage.setItem('eventSchedule', JSON.stringify(importData.eventSchedule));
+          }
+          
+          // Track Configuration
+          if (importData.trackConfiguration && importData.trackConfiguration.currentTrackLength !== null) {
+            localStorage.setItem('currentTrackLength', importData.trackConfiguration.currentTrackLength.toString());
+          }
+          
+          // Settings
+          if (importData.settings) {
+            if (importData.settings.storagePath) {
+              localStorage.setItem('racingCarManager_storagePath', importData.settings.storagePath);
+            }
+            if (importData.settings.archivePath) {
+              localStorage.setItem('racingCarManager_archivePath', importData.settings.archivePath);
+            }
+          }
+        } else {
+          // Old .rcme format - import runplans if present
+          if (importData.runPlans && importData.runPlans.length > 0) {
+            const existingRunPlans = localStorage.getItem('runPlanSheet_history');
+            const runPlanHistory = existingRunPlans ? JSON.parse(existingRunPlans) : [];
+            
+            // Add imported runplans to history
+            const importedRunPlans = importData.runPlans.map(rp => ({
+              ...rp,
+              id: `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+              timestamp: new Date().toISOString(),
+              imported: true
+            }));
+            
+            runPlanHistory.push(...importedRunPlans);
+            localStorage.setItem('runPlanSheet_history', JSON.stringify(runPlanHistory));
+          }
 
-        // Import tire pressure database if present
-        if (importData.tirePressureDatabase && importData.tirePressureDatabase.length > 0) {
-          const existingTirePressure = localStorage.getItem('tirePressureDatabase');
-          const tirePressureDb = existingTirePressure ? JSON.parse(existingTirePressure) : [];
-          
-          // Add imported entries to tire pressure database
-          const importedEntries = importData.tirePressureDatabase.map(entry => ({
-            ...entry,
-            id: Date.now().toString() + '-' + Math.random().toString(36).substring(2, 11),
-            imported: true
-          }));
-          
-          tirePressureDb.push(...importedEntries);
-          localStorage.setItem('tirePressureDatabase', JSON.stringify(tirePressureDb));
+          // Import tire pressure database if present
+          if (importData.tirePressureDatabase && importData.tirePressureDatabase.length > 0) {
+            const existingTirePressure = localStorage.getItem('tirePressureDatabase');
+            const tirePressureDb = existingTirePressure ? JSON.parse(existingTirePressure) : [];
+            
+            // Add imported entries to tire pressure database
+            const importedEntries = importData.tirePressureDatabase.map(entry => ({
+              ...entry,
+              id: Date.now().toString() + '-' + Math.random().toString(36).substring(2, 11),
+              imported: true
+            }));
+            
+            tirePressureDb.push(...importedEntries);
+            localStorage.setItem('tirePressureDatabase', JSON.stringify(tirePressureDb));
+          }
         }
 
         alert('Evento importato con successo! Verrai reindirizzato alla lista eventi.');
@@ -494,7 +627,7 @@ function EventDetail() {
               📂 Importa Evento
               <input
                 type="file"
-                accept=".rcme"
+                accept=".rcdata,.rcme"
                 onChange={handleImportEvent}
                 style={{ display: 'none' }}
               />

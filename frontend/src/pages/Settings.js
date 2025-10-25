@@ -89,8 +89,8 @@ function Settings() {
     link.href = url;
     
     // Use custom filename or default
-    const defaultFilename = `racing_data_complete_${new Date().toISOString().split('T')[0]}.rcmd`;
-    link.download = filename ? (filename.endsWith('.rcmd') ? filename : filename + '.rcmd') : defaultFilename;
+    const defaultFilename = `racing_data_complete_${new Date().toISOString().split('T')[0]}.rcdata`;
+    link.download = filename ? (filename.endsWith('.rcdata') ? filename : filename + '.rcdata') : defaultFilename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -212,7 +212,7 @@ function Settings() {
           setMessage('✅ Dati caricati (formato precedente - dati parziali). La pagina verrà ricaricata.');
         } else {
           // Unknown or very old format
-          setMessage('⚠️ Formato file non riconosciuto. Assicurati di utilizzare un file .rcmd valido.');
+          setMessage('⚠️ Formato file non riconosciuto. Assicurati di utilizzare un file .rcdata valido.');
           setTimeout(() => setMessage(''), 4000);
           return;
         }
@@ -263,7 +263,7 @@ function Settings() {
               id="filename"
               value={filename}
               onChange={(e) => setFilename(e.target.value)}
-              placeholder="es. mio_evento.rcmd (estensione .rcmd verrà aggiunta automaticamente)"
+              placeholder="es. mio_evento.rcdata (estensione .rcdata verrà aggiunta automaticamente)"
               style={{
                 width: '100%',
                 padding: '12px',
@@ -273,7 +273,7 @@ function Settings() {
               }}
             />
             <small style={{ display: 'block', marginTop: '8px', color: '#666' }}>
-              Se non specificato, verrà generato automaticamente: <code>racing_data_complete_YYYY-MM-DD.rcmd</code>
+              Se non specificato, verrà generato automaticamente: <code>racing_data_complete_YYYY-MM-DD.rcdata</code>
             </small>
           </div>
 
@@ -328,7 +328,7 @@ function Settings() {
           
           <input
             type="file"
-            accept=".rcmd,.tpdb"
+            accept=".rcdata,.rcmd,.tpdb"
             onChange={handleLoadAllData}
             style={{
               padding: '12px',
@@ -340,7 +340,7 @@ function Settings() {
           />
           
           <small style={{ display: 'block', marginTop: '12px', color: '#666' }}>
-            Formati supportati: <code>.rcmd</code> (completo v2.0), <code>.tpdb</code> (parziale v1.x)
+            Formati supportati: <code>.rcdata</code> (completo v2.0+), <code>.rcmd</code> (legacy v2.0), <code>.tpdb</code> (parziale v1.x)
           </small>
         </div>
       </div>
@@ -349,7 +349,7 @@ function Settings() {
         <h2>ℹ️ Informazioni sul Salvataggio</h2>
         
         <div style={{ lineHeight: '1.8' }}>
-          <p><strong>Formato File:</strong> I dati vengono salvati in formato JSON con estensione <code>.rcmd</code> (Racing Car Manager Data)</p>
+          <p><strong>Formato File:</strong> I dati vengono salvati in formato JSON con estensione <code>.rcdata</code> (Racing Car Data)</p>
           
           <p><strong>Posizione:</strong> Il file viene scaricato nella cartella Download del browser</p>
           
@@ -358,12 +358,13 @@ function Settings() {
             <li>Salva i dati regolarmente durante le sessioni di lavoro</li>
             <li>Crea backup prima di eventi importanti</li>
             <li>Mantieni copie di sicurezza in più posizioni</li>
-            <li>Utilizza nomi file descrittivi (es. <code>imola_2025_setup.rcmd</code>)</li>
+            <li>Utilizza nomi file descrittivi (es. <code>imola_2025_setup.rcdata</code>)</li>
           </ul>
           
           <p><strong>Compatibilità:</strong></p>
           <ul>
-            <li><code>.rcmd v2.0</code> - Formato completo con tutti i dati (versione corrente)</li>
+            <li><code>.rcdata v2.0+</code> - Formato unificato completo con tutti i dati (versione corrente)</li>
+            <li><code>.rcmd v2.0</code> - Formato legacy completo (compatibile in lettura)</li>
             <li><code>.tpdb v1.x</code> - Formato parziale legacy (compatibile in lettura)</li>
           </ul>
         </div>

@@ -83,34 +83,44 @@ function Events() {
       try {
         const importData = JSON.parse(event.target?.result);
         
-        // Validate import data
-        if (!importData.event || !importData.sessions) {
+        // Determine if this is a new .rcdata format or old .rcme format
+        let eventData, sessionsData;
+        
+        if (importData.currentEvent) {
+          // New .rcdata format with comprehensive data
+          eventData = importData.currentEvent.event;
+          sessionsData = importData.currentEvent.sessions;
+        } else if (importData.event && importData.sessions) {
+          // Old .rcme format
+          eventData = importData.event;
+          sessionsData = importData.sessions;
+        } else {
           throw new Error('File non valido: struttura dati mancante');
         }
 
         if (!window.confirm(
-          `Vuoi importare l'evento "${importData.event.name}"?\n\n` +
-          `Questo creerà un nuovo evento con ${importData.sessions.length} sessioni e tutti i loro giri.`
+          `Vuoi importare l'evento "${eventData.name}"?\n\n` +
+          `Questo creerà un nuovo evento con ${sessionsData.length} sessioni e tutti i loro giri.`
         )) {
           return;
         }
 
         // Create new event
         const newEventData = {
-          name: importData.event.name + ' (Importato)',
-          track: importData.event.track,
-          date_start: importData.event.date_start,
-          date_end: importData.event.date_end,
-          weather: importData.event.weather,
-          notes: importData.event.notes,
-          track_length: importData.event.track_length
+          name: eventData.name + ' (Importato)',
+          track: eventData.track,
+          date_start: eventData.date_start,
+          date_end: eventData.date_end,
+          weather: eventData.weather,
+          notes: eventData.notes,
+          track_length: eventData.track_length
         };
         
         const eventResponse = await eventAPI.create(newEventData);
         const newEventId = eventResponse.data.id;
 
         // Create sessions and laps
-        for (const session of importData.sessions) {
+        for (const session of sessionsData) {
           const sessionData = {
             session_type: session.session_type,
             session_number: session.session_number,
@@ -177,7 +187,7 @@ function Events() {
             📂 Importa Evento
             <input
               type="file"
-              accept=".rcme"
+              accept=".rcdata,.rcme"
               onChange={handleImportEvent}
               style={{ display: 'none' }}
             />

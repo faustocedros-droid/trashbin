@@ -174,6 +174,26 @@ pip install -r requirements.txt
 python3 app.py
 ```
 
+## Customizing the App Icon / Personalizzazione Icona
+
+### Italiano
+Per personalizzare l'icona dell'applicazione:
+
+1. Crea un'icona in formato PNG (512x512 pixel raccomandati)
+2. Salva il file come `frontend/public/images/icon.png`
+3. Ricompila il pacchetto di installazione con `build-installer.bat` (Windows) o `./build-installer.sh` (Linux/macOS)
+
+L'icona personalizzata verrà utilizzata nell'installer e nell'applicazione installata.
+
+### English
+To customize the application icon:
+
+1. Create an icon in PNG format (512x512 pixels recommended)
+2. Save the file as `frontend/public/images/icon.png`
+3. Rebuild the installation package with `build-installer.bat` (Windows) or `./build-installer.sh` (Linux/macOS)
+
+The custom icon will be used in the installer and installed application.
+
 ## Troubleshooting / Risoluzione Problemi
 
 ### L'applicazione non si avvia / Application won't start

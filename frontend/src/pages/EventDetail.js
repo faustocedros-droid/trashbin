@@ -280,6 +280,8 @@ function EventDetail() {
   };
 
   // Export event with all sessions and laps to file, plus ALL app data
+  // Includes: events, eventFeatures, generalInformation, setup, runPlan, 
+  // tirePressure, fuelConsumption, eventSchedule, trackConfiguration, settings
   const handleExportEvent = async () => {
     try {
       // Fetch all sessions with their laps
@@ -532,7 +534,7 @@ function EventDetail() {
           }
           
           // Track Configuration
-          if (importData.trackConfiguration && importData.trackConfiguration.currentTrackLength !== null) {
+          if (importData.trackConfiguration && importData.trackConfiguration.currentTrackLength != null) {
             localStorage.setItem('currentTrackLength', importData.trackConfiguration.currentTrackLength.toString());
           }
           

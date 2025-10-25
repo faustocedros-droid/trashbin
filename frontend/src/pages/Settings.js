@@ -349,7 +349,7 @@ function Settings() {
         <h2>ℹ️ Informazioni sul Salvataggio</h2>
         
         <div style={{ lineHeight: '1.8' }}>
-          <p><strong>Formato File:</strong> I dati vengono salvati in formato JSON con estensione <code>.rcdata</code> (Racing Car Data)</p>
+          <p><strong>Formato File:</strong> I dati vengono salvati in formato JSON con estensione <code>.rcdata</code> (Racing Car Manager Data - formato unificato)</p>
           
           <p><strong>Posizione:</strong> Il file viene scaricato nella cartella Download del browser</p>
           

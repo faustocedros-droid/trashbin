@@ -6,7 +6,7 @@ Il file `.RCDATA` non conteneva le informazioni sull'evento, le sessioni e i gir
 
 ### Analisi del Problema
 
-Prima della fix, c'erano inconsistenze nel sistema di export/import:
+Prima della fix, c'erano incoerenze nel sistema di export/import:
 
 1. **EventDetail.js** esportava con struttura `currentEvent` (singolo evento) + dati localStorage
 2. **Settings.js** esportava SOLO dati localStorage (mancavano eventi/sessioni/giri dal database)
@@ -79,18 +79,33 @@ if (archiveData.events) {
 if (archiveData.events && archiveData.events.length > 0) {
   for (const eventData of archiveData.events) {
     // Crea evento nel database backend
+    const newEventData = {
+      name: eventData.name,
+      track: eventData.track,
+      // ... altri campi evento
+    };
     const eventResponse = await eventAPI.create(newEventData);
     const newEventId = eventResponse.data.id;
     
     // Crea sessioni e giri per questo evento
     if (eventData.sessions && eventData.sessions.length > 0) {
       for (const session of eventData.sessions) {
+        const sessionData = {
+          session_type: session.session_type,
+          session_number: session.session_number,
+          // ... altri campi sessione
+        };
         const sessionResponse = await eventAPI.createSession(newEventId, sessionData);
         const newSessionId = sessionResponse.data.id;
         
         // Crea giri per questa sessione
         if (session.laps && session.laps.length > 0) {
           for (const lap of session.laps) {
+            const lapData = {
+              lap_number: lap.lap_number,
+              lap_time: lap.lap_time,
+              // ... altri campi giro
+            };
             await sessionAPI.createLap(newSessionId, lapData);
           }
         }

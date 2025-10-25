@@ -342,6 +342,58 @@ ipcMain.handle('load-driver-comment', async (event) => {
   }
 });
 
+// Handle saving .rcmd file
+ipcMain.handle('save-rcmd-file', async (event, data, filename) => {
+  try {
+    const fs = require('fs');
+    const defaultFilename = filename || `racing_data_complete_${new Date().toISOString().split('T')[0]}.rcmd`;
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: 'Salva File RCMD',
+      defaultPath: defaultFilename.endsWith('.rcmd') ? defaultFilename : defaultFilename + '.rcmd',
+      filters: [
+        { name: 'Racing Car Manager Data', extensions: ['rcmd'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    });
+    
+    if (!result.canceled && result.filePath) {
+      fs.writeFileSync(result.filePath, JSON.stringify(data, null, 2));
+      return { success: true, filePath: result.filePath };
+    }
+    return { success: false };
+  } catch (error) {
+    console.error('Error saving .rcmd file:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Handle loading .rcmd file
+ipcMain.handle('load-rcmd-file', async (event) => {
+  try {
+    const fs = require('fs');
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Carica File RCMD',
+      properties: ['openFile'],
+      filters: [
+        { name: 'Racing Car Manager Data', extensions: ['rcmd'] },
+        { name: 'Legacy Format', extensions: ['tpdb'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    });
+    
+    if (!result.canceled && result.filePaths.length > 0) {
+      const filePath = result.filePaths[0];
+      const fileContent = fs.readFileSync(filePath, 'utf8');
+      const data = JSON.parse(fileContent);
+      return { success: true, data };
+    }
+    return { success: false };
+  } catch (error) {
+    console.error('Error loading .rcmd file:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // Handle crashes gracefully
 app.on('render-process-gone', (event, webContents, details) => {
   console.error('Render process gone:', details);

@@ -38,6 +38,10 @@ contextBridge.exposeInMainWorld('electron', {
   saveDriverComment: (data) => ipcRenderer.invoke('save-driver-comment', data),
   loadDriverComment: () => ipcRenderer.invoke('load-driver-comment'),
   
+  // RCMD file operations
+  saveRcmdFile: (data, filename) => ipcRenderer.invoke('save-rcmd-file', data, filename),
+  loadRcmdFile: () => ipcRenderer.invoke('load-rcmd-file'),
+  
   // Platform info
   platform: process.platform,
   

@@ -3,8 +3,11 @@ import React, { useState } from 'react';
 function Settings() {
   const [message, setMessage] = useState('');
   const [filename, setFilename] = useState('');
+  
+  // Check if running in Electron
+  const isElectron = typeof window !== 'undefined' && window.electron;
 
-  const handleSaveAllData = () => {
+  const handleSaveAllData = async () => {
     // Get ALL data from localStorage - all sections and subsections
     const eventsData = localStorage.getItem('racingCarManager_events');
     const tirePressureData = localStorage.getItem('tirePressureDatabase');
@@ -80,154 +83,204 @@ function Settings() {
       return;
     }
 
-    // Create a blob with the comprehensive data
-    const blob = new Blob([JSON.stringify(archiveData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    
-    // Create a download link
-    const link = document.createElement('a');
-    link.href = url;
-    
-    // Use custom filename or default
-    const defaultFilename = `racing_data_complete_${new Date().toISOString().split('T')[0]}.rcmd`;
-    link.download = filename ? (filename.endsWith('.rcmd') ? filename : filename + '.rcmd') : defaultFilename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    // Use Electron IPC if available, otherwise use browser download
+    if (isElectron && window.electron.saveRcmdFile) {
+      try {
+        const result = await window.electron.saveRcmdFile(archiveData, filename);
+        if (result.success) {
+          setMessage('✅ Tutti i dati sono stati salvati con successo!');
+          setTimeout(() => setMessage(''), 4000);
+        } else {
+          setMessage('⚠️ Salvataggio annullato o non riuscito.');
+          setTimeout(() => setMessage(''), 4000);
+        }
+      } catch (error) {
+        console.error('Error saving file via Electron:', error);
+        setMessage('❌ Errore nel salvataggio del file!');
+        setTimeout(() => setMessage(''), 4000);
+      }
+    } else {
+      // Browser mode: create blob and download
+      const blob = new Blob([JSON.stringify(archiveData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      // Create a download link
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Use custom filename or default
+      const defaultFilename = `racing_data_complete_${new Date().toISOString().split('T')[0]}.rcmd`;
+      link.download = filename ? (filename.endsWith('.rcmd') ? filename : filename + '.rcmd') : defaultFilename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
 
-    setMessage('✅ Tutti i dati sono stati salvati con successo! Il file è stato scaricato.');
-    setTimeout(() => setMessage(''), 4000);
+      setMessage('✅ Tutti i dati sono stati salvati con successo! Il file è stato scaricato.');
+      setTimeout(() => setMessage(''), 4000);
+    }
   };
 
-  const handleLoadAllData = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
+  const handleLoadAllData = async (e) => {
+    let archiveData;
+    
+    // Use Electron IPC if available
+    if (isElectron && window.electron.loadRcmdFile) {
       try {
-        const data = event.target.result;
-        const archiveData = JSON.parse(data);
-        
-        // Check version and restore all data
-        if (archiveData.version === '2.0') {
-          // New complete format - restore ALL application data
-          
-          // Events section
-          if (archiveData.events) {
-            localStorage.setItem('racingCarManager_events', JSON.stringify(archiveData.events));
+        const result = await window.electron.loadRcmdFile();
+        if (!result.success) {
+          if (result.error) {
+            setMessage('❌ Errore nel caricamento del file! Assicurati che sia un file valido.');
           }
-          
-          // Event Features section
-          if (archiveData.eventFeatures) {
-            localStorage.setItem('eventFeatures_filePaths', JSON.stringify(archiveData.eventFeatures));
-          }
-          
-          // General Information section
-          if (archiveData.generalInformation) {
-            if (archiveData.generalInformation.circuitImage) {
-              localStorage.setItem('generalInfo_circuitImage', archiveData.generalInformation.circuitImage);
-            }
-            if (archiveData.generalInformation.schedule) {
-              localStorage.setItem('generalInfo_schedule', JSON.stringify(archiveData.generalInformation.schedule));
-            }
-          }
-          
-          // Setup section
-          if (archiveData.setup) {
-            localStorage.setItem('generalInfo_setup', JSON.stringify(archiveData.setup));
-          }
-          
-          // RunPlan section
-          if (archiveData.runPlan) {
-            if (archiveData.runPlan.currentSheet) {
-              localStorage.setItem('runPlanSheet_data', JSON.stringify(archiveData.runPlan.currentSheet));
-            }
-            if (archiveData.runPlan.history) {
-              localStorage.setItem('runPlanSheet_history', JSON.stringify(archiveData.runPlan.history));
-            }
-          }
-          
-          // Tire Pressure section
-          if (archiveData.tirePressure && archiveData.tirePressure.database) {
-            localStorage.setItem('tirePressureDatabase', JSON.stringify(archiveData.tirePressure.database));
-          }
-          
-          // Fuel Consumption section
-          if (archiveData.fuelConsumption) {
-            localStorage.setItem('fuelConsumption_data', JSON.stringify(archiveData.fuelConsumption));
-          }
-          
-          // Event Schedule
-          if (archiveData.eventSchedule) {
-            localStorage.setItem('eventSchedule', JSON.stringify(archiveData.eventSchedule));
-          }
-          
-          // Track Configuration
-          if (archiveData.trackConfiguration && archiveData.trackConfiguration.currentTrackLength !== null) {
-            localStorage.setItem('currentTrackLength', archiveData.trackConfiguration.currentTrackLength.toString());
-          }
-          
-          // Settings
-          if (archiveData.settings) {
-            if (archiveData.settings.storagePath) {
-              localStorage.setItem('racingCarManager_storagePath', archiveData.settings.storagePath);
-            }
-            if (archiveData.settings.archivePath) {
-              localStorage.setItem('racingCarManager_archivePath', archiveData.settings.archivePath);
-            }
-          }
-          
-          // Count restored items
-          let itemsRestored = 0;
-          if (archiveData.events && archiveData.events.length > 0) itemsRestored++;
-          if (archiveData.eventFeatures) itemsRestored++;
-          if (archiveData.generalInformation) itemsRestored++;
-          if (archiveData.setup) itemsRestored++;
-          if (archiveData.runPlan) itemsRestored++;
-          if (archiveData.tirePressure) itemsRestored++;
-          if (archiveData.fuelConsumption) itemsRestored++;
-          if (archiveData.eventSchedule) itemsRestored++;
-          
-          setMessage(`✅ Tutti i dati sono stati caricati con successo! ${itemsRestored} sezioni ripristinate. La pagina verrà ricaricata.`);
-        } else if (archiveData.version === '1.1' || archiveData.version === '1.0') {
-          // Old format - restore partial data
-          if (archiveData.events) {
-            localStorage.setItem('racingCarManager_events', JSON.stringify(archiveData.events));
-          }
-          if (archiveData.tirePressureDatabase) {
-            localStorage.setItem('tirePressureDatabase', JSON.stringify(archiveData.tirePressureDatabase));
-          }
-          if (archiveData.runPlanSheet) {
-            localStorage.setItem('runPlanSheet_data', JSON.stringify(archiveData.runPlanSheet));
-          }
-          if (archiveData.runPlanHistory) {
-            localStorage.setItem('runPlanSheet_history', JSON.stringify(archiveData.runPlanHistory));
-          }
-          if (archiveData.currentTrackLength !== null && archiveData.currentTrackLength !== undefined) {
-            localStorage.setItem('currentTrackLength', archiveData.currentTrackLength.toString());
-          }
-          
-          setMessage('✅ Dati caricati (formato precedente - dati parziali). La pagina verrà ricaricata.');
-        } else {
-          // Unknown or very old format
-          setMessage('⚠️ Formato file non riconosciuto. Assicurati di utilizzare un file .rcmd valido.');
-          setTimeout(() => setMessage(''), 4000);
+          // User cancelled, no message needed
           return;
         }
-        
-        setTimeout(() => setMessage(''), 5000);
-        
-        // Reload the page to reflect the restored data
-        setTimeout(() => window.location.reload(), 2000);
+        archiveData = result.data;
+      } catch (error) {
+        console.error('Error loading file via Electron:', error);
+        setMessage('❌ Errore nel caricamento del file! Assicurati che sia un file valido.');
+        setTimeout(() => setMessage(''), 4000);
+        return;
+      }
+    } else {
+      // Browser mode: use file input
+      const file = e.target.files[0];
+      if (!file) return;
+
+      try {
+        const fileContent = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (event) => resolve(event.target.result);
+          reader.onerror = reject;
+          reader.readAsText(file);
+        });
+        archiveData = JSON.parse(fileContent);
       } catch (error) {
         console.error('Error loading archive:', error);
         setMessage('❌ Errore nel caricamento del file! Assicurati che sia un file valido.');
         setTimeout(() => setMessage(''), 4000);
+        return;
       }
-    };
-    reader.readAsText(file);
+    }
+
+    // Process the loaded data
+    try {
+      // Check version and restore all data
+      if (archiveData.version === '2.0') {
+        // New complete format - restore ALL application data
+        
+        // Events section
+        if (archiveData.events) {
+          localStorage.setItem('racingCarManager_events', JSON.stringify(archiveData.events));
+        }
+        
+        // Event Features section
+        if (archiveData.eventFeatures) {
+          localStorage.setItem('eventFeatures_filePaths', JSON.stringify(archiveData.eventFeatures));
+        }
+        
+        // General Information section
+        if (archiveData.generalInformation) {
+          if (archiveData.generalInformation.circuitImage) {
+            localStorage.setItem('generalInfo_circuitImage', archiveData.generalInformation.circuitImage);
+          }
+          if (archiveData.generalInformation.schedule) {
+            localStorage.setItem('generalInfo_schedule', JSON.stringify(archiveData.generalInformation.schedule));
+          }
+        }
+        
+        // Setup section
+        if (archiveData.setup) {
+          localStorage.setItem('generalInfo_setup', JSON.stringify(archiveData.setup));
+        }
+        
+        // RunPlan section
+        if (archiveData.runPlan) {
+          if (archiveData.runPlan.currentSheet) {
+            localStorage.setItem('runPlanSheet_data', JSON.stringify(archiveData.runPlan.currentSheet));
+          }
+          if (archiveData.runPlan.history) {
+            localStorage.setItem('runPlanSheet_history', JSON.stringify(archiveData.runPlan.history));
+          }
+        }
+        
+        // Tire Pressure section
+        if (archiveData.tirePressure && archiveData.tirePressure.database) {
+          localStorage.setItem('tirePressureDatabase', JSON.stringify(archiveData.tirePressure.database));
+        }
+        
+        // Fuel Consumption section
+        if (archiveData.fuelConsumption) {
+          localStorage.setItem('fuelConsumption_data', JSON.stringify(archiveData.fuelConsumption));
+        }
+        
+        // Event Schedule
+        if (archiveData.eventSchedule) {
+          localStorage.setItem('eventSchedule', JSON.stringify(archiveData.eventSchedule));
+        }
+        
+        // Track Configuration
+        if (archiveData.trackConfiguration && archiveData.trackConfiguration.currentTrackLength !== null) {
+          localStorage.setItem('currentTrackLength', archiveData.trackConfiguration.currentTrackLength.toString());
+        }
+        
+        // Settings
+        if (archiveData.settings) {
+          if (archiveData.settings.storagePath) {
+            localStorage.setItem('racingCarManager_storagePath', archiveData.settings.storagePath);
+          }
+          if (archiveData.settings.archivePath) {
+            localStorage.setItem('racingCarManager_archivePath', archiveData.settings.archivePath);
+          }
+        }
+        
+        // Count restored items
+        let itemsRestored = 0;
+        if (archiveData.events && archiveData.events.length > 0) itemsRestored++;
+        if (archiveData.eventFeatures) itemsRestored++;
+        if (archiveData.generalInformation) itemsRestored++;
+        if (archiveData.setup) itemsRestored++;
+        if (archiveData.runPlan) itemsRestored++;
+        if (archiveData.tirePressure) itemsRestored++;
+        if (archiveData.fuelConsumption) itemsRestored++;
+        if (archiveData.eventSchedule) itemsRestored++;
+        
+        setMessage(`✅ Tutti i dati sono stati caricati con successo! ${itemsRestored} sezioni ripristinate. La pagina verrà ricaricata.`);
+      } else if (archiveData.version === '1.1' || archiveData.version === '1.0') {
+        // Old format - restore partial data
+        if (archiveData.events) {
+          localStorage.setItem('racingCarManager_events', JSON.stringify(archiveData.events));
+        }
+        if (archiveData.tirePressureDatabase) {
+          localStorage.setItem('tirePressureDatabase', JSON.stringify(archiveData.tirePressureDatabase));
+        }
+        if (archiveData.runPlanSheet) {
+          localStorage.setItem('runPlanSheet_data', JSON.stringify(archiveData.runPlanSheet));
+        }
+        if (archiveData.runPlanHistory) {
+          localStorage.setItem('runPlanSheet_history', JSON.stringify(archiveData.runPlanHistory));
+        }
+        if (archiveData.currentTrackLength !== null && archiveData.currentTrackLength !== undefined) {
+          localStorage.setItem('currentTrackLength', archiveData.currentTrackLength.toString());
+        }
+        
+        setMessage('✅ Dati caricati (formato precedente - dati parziali). La pagina verrà ricaricata.');
+      } else {
+        // Unknown or very old format
+        setMessage('⚠️ Formato file non riconosciuto. Assicurati di utilizzare un file .rcmd valido.');
+        setTimeout(() => setMessage(''), 4000);
+        return;
+      }
+      
+      setTimeout(() => setMessage(''), 5000);
+      
+      // Reload the page to reflect the restored data
+      setTimeout(() => window.location.reload(), 2000);
+    } catch (error) {
+      console.error('Error processing archive data:', error);
+      setMessage('❌ Errore nel caricamento del file! Assicurati che sia un file valido.');
+      setTimeout(() => setMessage(''), 4000);
+    }
   };
 
   return (
@@ -326,18 +379,34 @@ function Settings() {
             </p>
           </div>
           
-          <input
-            type="file"
-            accept=".rcmd,.tpdb"
-            onChange={handleLoadAllData}
-            style={{
-              padding: '12px',
-              fontSize: '16px',
-              border: '2px solid #007bff',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
-          />
+          {isElectron ? (
+            // Electron mode: use button with native dialog
+            <button 
+              onClick={handleLoadAllData}
+              className="btn btn-primary"
+              style={{
+                padding: '15px 30px',
+                fontSize: '18px',
+                fontWeight: 'bold'
+              }}
+            >
+              📂 Carica File RCMD
+            </button>
+          ) : (
+            // Browser mode: use file input
+            <input
+              type="file"
+              accept=".rcmd,.tpdb"
+              onChange={handleLoadAllData}
+              style={{
+                padding: '12px',
+                fontSize: '16px',
+                border: '2px solid #007bff',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            />
+          )}
           
           <small style={{ display: 'block', marginTop: '12px', color: '#666' }}>
             Formati supportati: <code>.rcmd</code> (completo v2.0), <code>.tpdb</code> (parziale v1.x)

@@ -98,8 +98,7 @@
             "x64"
           ]
         }
-      ],
-      "icon": "public/images/icon.png"
+      ]
     },
     "nsis": {
       "oneClick": false,
@@ -118,8 +117,7 @@
           ]
         }
       ],
-      "category": "public.app-category.productivity",
-      "icon": "public/images/icon.png"
+      "category": "public.app-category.productivity"
     },
     "linux": {
       "target": [
@@ -136,8 +134,7 @@
           ]
         }
       ],
-      "category": "Utility",
-      "icon": "public/images/icon.png"
+      "category": "Utility"
     }
   }
 }

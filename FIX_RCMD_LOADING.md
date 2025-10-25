@@ -1,9 +1,9 @@
 # Fix: .rcmd File Loading Issue in Desktop App
 
 ## Problem
-L'applicazione elaborata a seguito dell'ultima pull non era capace di caricare il file .rcmd e tutti i dati in esso contenuti.
+L'applicazione desktop a seguito dell'ultima pull non era capace di caricare il file .rcmd e tutti i dati in esso contenuti.
 
-The application was unable to load .rcmd files and all the data contained within them after the last pull request.
+The desktop application was unable to load .rcmd files and all the data contained within them after the last pull request.
 
 ## Root Cause
 The desktop Electron application was using HTML file input (`<input type="file">`) for loading .rcmd files, which can have limitations and permission issues in Electron's sandboxed environment. The app needed proper IPC (Inter-Process Communication) handlers to use native file dialogs.
@@ -12,13 +12,18 @@ The desktop Electron application was using HTML file input (`<input type="file">
 
 ### 1. Added Electron IPC Handlers (`frontend/public/electron.js`)
 - **`save-rcmd-file`**: Opens a native save dialog and saves the .rcmd file with proper filters
+  - Returns: `{ success: true, filePath: string }` on success
+  - Returns: `{ success: false }` on cancellation
+  - Returns: `{ success: false, error: string }` on error
 - **`load-rcmd-file`**: Opens a native open dialog and loads .rcmd or .tpdb files
+  - Returns: `{ success: true, data: object }` on success
+  - Returns: `{ success: false }` on cancellation
+  - Returns: `{ success: false, error: string }` on error
 
 Both handlers:
 - Use native file system access via Node.js `fs` module
 - Provide proper error handling
 - Support file type filtering (.rcmd, .tpdb)
-- Return standardized response objects with `{ success, data, error }`
 
 ### 2. Exposed Handlers in Preload Script (`frontend/public/preload.js`)
 - Added `saveRcmdFile` and `loadRcmdFile` methods to the electron context
@@ -29,6 +34,8 @@ Both handlers:
 - Added Electron environment detection: `const isElectron = typeof window !== 'undefined' && window.electron;`
 - Updated `handleSaveAllData()` to use Electron IPC when available, fallback to browser download
 - Updated `handleLoadAllData()` to use Electron IPC when available, fallback to FileReader
+  - In Electron mode: Called without event parameter (button click)
+  - In browser mode: Called with event parameter from file input onChange
 - Changed UI to show button instead of file input in Electron mode for better UX
 
 ## Key Features

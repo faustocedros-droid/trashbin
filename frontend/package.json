@@ -66,28 +66,78 @@
       "build/**/*",
       "public/electron.js",
       "public/preload.js",
-      "node_modules/**/*"
+      "node_modules/**/*",
+      "../backend/**/*",
+      "!../backend/venv/**/*",
+      "!../backend/__pycache__/**/*",
+      "!../backend/*.db",
+      "!../backend/.env"
+    ],
+    "extraResources": [
+      {
+        "from": "../backend",
+        "to": "backend",
+        "filter": [
+          "**/*",
+          "!venv/**/*",
+          "!__pycache__/**/*",
+          "!*.db",
+          "!.env"
+        ]
+      }
     ],
     "directories": {
-      "buildResources": "public"
+      "buildResources": "public",
+      "output": "../dist"
     },
     "win": {
       "target": [
-        "nsis"
-      ]
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "public/images/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Racing Car Manager"
     },
     "mac": {
       "target": [
-        "dmg"
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
       ],
-      "category": "public.app-category.productivity"
+      "category": "public.app-category.productivity",
+      "icon": "public/images/icon.png"
     },
     "linux": {
       "target": [
-        "AppImage",
-        "deb"
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
-      "category": "Utility"
+      "category": "Utility",
+      "icon": "public/images/icon.png"
     }
   }
 }

@@ -51,9 +51,30 @@ The original Excel file contains the following sheets that are being converted:
 
 ## Installation
 
-### Desktop App (Recommended)
+### Option 1: Install from Prebuilt Package (Recommended)
 
-The easiest way to use the application is with the desktop app, which automatically starts both the backend and frontend.
+Download and install the latest release for your platform:
+
+**Windows:**
+1. Download `Racing-Car-Manager-Setup-x.x.x.exe` from the [Releases](https://github.com/faustocedros-droid/trashbin/releases) page
+2. Run the installer and follow the setup wizard
+3. Launch "Racing Car Manager" from the Start Menu or Desktop
+
+**macOS:**
+1. Download `Racing-Car-Manager-x.x.x.dmg` from the [Releases](https://github.com/faustocedros-droid/trashbin/releases) page
+2. Open the DMG and drag the app to Applications
+3. Launch from Applications folder
+
+**Linux:**
+1. Download the `.AppImage` or `.deb` file from the [Releases](https://github.com/faustocedros-droid/trashbin/releases) page
+2. For AppImage: `chmod +x Racing-Car-Manager-x.x.x.AppImage && ./Racing-Car-Manager-x.x.x.AppImage`
+3. For DEB: `sudo dpkg -i Racing-Car-Manager-x.x.x.deb`
+
+See [INSTALL.md](INSTALL.md) for detailed installation instructions and troubleshooting.
+
+### Option 2: Run from Source (Desktop App)
+
+The easiest way to run from source is with the desktop app, which automatically starts both the backend and frontend.
 
 **Linux/macOS:**
 ```bash
@@ -67,7 +88,7 @@ start-desktop.bat
 
 See [DESKTOP_APP_README.md](DESKTOP_APP_README.md) for more details.
 
-### Manual Installation (Web App)
+### Option 3: Manual Installation (Web App)
 
 ### Prerequisites
 - Python 3.9+
@@ -96,6 +117,41 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions.
 
 - **Development**: Run backend and frontend separately
 - **Production**: Deploy backend and frontend separately (Heroku, Docker, etc.)
+
+## Building Installation Packages
+
+To build installation packages from source:
+
+### Prerequisites for Building
+- Node.js 16+
+- npm
+- Python 3.9+ (must be in PATH)
+
+### Build Commands
+
+**Windows:**
+```batch
+build-installer.bat
+```
+
+**Linux/macOS:**
+```bash
+./build-installer.sh
+```
+
+**Or build for specific platforms:**
+```bash
+cd frontend
+npm install
+npm run build
+
+# Choose one:
+npm run electron-build-win     # Windows installer
+npm run electron-build-mac     # macOS DMG
+npm run electron-build-linux   # Linux AppImage and DEB
+```
+
+The installation packages will be created in the `dist/` directory.
 
 ## Features
 

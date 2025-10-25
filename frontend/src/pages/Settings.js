@@ -8,6 +8,9 @@ function Settings() {
     // Get ALL data from localStorage - all sections and subsections
     const eventsData = localStorage.getItem('racingCarManager_events');
     const tirePressureData = localStorage.getItem('tirePressureDatabase');
+    const tirePressureSetup = localStorage.getItem('tirePressureSetup');
+    const tirePressureSetsManagement = localStorage.getItem('tirePressureSetsManagement');
+    const tirePressureSessionTable = localStorage.getItem('tirePressureSessionTable');
     const runPlanData = localStorage.getItem('runPlanSheet_data');
     const runPlanHistory = localStorage.getItem('runPlanSheet_history');
     const trackLength = localStorage.getItem('currentTrackLength');
@@ -48,7 +51,10 @@ function Settings() {
       
       // Tire Pressure Management section and all subsections
       tirePressure: {
-        database: tirePressureData ? JSON.parse(tirePressureData) : null
+        database: tirePressureData ? JSON.parse(tirePressureData) : null,
+        setup: tirePressureSetup ? JSON.parse(tirePressureSetup) : null,
+        setsManagement: tirePressureSetsManagement ? JSON.parse(tirePressureSetsManagement) : null,
+        sessionTable: tirePressureSessionTable ? JSON.parse(tirePressureSessionTable) : null
       },
       
       // Fuel Consumption section
@@ -70,7 +76,8 @@ function Settings() {
     };
     
     // Check if there's any data to save
-    const hasData = eventsData || tirePressureData || runPlanData || runPlanHistory || 
+    const hasData = eventsData || tirePressureData || tirePressureSetup || tirePressureSetsManagement || 
+                     tirePressureSessionTable || runPlanData || runPlanHistory || 
                      eventSchedule || circuitImage || generalSchedule || setupData || 
                      fuelConsumption || eventFeaturesPaths;
     
@@ -150,8 +157,19 @@ function Settings() {
           }
           
           // Tire Pressure section
-          if (archiveData.tirePressure && archiveData.tirePressure.database) {
-            localStorage.setItem('tirePressureDatabase', JSON.stringify(archiveData.tirePressure.database));
+          if (archiveData.tirePressure) {
+            if (archiveData.tirePressure.database) {
+              localStorage.setItem('tirePressureDatabase', JSON.stringify(archiveData.tirePressure.database));
+            }
+            if (archiveData.tirePressure.setup) {
+              localStorage.setItem('tirePressureSetup', JSON.stringify(archiveData.tirePressure.setup));
+            }
+            if (archiveData.tirePressure.setsManagement) {
+              localStorage.setItem('tirePressureSetsManagement', JSON.stringify(archiveData.tirePressure.setsManagement));
+            }
+            if (archiveData.tirePressure.sessionTable) {
+              localStorage.setItem('tirePressureSessionTable', JSON.stringify(archiveData.tirePressure.sessionTable));
+            }
           }
           
           // Fuel Consumption section

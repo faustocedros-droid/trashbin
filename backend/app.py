@@ -284,11 +284,18 @@ def start_monitoring(config_id):
             'status': 'success',
             'message': f'Monitoring started for config {config_id}'
         })
-    except Exception as e:
+    except ValueError as e:
+        # Expected validation errors - safe to expose
         return jsonify({
             'status': 'error',
             'message': str(e)
         }), 400
+    except Exception:
+        # Unexpected errors - don't expose details
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to start monitoring'
+        }), 500
 
 @app.route('/api/timing/configs/<int:config_id>/stop', methods=['POST'])
 def stop_monitoring(config_id):

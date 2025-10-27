@@ -174,6 +174,65 @@ function DriversComments() {
     }
   };
 
+  // Clean header section
+  const handleCleanHeader = () => {
+    if (window.confirm('Sei sicuro di voler pulire i dati header (Event, Session, Date)?')) {
+      setFormData(prev => ({
+        ...prev,
+        event: '',
+        session: '',
+        date: ''
+      }));
+    }
+  };
+
+  // Clean weather section
+  const handleCleanWeather = () => {
+    if (window.confirm('Sei sicuro di voler pulire i dati meteo?')) {
+      setFormData(prev => ({
+        ...prev,
+        tAir: '',
+        tTrack: '',
+        wetDry: 'dry'
+      }));
+    }
+  };
+
+  // Clean equipment section
+  const handleCleanEquipment = () => {
+    if (window.confirm('Sei sicuro di voler pulire le valutazioni equipment?')) {
+      setFormData(prev => ({
+        ...prev,
+        radio: '',
+        seat: '',
+        belts: '',
+        stWheel: '',
+        pedals: '',
+        dashboard: '',
+        engine: '',
+        gearbox: '',
+        comments: ''
+      }));
+    }
+  };
+
+  // Clean turns analysis
+  const handleCleanTurns = () => {
+    if (window.confirm('Sei sicuro di voler pulire tutti i dati delle curve?')) {
+      setFormData(prev => ({
+        ...prev,
+        turns: Array(17).fill(null).map(() => ({
+          braking: '',
+          turnIn: '',
+          midCorner: '',
+          exit: '',
+          traction: '',
+          comments: ''
+        }))
+      }));
+    }
+  };
+
   return (
     <div className="container" style={{ maxWidth: '1400px', margin: '0 auto', padding: '20px' }}>
       <div className="no-print" style={{ marginBottom: '20px', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
@@ -195,39 +254,62 @@ function DriversComments() {
         <h1 style={{ textAlign: 'center', marginBottom: '30px', color: '#333' }}>Drivers Comments</h1>
 
         {/* Header Section */}
-        <div style={{ marginBottom: '30px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px' }}>
-          <div>
-            <label style={labelStyle}>Event:</label>
-            <input
-              type="text"
-              value={formData.event}
-              onChange={(e) => handleInputChange('event', e.target.value)}
-              style={inputStyle}
-            />
+        <div style={{ marginBottom: '30px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <h3 style={{ margin: 0 }}>Informazioni Generali</h3>
+            <button onClick={handleCleanHeader} className="no-print" style={{ 
+              ...buttonStyle, 
+              backgroundColor: '#ff9800',
+              padding: '6px 12px',
+              fontSize: '12px'
+            }}>
+              🧹 CLEAN
+            </button>
           </div>
-          <div>
-            <label style={labelStyle}>Session:</label>
-            <input
-              type="text"
-              value={formData.session}
-              onChange={(e) => handleInputChange('session', e.target.value)}
-              style={inputStyle}
-            />
-          </div>
-          <div>
-            <label style={labelStyle}>Date:</label>
-            <input
-              type="date"
-              value={formData.date}
-              onChange={(e) => handleInputChange('date', e.target.value)}
-              style={inputStyle}
-            />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px' }}>
+            <div>
+              <label style={labelStyle}>Event:</label>
+              <input
+                type="text"
+                value={formData.event}
+                onChange={(e) => handleInputChange('event', e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Session:</label>
+              <input
+                type="text"
+                value={formData.session}
+                onChange={(e) => handleInputChange('session', e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Date:</label>
+              <input
+                type="date"
+                value={formData.date}
+                onChange={(e) => handleInputChange('date', e.target.value)}
+                style={inputStyle}
+              />
+            </div>
           </div>
         </div>
 
         {/* Weather Section */}
         <div style={{ marginBottom: '30px', border: '1px solid #ddd', padding: '15px', borderRadius: '4px' }}>
-          <h3 style={{ marginTop: 0, color: '#333' }}>Weather:</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ marginTop: 0, color: '#333' }}>Weather:</h3>
+            <button onClick={handleCleanWeather} className="no-print" style={{ 
+              ...buttonStyle, 
+              backgroundColor: '#ff9800',
+              padding: '6px 12px',
+              fontSize: '12px'
+            }}>
+              🧹 CLEAN
+            </button>
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', alignItems: 'end' }}>
             <div>
               <label style={labelStyle}>T Air (°C):</label>
@@ -277,7 +359,17 @@ function DriversComments() {
 
         {/* Equipment Rating Section */}
         <div style={{ marginBottom: '30px', border: '1px solid #ddd', padding: '15px', borderRadius: '4px' }}>
-          <h3 style={{ marginTop: 0, color: '#333' }}>Rate the equipment (1:bad...5:good)</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ marginTop: 0, color: '#333' }}>Rate the equipment (1:bad...5:good)</h3>
+            <button onClick={handleCleanEquipment} className="no-print" style={{ 
+              ...buttonStyle, 
+              backgroundColor: '#ff9800',
+              padding: '6px 12px',
+              fontSize: '12px'
+            }}>
+              🧹 CLEAN
+            </button>
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 3fr', gap: '10px', alignItems: 'center' }}>
             {[
               { label: 'Radio:', field: 'radio' },
@@ -342,8 +434,18 @@ function DriversComments() {
 
         {/* Turn by Turn Analysis */}
         <div style={{ marginBottom: '30px' }}>
-          <h3 style={{ color: '#333' }}>Turn by turn analysis</h3>
-          <p style={{ fontSize: '12px', color: '#666', marginBottom: '15px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ color: '#333', marginBottom: '5px' }}>Turn by turn analysis</h3>
+            <button onClick={handleCleanTurns} className="no-print" style={{ 
+              ...buttonStyle, 
+              backgroundColor: '#ff9800',
+              padding: '6px 12px',
+              fontSize: '12px'
+            }}>
+              🧹 CLEAN
+            </button>
+          </div>
+          <p style={{ fontSize: '12px', color: '#666', marginBottom: '15px', marginTop: '5px' }}>
             Braking, Traction (1:bad...5:good); Turn-in, Mid Corner, Exit balance (-3:max understeer...0: neutral...+3: max oversteer)
           </p>
           <div style={{ overflowX: 'auto' }}>

@@ -443,6 +443,77 @@ function RunPlanSheet() {
         reader.readAsText(file);
     };
 
+    // Clean event data section
+    const handleCleanEventData = () => {
+        if (window.confirm('Sei sicuro di voler pulire i dati evento?')) {
+            const newData = {
+                ...data,
+                O4: '',
+                D4: '',
+                O5: '',
+                D5: 0,
+                I5: 0,
+                TRACK_LENGTH: 0,
+                OUTLAP_TIME: '',
+                INLAP_TIME: '',
+                PACE: '',
+                START_TIME: '',
+                DURATION: '',
+                D7: 0,
+            };
+            setData(newData);
+            localStorage.setItem('runPlanSheet_data', JSON.stringify(newData));
+        }
+    };
+
+    // Clean stint data
+    const handleCleanStint = (stintNumber: number) => {
+        if (window.confirm(`Sei sicuro di voler pulire i dati dello stint ${stintNumber}?`)) {
+            let newData = { ...data };
+            
+            switch (stintNumber) {
+                case 1:
+                    newData = {
+                        ...newData,
+                        B13: 0, B14: 0, B15: 0, B16: '', D16: 0,
+                        H11: '', REFUEL1: 0, NOTE1: '', E11: 0
+                    };
+                    break;
+                case 2:
+                    newData = {
+                        ...newData,
+                        B21: 0, B22: 0, B23: 0, B24: '', C24: 0,
+                        H19: '', REFUEL2: 0, NOTE2: '', E19: 0
+                    };
+                    break;
+                case 3:
+                    newData = {
+                        ...newData,
+                        B29: 0, B30: 0, B31: 0, B32: '', C32: 0,
+                        H27: '', REFUEL3: 0, NOTE3: '', E27: 0
+                    };
+                    break;
+                case 4:
+                    newData = {
+                        ...newData,
+                        B37: 0, B38: 0, B39: 0, B40: '', C40: 0,
+                        H35: '', REFUEL4: 0, NOTE4: '', E35: 0
+                    };
+                    break;
+                case 5:
+                    newData = {
+                        ...newData,
+                        B45: 0, B46: 0, B47: 0, B48: '', C48: 0,
+                        H43: '', REFUEL5: 0, NOTE5: '', E43: 0
+                    };
+                    break;
+            }
+            
+            setData(newData);
+            localStorage.setItem('runPlanSheet_data', JSON.stringify(newData));
+        }
+    };
+
     // VLOOKUP simulation - returns tire compound based on set name
     const vlookup = (setName: string): string => {
         const tireSetData: { [key: string]: string } = {
@@ -724,7 +795,24 @@ function RunPlanSheet() {
 
             {/* Input Section */}
             <div className="card" style={{ marginBottom: '20px' }}>
-                <h2 style={{ color: '#2c5282', marginBottom: '20px' }}>📝 Session Information</h2>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                    <h2 style={{ color: '#2c5282', margin: 0 }}>📝 Session Information</h2>
+                    <button
+                        onClick={handleCleanEventData}
+                        style={{
+                            padding: '8px 16px',
+                            fontSize: '13px',
+                            backgroundColor: '#ff9800',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                        }}
+                        title="Pulisci i dati evento"
+                    >
+                        🧹 CLEAN
+                    </button>
+                </div>
                 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '15px' }}>
                     <div>
@@ -872,9 +960,26 @@ function RunPlanSheet() {
                         { key: 'B47', label: 'INLAP' },
                         { key: 'B48', label: 'PIT TIME (mm:ss)', isTime: true }
                     ]},
-                ].map(({ title, setKey, refuelKey, noteKey, rows }) => (
+                ].map(({ title, setKey, refuelKey, noteKey, rows }, index) => (
                     <div key={setKey} style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f0f4f8', borderRadius: '8px' }}>
-                        <h4 style={{ margin: '0 0 10px 0', color: '#2c5282' }}>{title}</h4>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                            <h4 style={{ margin: 0, color: '#2c5282' }}>{title}</h4>
+                            <button
+                                onClick={() => handleCleanStint(index + 1)}
+                                style={{
+                                    padding: '6px 12px',
+                                    fontSize: '12px',
+                                    backgroundColor: '#ff9800',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                }}
+                                title={`Pulisci dati ${title}`}
+                            >
+                                🧹 CLEAN
+                            </button>
+                        </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px' }}>
                             <div>
                                 <label style={{ display: 'block', marginBottom: '5px' }}>Tire Set:</label>

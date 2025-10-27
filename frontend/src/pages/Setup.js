@@ -147,6 +147,50 @@ function Setup() {
     }
   };
 
+  // Handle clean metadata only
+  const handleCleanMetadata = () => {
+    if (window.confirm('Sei sicuro di voler pulire i campi metadata (Vettura, Circuito, Evento, Data)?')) {
+      const updatedSetup = {
+        ...setupData,
+        metadata: {
+          vettura: '',
+          circuito: '',
+          evento: '',
+          data: ''
+        }
+      };
+      setSetupData(updatedSetup);
+      localStorage.setItem('generalInfo_setup', JSON.stringify(updatedSetup));
+    }
+  };
+
+  // Handle clean table rows only
+  const handleCleanTable = () => {
+    if (window.confirm('Sei sicuro di voler pulire tutti i dati della tabella?')) {
+      const updatedSetup = {
+        ...setupData,
+        rows: setupData.rows.map(row => ({
+          ...row,
+          workshop: '',
+          col_c: '',
+          bop: '',
+          t1: '',
+          t2: '',
+          t3: '',
+          t4: '',
+          fp1: '',
+          fp2: '',
+          q: '',
+          r1: '',
+          r2: '',
+          note: ''
+        }))
+      };
+      setSetupData(updatedSetup);
+      localStorage.setItem('generalInfo_setup', JSON.stringify(updatedSetup));
+    }
+  };
+
   // Export setup data to file
   const handleExportSetup = () => {
     const dataToExport = {
@@ -274,99 +318,136 @@ function Setup() {
         </div>
         
         {/* Metadata Fields */}
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-          gap: '15px',
-          marginTop: '20px',
-          marginBottom: '20px'
-        }}>
-          <div>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-              Vettura
-            </label>
-            <input
-              type="text"
-              value={setupData.metadata.vettura}
-              onChange={(e) => handleSetupMetadataChange('vettura', e.target.value)}
-              placeholder="..."
+        <div style={{ marginTop: '20px', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <h3 style={{ margin: 0, fontSize: '16px' }}>Dati Evento</h3>
+            <button
+              onClick={handleCleanMetadata}
               style={{
-                width: '100%',
-                padding: '8px',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                fontSize: '14px',
-                boxSizing: 'border-box'
+                padding: '6px 15px',
+                fontSize: '13px',
+                backgroundColor: '#ff9800',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
               }}
-            />
+              title="Pulisci i campi metadata"
+            >
+              🧹 CLEAN
+            </button>
           </div>
-          <div>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-              Circuito
-            </label>
-            <input
-              type="text"
-              value={setupData.metadata.circuito}
-              onChange={(e) => handleSetupMetadataChange('circuito', e.target.value)}
-              placeholder="..."
-              style={{
-                width: '100%',
-                padding: '8px',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                fontSize: '14px',
-                boxSizing: 'border-box'
-              }}
-            />
-          </div>
-          <div>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-              Evento
-            </label>
-            <input
-              type="text"
-              value={setupData.metadata.evento}
-              onChange={(e) => handleSetupMetadataChange('evento', e.target.value)}
-              placeholder="..."
-              style={{
-                width: '100%',
-                padding: '8px',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                fontSize: '14px',
-                boxSizing: 'border-box'
-              }}
-            />
-          </div>
-          <div>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-              Data
-            </label>
-            <input
-              type="text"
-              value={setupData.metadata.data}
-              onChange={(e) => handleSetupMetadataChange('data', e.target.value)}
-              placeholder="..."
-              style={{
-                width: '100%',
-                padding: '8px',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                fontSize: '14px',
-                boxSizing: 'border-box'
-              }}
-            />
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+            gap: '15px'
+          }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                Vettura
+              </label>
+              <input
+                type="text"
+                value={setupData.metadata.vettura}
+                onChange={(e) => handleSetupMetadataChange('vettura', e.target.value)}
+                placeholder="..."
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                Circuito
+              </label>
+              <input
+                type="text"
+                value={setupData.metadata.circuito}
+                onChange={(e) => handleSetupMetadataChange('circuito', e.target.value)}
+                placeholder="..."
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                Evento
+              </label>
+              <input
+                type="text"
+                value={setupData.metadata.evento}
+                onChange={(e) => handleSetupMetadataChange('evento', e.target.value)}
+                placeholder="..."
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                Data
+              </label>
+              <input
+                type="text"
+                value={setupData.metadata.data}
+                onChange={(e) => handleSetupMetadataChange('data', e.target.value)}
+                placeholder="..."
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
           </div>
         </div>
 
         {/* Setup Table */}
-        <div style={{ overflowX: 'auto', marginTop: '20px' }}>
-          <table style={{ 
-            width: '100%',
-            borderCollapse: 'collapse',
-            border: '2px solid #333',
-            fontSize: '13px'
-          }}>
+        <div style={{ marginTop: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <h3 style={{ margin: 0, fontSize: '16px' }}>Tabella Setup</h3>
+            <button
+              onClick={handleCleanTable}
+              style={{
+                padding: '6px 15px',
+                fontSize: '13px',
+                backgroundColor: '#ff9800',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+              }}
+              title="Pulisci tutti i dati della tabella"
+            >
+              🧹 CLEAN
+            </button>
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ 
+              width: '100%',
+              borderCollapse: 'collapse',
+              border: '2px solid #333',
+              fontSize: '13px'
+            }}>
             <thead>
               <tr style={{ backgroundColor: '#4472C4', color: 'white' }}>
                 <th style={{ 
@@ -627,6 +708,7 @@ function Setup() {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
 

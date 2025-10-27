@@ -153,6 +153,22 @@ function EventDetail() {
     });
   };
 
+  // Clean session form data
+  const handleCleanSessionForm = () => {
+    if (window.confirm('Sei sicuro di voler pulire tutti i campi della sessione?')) {
+      setSessionFormData({
+        session_type: 'Test',
+        session_number: 1,
+        duration: 60,
+        fuel_start: 0,
+        fuel_per_lap: 0,
+        tire_set: '',
+        session_status: null,
+        notes: '',
+      });
+    }
+  };
+
   const handleDeleteSession = async (sessionId) => {
     if (window.confirm('Sei sicuro di voler eliminare questa sessione?')) {
       try {
@@ -266,6 +282,24 @@ function EventDetail() {
     } catch (error) {
       console.error('Error deleting lap:', error);
       alert('Errore nell\'eliminazione del giro');
+    }
+  };
+
+  // Clean lap form data
+  const handleCleanLapForm = () => {
+    if (window.confirm('Sei sicuro di voler pulire tutti i campi del giro?')) {
+      setLapFormData({
+        lapNumber: sessionLaps.length + 1,
+        lapTime: '',
+        sector1: '',
+        sector2: '',
+        sector3: '',
+        sector4: '',
+        fuelConsumed: 0,
+        tireSet: '',
+        lapStatus: null,
+        notes: '',
+      });
     }
   };
 
@@ -691,7 +725,26 @@ function EventDetail() {
 
         {showSessionForm && (
           <form onSubmit={handleSessionSubmit} style={{ marginBottom: '30px', padding: '20px', background: '#f5f5f5', borderRadius: '8px' }}>
-            <h3>{editingSession ? 'Modifica Sessione' : 'Crea Nuova Sessione'}</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+              <h3 style={{ margin: 0 }}>{editingSession ? 'Modifica Sessione' : 'Crea Nuova Sessione'}</h3>
+              <button
+                type="button"
+                onClick={handleCleanSessionForm}
+                className="btn"
+                style={{
+                  padding: '6px 12px',
+                  fontSize: '12px',
+                  backgroundColor: '#ff9800',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                }}
+                title="Pulisci tutti i campi"
+              >
+                🧹 CLEAN
+              </button>
+            </div>
             
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
               <div className="form-group">
@@ -1019,7 +1072,26 @@ function EventDetail() {
           {/* Lap form */}
           {showLapForm && (
             <form onSubmit={handleSaveLap} style={{ background: '#f5f5f5', padding: '20px', borderRadius: '8px', marginBottom: '20px' }}>
-              <h4>{editingLap ? 'Modifica Giro' : 'Nuovo Giro'}</h4>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                <h4 style={{ margin: 0 }}>{editingLap ? 'Modifica Giro' : 'Nuovo Giro'}</h4>
+                <button
+                  type="button"
+                  onClick={handleCleanLapForm}
+                  className="btn"
+                  style={{
+                    padding: '6px 12px',
+                    fontSize: '12px',
+                    backgroundColor: '#ff9800',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                  }}
+                  title="Pulisci tutti i campi"
+                >
+                  🧹 CLEAN
+                </button>
+              </div>
               
               {/* Lap number */}
               <div className="form-group" style={{ marginBottom: '15px' }}>

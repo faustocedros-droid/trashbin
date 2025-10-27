@@ -16,6 +16,7 @@ import Setup from './pages/Setup';
 import FuelConsumption from './pages/FuelConsumption';
 import EventFeatures from './pages/EventFeatures';
 import DriversComments from './pages/DriversComments';
+import TimingMonitor from './pages/TimingMonitor';
 import notificationService from './services/notificationService';
 
 function App() {
@@ -148,6 +149,7 @@ function App() {
               <ul className={`nav-links ${menuOpen ? 'open' : ''}`}>
                 <li><Link to="/events" onClick={() => setMenuOpen(false)}>Eventi</Link></li>
                 <li><Link to="/event-features" onClick={() => setMenuOpen(false)}>Event Features</Link></li>
+                <li><Link to="/timing-monitor" onClick={() => setMenuOpen(false)}>Timing Monitor</Link></li>
                 <li><Link to="/general-information" onClick={() => setMenuOpen(false)}>General Information</Link></li>
                 <li><Link to="/setup" onClick={() => setMenuOpen(false)}>Setup</Link></li>
                 <li>
@@ -227,6 +229,7 @@ function App() {
             <Route path="/events" element={<Events />} />
             <Route path="/events/:id" element={<EventDetail />} />
             <Route path="/event-features" element={<EventFeatures />} />
+            <Route path="/timing-monitor" element={<TimingMonitor />} />
             <Route path="/general-information" element={<GeneralInformation />} />
             <Route path="/setup" element={<Setup />} />
             <Route path="/tire-pressure" element={<TirePressure />} />

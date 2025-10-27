@@ -227,3 +227,117 @@ class SetupData(db.Model):
             'notes': self.notes,
             'created_at': self.created_at.isoformat()
         }
+
+class TimingMonitorConfig(db.Model):
+    """Model for timing monitor configuration"""
+    __tablename__ = 'timing_monitor_configs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    url = db.Column(db.String(500), nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+    polling_interval = db.Column(db.Integer, default=5)  # Seconds between updates
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    timing_snapshots = db.relationship('TimingSnapshot', backref='monitor_config', lazy=True, cascade='all, delete-orphan')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'url': self.url,
+            'is_active': self.is_active,
+            'polling_interval': self.polling_interval,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
+        }
+
+class Driver(db.Model):
+    """Model for drivers"""
+    __tablename__ = 'drivers'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    number = db.Column(db.String(10))
+    team = db.Column(db.String(200))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    timing_data = db.relationship('TimingData', backref='driver', lazy=True, cascade='all, delete-orphan')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'number': self.number,
+            'team': self.team,
+            'created_at': self.created_at.isoformat()
+        }
+
+class TimingSnapshot(db.Model):
+    """Model for a snapshot of timing data at a specific point in time"""
+    __tablename__ = 'timing_snapshots'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    monitor_config_id = db.Column(db.Integer, db.ForeignKey('timing_monitor_configs.id'), nullable=False)
+    race_number = db.Column(db.String(50))  # Race or session identifier
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    session_status = db.Column(db.String(50))  # e.g., "Green", "Yellow", "Red", "Finished"
+    
+    # Relationships
+    timing_data = db.relationship('TimingData', backref='snapshot', lazy=True, cascade='all, delete-orphan')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'monitor_config_id': self.monitor_config_id,
+            'race_number': self.race_number,
+            'timestamp': self.timestamp.isoformat(),
+            'session_status': self.session_status,
+            'timing_data': [data.to_dict() for data in self.timing_data]
+        }
+
+class TimingData(db.Model):
+    """Model for individual driver timing data"""
+    __tablename__ = 'timing_data'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    snapshot_id = db.Column(db.Integer, db.ForeignKey('timing_snapshots.id'), nullable=False)
+    driver_id = db.Column(db.Integer, db.ForeignKey('drivers.id'))
+    driver_name = db.Column(db.String(200), nullable=False)
+    driver_number = db.Column(db.String(10))
+    position = db.Column(db.Integer)
+    laps_completed = db.Column(db.Integer)
+    last_lap_time = db.Column(db.String(20))  # Format: MM:SS.mmm
+    best_lap_time = db.Column(db.String(20))  # Format: MM:SS.mmm
+    sector1_time = db.Column(db.String(20))  # Format: SS.mmm
+    sector2_time = db.Column(db.String(20))  # Format: SS.mmm
+    sector3_time = db.Column(db.String(20))  # Format: SS.mmm
+    gap_to_leader = db.Column(db.String(20))  # Gap or time behind leader
+    gap_to_ahead = db.Column(db.String(20))  # Gap to car ahead
+    pit_stops = db.Column(db.Integer, default=0)
+    in_pit = db.Column(db.Boolean, default=False)
+    status = db.Column(db.String(20))  # "Running", "Out", "DNF", etc.
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'snapshot_id': self.snapshot_id,
+            'driver_id': self.driver_id,
+            'driver_name': self.driver_name,
+            'driver_number': self.driver_number,
+            'position': self.position,
+            'laps_completed': self.laps_completed,
+            'last_lap_time': self.last_lap_time,
+            'best_lap_time': self.best_lap_time,
+            'sector1_time': self.sector1_time,
+            'sector2_time': self.sector2_time,
+            'sector3_time': self.sector3_time,
+            'gap_to_leader': self.gap_to_leader,
+            'gap_to_ahead': self.gap_to_ahead,
+            'pit_stops': self.pit_stops,
+            'in_pit': self.in_pit,
+            'status': self.status
+        }

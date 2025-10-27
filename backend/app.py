@@ -13,8 +13,16 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-i
 CORS(app)
 
 # Import and initialize database
-from models import db, RaceEvent, Session, Lap, TireData, EngineData, SetupData
+from models import (db, RaceEvent, Session, Lap, TireData, EngineData, SetupData,
+                    TimingMonitorConfig, Driver, TimingSnapshot, TimingData)
 db.init_app(app)
+
+# Import timing service
+from timing_service import TimingMonitorService
+import models as models_module
+
+# Initialize timing service
+timing_service = TimingMonitorService(db, models_module)
 
 # Create tables
 with app.app_context():
@@ -221,6 +229,155 @@ def archive_event():
         'message': 'OneDrive archiving will be implemented in future release',
         'event_id': event_id
     }), 200
+
+# Timing Monitor Endpoints
+
+@app.route('/api/timing/configs', methods=['GET', 'POST'])
+def handle_timing_configs():
+    """Get all timing monitor configurations or create a new one"""
+    if request.method == 'GET':
+        configs = TimingMonitorConfig.query.all()
+        return jsonify([config.to_dict() for config in configs])
+    
+    elif request.method == 'POST':
+        data = request.json
+        config = TimingMonitorConfig(
+            name=data['name'],
+            url=data['url'],
+            is_active=data.get('is_active', True),
+            polling_interval=data.get('polling_interval', 5)
+        )
+        db.session.add(config)
+        db.session.commit()
+        return jsonify(config.to_dict()), 201
+
+@app.route('/api/timing/configs/<int:config_id>', methods=['GET', 'PUT', 'DELETE'])
+def handle_timing_config(config_id):
+    """Get, update or delete a specific timing monitor configuration"""
+    config = TimingMonitorConfig.query.get_or_404(config_id)
+    
+    if request.method == 'GET':
+        return jsonify(config.to_dict())
+    
+    elif request.method == 'PUT':
+        data = request.json
+        config.name = data.get('name', config.name)
+        config.url = data.get('url', config.url)
+        config.is_active = data.get('is_active', config.is_active)
+        config.polling_interval = data.get('polling_interval', config.polling_interval)
+        db.session.commit()
+        return jsonify(config.to_dict())
+    
+    elif request.method == 'DELETE':
+        # Stop monitoring if active
+        timing_service.stop_monitoring(config_id)
+        db.session.delete(config)
+        db.session.commit()
+        return '', 204
+
+@app.route('/api/timing/configs/<int:config_id>/start', methods=['POST'])
+def start_monitoring(config_id):
+    """Start monitoring a timing monitor"""
+    try:
+        timing_service.start_monitoring(config_id)
+        return jsonify({
+            'status': 'success',
+            'message': f'Monitoring started for config {config_id}'
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 400
+
+@app.route('/api/timing/configs/<int:config_id>/stop', methods=['POST'])
+def stop_monitoring(config_id):
+    """Stop monitoring a timing monitor"""
+    timing_service.stop_monitoring(config_id)
+    return jsonify({
+        'status': 'success',
+        'message': f'Monitoring stopped for config {config_id}'
+    })
+
+@app.route('/api/timing/configs/<int:config_id>/status', methods=['GET'])
+def get_monitoring_status(config_id):
+    """Get the monitoring status for a configuration"""
+    status = timing_service.get_monitor_status(config_id)
+    return jsonify(status)
+
+@app.route('/api/timing/configs/<int:config_id>/latest', methods=['GET'])
+def get_latest_timing(config_id):
+    """Get the latest timing snapshot for a configuration"""
+    snapshot = timing_service.get_latest_snapshot(config_id)
+    if snapshot:
+        return jsonify(snapshot)
+    else:
+        return jsonify({'message': 'No timing data available yet'}), 404
+
+@app.route('/api/timing/snapshots', methods=['GET'])
+def get_timing_snapshots():
+    """Get timing snapshots with optional filters"""
+    config_id = request.args.get('config_id', type=int)
+    limit = request.args.get('limit', 10, type=int)
+    
+    query = TimingSnapshot.query
+    if config_id:
+        query = query.filter_by(monitor_config_id=config_id)
+    
+    snapshots = query.order_by(TimingSnapshot.timestamp.desc()).limit(limit).all()
+    return jsonify([snapshot.to_dict() for snapshot in snapshots])
+
+@app.route('/api/timing/snapshots/<int:snapshot_id>', methods=['GET'])
+def get_timing_snapshot(snapshot_id):
+    """Get a specific timing snapshot"""
+    snapshot = TimingSnapshot.query.get_or_404(snapshot_id)
+    return jsonify(snapshot.to_dict())
+
+@app.route('/api/drivers', methods=['GET', 'POST'])
+def handle_drivers():
+    """Get all drivers or create a new driver"""
+    if request.method == 'GET':
+        drivers = Driver.query.all()
+        return jsonify([driver.to_dict() for driver in drivers])
+    
+    elif request.method == 'POST':
+        data = request.json
+        driver = Driver(
+            name=data['name'],
+            number=data.get('number'),
+            team=data.get('team')
+        )
+        db.session.add(driver)
+        db.session.commit()
+        return jsonify(driver.to_dict()), 201
+
+@app.route('/api/drivers/<int:driver_id>', methods=['GET', 'PUT', 'DELETE'])
+def handle_driver(driver_id):
+    """Get, update or delete a specific driver"""
+    driver = Driver.query.get_or_404(driver_id)
+    
+    if request.method == 'GET':
+        return jsonify(driver.to_dict())
+    
+    elif request.method == 'PUT':
+        data = request.json
+        driver.name = data.get('name', driver.name)
+        driver.number = data.get('number', driver.number)
+        driver.team = data.get('team', driver.team)
+        db.session.commit()
+        return jsonify(driver.to_dict())
+    
+    elif request.method == 'DELETE':
+        db.session.delete(driver)
+        db.session.commit()
+        return '', 204
+
+# Cleanup on shutdown
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    """Stop all monitoring on shutdown"""
+    if exception:
+        timing_service.stop_all_monitoring()
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

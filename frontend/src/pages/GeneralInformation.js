@@ -68,6 +68,15 @@ function GeneralInformation() {
     localStorage.removeItem('generalInfo_circuitImage');
   };
 
+  // Clean schedule table
+  const handleCleanSchedule = () => {
+    if (window.confirm('Sei sicuro di voler pulire tutti i dati della tabella schedule?')) {
+      const clearedSchedule = initializeScheduleData();
+      setScheduleData(clearedSchedule);
+      localStorage.setItem('generalInfo_schedule', JSON.stringify(clearedSchedule));
+    }
+  };
+
   // Handle schedule data change
   const handleScheduleChange = (rowIndex, dayKey, value) => {
     const updatedSchedule = [...scheduleData];
@@ -232,7 +241,22 @@ function GeneralInformation() {
 
       {/* Schedule Table Section */}
       <div className="card" style={{ marginTop: '30px' }}>
-        <h2>SCHEDULE</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+          <h2 style={{ margin: 0 }}>SCHEDULE</h2>
+          <button
+            onClick={handleCleanSchedule}
+            className="btn btn-primary"
+            style={{ 
+              margin: 0, 
+              padding: '8px 16px',
+              backgroundColor: '#ff9800', 
+              borderColor: '#ff9800' 
+            }}
+            title="Pulisci tutti i dati della tabella"
+          >
+            🧹 CLEAN
+          </button>
+        </div>
         
         <div style={{ overflowX: 'auto', marginTop: '20px' }}>
           <table className="table" style={{ tableLayout: 'fixed' }}>

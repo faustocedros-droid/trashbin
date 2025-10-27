@@ -193,6 +193,24 @@ function TirePressureSetup() {
         if (e.target) e.target.value = '';
     };
 
+    // Handle clean all data
+    const handleCleanData = () => {
+        if (window.confirm('Sei sicuro di voler pulire tutti i dati?')) {
+            const cleanedData: SetupInputData = {
+                F7: 0, G7: 0, F8: 0, G8: 0,
+                D10: 0, E10: 0, D11: 0, E11: 0,
+                F13: 0, G13: 0, F14: 0, G14: 0,
+                H13: 0, H16: 0,
+                F16: 0, G16: 0, F17: 0, G17: 0,
+                H22: 0, K22: 0.02, H23: 0, K23: 0.015,
+                F27: 0, G27: 0, F28: 0, G28: 0,
+                H30: 0, H31: 0, K30: 0, K31: 0,
+            };
+            setInputData(cleanedData);
+            localStorage.setItem('tirePressureSetup', JSON.stringify(cleanedData));
+        }
+    };
+
     // Calculate all outputs based on formulas
     const calculateOutputs = (): CalculatedOutputs => {
         const i = inputData;
@@ -649,6 +667,21 @@ function TirePressureSetup() {
                             style={{ display: 'none' }}
                         />
                     </label>
+                    <button
+                        onClick={handleCleanData}
+                        style={{
+                            padding: '10px 20px',
+                            fontSize: '14px',
+                            backgroundColor: '#ff9800',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                        }}
+                        title="Pulisci tutti i dati"
+                    >
+                        🧹 CLEAN
+                    </button>
                 </div>
             </div>
 

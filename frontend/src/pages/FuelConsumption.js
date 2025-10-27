@@ -112,6 +112,40 @@ function FuelConsumption() {
     }
   };
 
+  // Handle clean metadata only
+  const handleCleanMetadata = () => {
+    if (window.confirm('Sei sicuro di voler pulire i campi metadata (Championship, Car, Track, Track Length)?')) {
+      const updatedData = {
+        ...fuelData,
+        metadata: {
+          championship: '',
+          car: '',
+          track: '',
+          trackLength: ''
+        }
+      };
+      setFuelData(updatedData);
+      localStorage.setItem('fuelConsumption_data', JSON.stringify(updatedData));
+    }
+  };
+
+  // Handle clean table rows only
+  const handleCleanTable = () => {
+    if (window.confirm('Sei sicuro di voler pulire tutti i dati della tabella?')) {
+      const updatedData = {
+        ...fuelData,
+        rows: fuelData.rows.map(row => ({
+          ...row,
+          fuelIn: '',
+          fuelOut: '',
+          laps: ''
+        }))
+      };
+      setFuelData(updatedData);
+      localStorage.setItem('fuelConsumption_data', JSON.stringify(updatedData));
+    }
+  };
+
   // Export fuel data to file
   const handleExport = () => {
     const dataToExport = {
@@ -239,100 +273,137 @@ function FuelConsumption() {
         </div>
         
         {/* Metadata Fields */}
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-          gap: '15px',
-          marginTop: '20px',
-          marginBottom: '20px'
-        }}>
-          <div>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-              Championship
-            </label>
-            <input
-              type="text"
-              value={fuelData.metadata.championship}
-              onChange={(e) => handleMetadataChange('championship', e.target.value)}
-              placeholder="..."
+        <div style={{ marginTop: '20px', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <h3 style={{ margin: 0, fontSize: '16px' }}>Dati Gara</h3>
+            <button
+              onClick={handleCleanMetadata}
               style={{
-                width: '100%',
-                padding: '8px',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                fontSize: '14px',
-                boxSizing: 'border-box'
+                padding: '6px 15px',
+                fontSize: '13px',
+                backgroundColor: '#ff9800',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
               }}
-            />
+              title="Pulisci i campi metadata"
+            >
+              🧹 CLEAN
+            </button>
           </div>
-          <div>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-              Car
-            </label>
-            <input
-              type="text"
-              value={fuelData.metadata.car}
-              onChange={(e) => handleMetadataChange('car', e.target.value)}
-              placeholder="..."
-              style={{
-                width: '100%',
-                padding: '8px',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                fontSize: '14px',
-                boxSizing: 'border-box'
-              }}
-            />
-          </div>
-          <div>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-              Track
-            </label>
-            <input
-              type="text"
-              value={fuelData.metadata.track}
-              onChange={(e) => handleMetadataChange('track', e.target.value)}
-              placeholder="..."
-              style={{
-                width: '100%',
-                padding: '8px',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                fontSize: '14px',
-                boxSizing: 'border-box'
-              }}
-            />
-          </div>
-          <div>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-              Track Length (km)
-            </label>
-            <input
-              type="number"
-              step="0.001"
-              value={fuelData.metadata.trackLength}
-              onChange={(e) => handleMetadataChange('trackLength', e.target.value)}
-              placeholder="..."
-              style={{
-                width: '100%',
-                padding: '8px',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                fontSize: '14px',
-                boxSizing: 'border-box'
-              }}
-            />
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+            gap: '15px'
+          }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                Championship
+              </label>
+              <input
+                type="text"
+                value={fuelData.metadata.championship}
+                onChange={(e) => handleMetadataChange('championship', e.target.value)}
+                placeholder="..."
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                Car
+              </label>
+              <input
+                type="text"
+                value={fuelData.metadata.car}
+                onChange={(e) => handleMetadataChange('car', e.target.value)}
+                placeholder="..."
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                Track
+              </label>
+              <input
+                type="text"
+                value={fuelData.metadata.track}
+                onChange={(e) => handleMetadataChange('track', e.target.value)}
+                placeholder="..."
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                Track Length (km)
+              </label>
+              <input
+                type="number"
+                step="0.001"
+                value={fuelData.metadata.trackLength}
+                onChange={(e) => handleMetadataChange('trackLength', e.target.value)}
+                placeholder="..."
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
           </div>
         </div>
 
         {/* Fuel Consumption Table */}
-        <div style={{ overflowX: 'auto', marginTop: '20px' }}>
-          <table style={{ 
-            width: '100%',
-            borderCollapse: 'collapse',
-            border: '2px solid #333',
-            fontSize: '13px'
-          }}>
+        <div style={{ marginTop: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <h3 style={{ margin: 0, fontSize: '16px' }}>Tabella Consumi</h3>
+            <button
+              onClick={handleCleanTable}
+              style={{
+                padding: '6px 15px',
+                fontSize: '13px',
+                backgroundColor: '#ff9800',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+              }}
+              title="Pulisci tutti i dati della tabella"
+            >
+              🧹 CLEAN
+            </button>
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ 
+              width: '100%',
+              borderCollapse: 'collapse',
+              border: '2px solid #333',
+              fontSize: '13px'
+            }}>
             <thead>
               <tr style={{ backgroundColor: '#4472C4', color: 'white' }}>
                 <th style={{ 
@@ -453,6 +524,7 @@ function FuelConsumption() {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
 

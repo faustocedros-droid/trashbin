@@ -100,18 +100,34 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions.
 ## Features
 
 ### Current Features
-- [In Development] Basic project structure
+- ✅ Race event creation and management
+- ✅ Session planning and tracking
+- ✅ **Real-time Timing Monitor** - Read and store timing data from web-based race monitors
+- ✅ Tire pressure management and optimization
+- ✅ Run plan generation
+- ✅ Driver comments tracking
+- ✅ Weather tracking
+- ✅ Fuel consumption calculations
 - [In Development] Data models for races and sessions
 - [In Development] API endpoints
 
+### Timing Monitor Features
+- **Live Data Acquisition**: Read timing data from any web-based timing monitor
+- **Configurable URLs**: Support for any timing website with customizable polling intervals
+- **Real-time Updates**: Automatic data refresh during races
+- **Historical Database**: Store all timing snapshots for later analysis
+- **Driver Management**: Automatic driver detection and tracking
+- **Comprehensive Data**: Position, lap times, sectors, gaps, pit stops, and status
+
+See [TIMING_MONITOR_GUIDE.md](TIMING_MONITOR_GUIDE.md) for detailed usage instructions.
+
 ### Planned Features
-- Race event creation and management
-- Session planning with fuel and tire calculations
 - Telemetry data visualization
 - Setup comparison tools
 - OneDrive archiving and retrieval
 - Data import from Excel
 - PDF report generation
+- WebSocket support for timing monitor (instead of polling)
 
 ## Development Status
 

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sample Race Timing Monitor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .race-title {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .session-status {
+            font-size: 18px;
+            color: #00ff00;
+            margin-top: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+        th {
+            background-color: #2a2a2a;
+            font-weight: bold;
+        }
+        tr:hover {
+            background-color: #2a2a2a;
+        }
+        .position {
+            font-weight: bold;
+            color: #ffaa00;
+        }
+        .best-lap {
+            color: #ff00ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 class="race-title">Race #123 - Practice Session</h1>
+        <div class="session-status">🟢 Green Flag</div>
+    </div>
+
+    <table class="timing-table">
+        <thead>
+            <tr>
+                <th>Pos</th>
+                <th>No.</th>
+                <th>Driver</th>
+                <th>Laps</th>
+                <th>Last Lap</th>
+                <th>Best Lap</th>
+                <th>S1</th>
+                <th>S2</th>
+                <th>S3</th>
+                <th>Gap</th>
+                <th>Gap Ahead</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody id="timing-body">
+            <tr>
+                <td class="position">1</td>
+                <td>44</td>
+                <td>Lewis Hamilton</td>
+                <td>15</td>
+                <td>1:23.456</td>
+                <td class="best-lap">1:22.123</td>
+                <td>28.123</td>
+                <td>32.456</td>
+                <td>21.544</td>
+                <td>-</td>
+                <td>-</td>
+                <td>Running</td>
+            </tr>
+            <tr>
+                <td class="position">2</td>
+                <td>33</td>
+                <td>Max Verstappen</td>
+                <td>15</td>
+                <td>1:23.789</td>
+                <td class="best-lap">1:22.456</td>
+                <td>28.234</td>
+                <td>32.567</td>
+                <td>21.655</td>
+                <td>+0.333</td>
+                <td>+0.333</td>
+                <td>Running</td>
+            </tr>
+            <tr>
+                <td class="position">3</td>
+                <td>16</td>
+                <td>Charles Leclerc</td>
+                <td>14</td>
+                <td>1:24.123</td>
+                <td class="best-lap">1:22.789</td>
+                <td>28.345</td>
+                <td>32.678</td>
+                <td>21.766</td>
+                <td>+0.666</td>
+                <td>+0.333</td>
+                <td>Running</td>
+            </tr>
+            <tr>
+                <td class="position">4</td>
+                <td>11</td>
+                <td>Sergio Perez</td>
+                <td>14</td>
+                <td>1:24.456</td>
+                <td class="best-lap">1:23.012</td>
+                <td>28.456</td>
+                <td>32.789</td>
+                <td>21.767</td>
+                <td>+0.889</td>
+                <td>+0.223</td>
+                <td>Running</td>
+            </tr>
+            <tr>
+                <td class="position">5</td>
+                <td>55</td>
+                <td>Carlos Sainz</td>
+                <td>14</td>
+                <td>1:24.789</td>
+                <td class="best-lap">1:23.345</td>
+                <td>28.567</td>
+                <td>32.890</td>
+                <td>21.888</td>
+                <td>+1.222</td>
+                <td>+0.333</td>
+                <td>Running</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <script>
+        // Simulate live timing updates
+        let lapCount = 15;
+        
+        function getRandomTime(base) {
+            const variation = (Math.random() - 0.5) * 0.5;
+            return (base + variation).toFixed(3);
+        }
+
+        function updateTiming() {
+            const rows = document.querySelectorAll('#timing-body tr');
+            lapCount++;
+            
+            rows.forEach((row, index) => {
+                const cells = row.querySelectorAll('td');
+                // Update lap count occasionally
+                if (Math.random() > 0.3) {
+                    const currentLaps = parseInt(cells[3].textContent);
+                    cells[3].textContent = currentLaps + (Math.random() > 0.5 ? 1 : 0);
+                }
+                
+                // Update last lap time
+                const baseTime = 82 + index * 0.3 + Math.random() * 2;
+                const minutes = Math.floor(baseTime / 60);
+                const seconds = (baseTime % 60).toFixed(3);
+                cells[4].textContent = `${minutes}:${seconds.padStart(6, '0')}`;
+                
+                // Update sectors
+                cells[6].textContent = getRandomTime(28 + index * 0.1);
+                cells[7].textContent = getRandomTime(32 + index * 0.1);
+                cells[8].textContent = getRandomTime(21 + index * 0.1);
+            });
+        }
+
+        // Update every 3 seconds to simulate live timing
+        setInterval(updateTiming, 3000);
+    </script>
+</body>
+</html>

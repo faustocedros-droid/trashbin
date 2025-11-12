@@ -3,6 +3,17 @@ import React, { useState, useEffect } from 'react';
 function GeneralInformation() {
   const [imagePreview, setImagePreview] = useState('');
   const [scheduleData, setScheduleData] = useState([]);
+  const [eventDetails, setEventDetails] = useState({
+    date: '',
+    championship: '',
+    event: '',
+    car: '',
+    team: '',
+    driver1: '',
+    driver2: '',
+    driver3: '',
+    driver4: ''
+  });
 
   // Initialize schedule data with 15 rows and 7 columns
   const initializeScheduleData = () => {
@@ -22,7 +33,7 @@ function GeneralInformation() {
     return rows;
   };
 
-  // Load saved circuit image and schedule data from localStorage on component mount
+  // Load saved circuit image, schedule data, and event details from localStorage on component mount
   useEffect(() => {
     const savedImage = localStorage.getItem('generalInfo_circuitImage');
     if (savedImage) {
@@ -39,6 +50,15 @@ function GeneralInformation() {
       }
     } else {
       setScheduleData(initializeScheduleData());
+    }
+
+    const savedEventDetails = localStorage.getItem('generalInfo_eventDetails');
+    if (savedEventDetails) {
+      try {
+        setEventDetails(JSON.parse(savedEventDetails));
+      } catch (error) {
+        console.error('Error loading event details:', error);
+      }
     }
   }, []);
 
@@ -86,11 +106,20 @@ function GeneralInformation() {
     localStorage.setItem('generalInfo_schedule', JSON.stringify(updatedSchedule));
   };
 
+  // Handle event details change
+  const handleEventDetailChange = (field, value) => {
+    const updatedDetails = { ...eventDetails, [field]: value };
+    setEventDetails(updatedDetails);
+    // Auto-save to localStorage
+    localStorage.setItem('generalInfo_eventDetails', JSON.stringify(updatedDetails));
+  };
+
   // Export general information to file
   const handleExportData = () => {
     const dataToExport = {
       version: '1.0',
       exportDate: new Date().toISOString(),
+      eventDetails: eventDetails,
       circuitImage: imagePreview,
       schedule: scheduleData
     };
@@ -121,6 +150,10 @@ function GeneralInformation() {
         }
 
         if (window.confirm('Vuoi importare questi dati? I dati attuali saranno sostituiti.')) {
+          if (importedData.eventDetails) {
+            setEventDetails(importedData.eventDetails);
+            localStorage.setItem('generalInfo_eventDetails', JSON.stringify(importedData.eventDetails));
+          }
           if (importedData.circuitImage) {
             setImagePreview(importedData.circuitImage);
             localStorage.setItem('generalInfo_circuitImage', importedData.circuitImage);
@@ -174,6 +207,243 @@ function GeneralInformation() {
               style={{ display: 'none' }}
             />
           </label>
+        </div>
+      </div>
+      
+      {/* Event Details Section */}
+      <div className="card" style={{ marginTop: '30px' }}>
+        <h2>Event Details</h2>
+        
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+          gap: '20px',
+          marginTop: '20px'
+        }}>
+          <div>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '8px', 
+              fontWeight: '600',
+              color: '#333'
+            }}>
+              Date
+            </label>
+            <input
+              type="text"
+              value={eventDetails.date}
+              onChange={(e) => handleEventDetailChange('date', e.target.value)}
+              placeholder="Enter date..."
+              style={{
+                width: '100%',
+                padding: '10px',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                fontSize: '14px',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
+
+          <div>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '8px', 
+              fontWeight: '600',
+              color: '#333'
+            }}>
+              Championship
+            </label>
+            <input
+              type="text"
+              value={eventDetails.championship}
+              onChange={(e) => handleEventDetailChange('championship', e.target.value)}
+              placeholder="Enter championship..."
+              style={{
+                width: '100%',
+                padding: '10px',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                fontSize: '14px',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
+
+          <div>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '8px', 
+              fontWeight: '600',
+              color: '#333'
+            }}>
+              Event
+            </label>
+            <input
+              type="text"
+              value={eventDetails.event}
+              onChange={(e) => handleEventDetailChange('event', e.target.value)}
+              placeholder="Enter event..."
+              style={{
+                width: '100%',
+                padding: '10px',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                fontSize: '14px',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
+
+          <div>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '8px', 
+              fontWeight: '600',
+              color: '#333'
+            }}>
+              Car
+            </label>
+            <input
+              type="text"
+              value={eventDetails.car}
+              onChange={(e) => handleEventDetailChange('car', e.target.value)}
+              placeholder="Enter car..."
+              style={{
+                width: '100%',
+                padding: '10px',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                fontSize: '14px',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
+
+          <div>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '8px', 
+              fontWeight: '600',
+              color: '#333'
+            }}>
+              Team
+            </label>
+            <input
+              type="text"
+              value={eventDetails.team}
+              onChange={(e) => handleEventDetailChange('team', e.target.value)}
+              placeholder="Enter team..."
+              style={{
+                width: '100%',
+                padding: '10px',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                fontSize: '14px',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
+
+          <div>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '8px', 
+              fontWeight: '600',
+              color: '#333'
+            }}>
+              Driver1
+            </label>
+            <input
+              type="text"
+              value={eventDetails.driver1}
+              onChange={(e) => handleEventDetailChange('driver1', e.target.value)}
+              placeholder="Enter driver 1..."
+              style={{
+                width: '100%',
+                padding: '10px',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                fontSize: '14px',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
+
+          <div>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '8px', 
+              fontWeight: '600',
+              color: '#333'
+            }}>
+              Driver2
+            </label>
+            <input
+              type="text"
+              value={eventDetails.driver2}
+              onChange={(e) => handleEventDetailChange('driver2', e.target.value)}
+              placeholder="Enter driver 2..."
+              style={{
+                width: '100%',
+                padding: '10px',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                fontSize: '14px',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
+
+          <div>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '8px', 
+              fontWeight: '600',
+              color: '#333'
+            }}>
+              Driver3
+            </label>
+            <input
+              type="text"
+              value={eventDetails.driver3}
+              onChange={(e) => handleEventDetailChange('driver3', e.target.value)}
+              placeholder="Enter driver 3..."
+              style={{
+                width: '100%',
+                padding: '10px',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                fontSize: '14px',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
+
+          <div>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '8px', 
+              fontWeight: '600',
+              color: '#333'
+            }}>
+              Driver4
+            </label>
+            <input
+              type="text"
+              value={eventDetails.driver4}
+              onChange={(e) => handleEventDetailChange('driver4', e.target.value)}
+              placeholder="Enter driver 4..."
+              style={{
+                width: '100%',
+                padding: '10px',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                fontSize: '14px',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
         </div>
       </div>
       

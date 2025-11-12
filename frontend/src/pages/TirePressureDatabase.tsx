@@ -239,6 +239,21 @@ function TirePressureDatabase() {
     }, 0);
   };
 
+  // Calculate column total (sum of all values in a column starting from T1)
+  const calculateColumnTotal = (column: keyof SessionRow): number => {
+    return sessionTable.reduce((sum, row) => {
+      const val = row[column];
+      const num = parseFloat(val) || 0;
+      return sum + num;
+    }, 0);
+  };
+
+  // Calculate total KM of event (sum of all column totals from T1 to R3)
+  const calculateTotalEventKm = (): number => {
+    const columns: (keyof SessionRow)[] = ['T1', 'T2', 'T3', 'T4', 'FP1', 'FP2', 'FP3', 'Q', 'R1', 'R2', 'R3'];
+    return columns.reduce((sum, col) => sum + calculateColumnTotal(col), 0);
+  };
+
   // Print session table
   const handlePrintSessionTable = () => {
     window.print();
@@ -547,8 +562,67 @@ function TirePressureDatabase() {
                   </td>
                 </tr>
               ))}
+              {/* Totals Row */}
+              <tr style={{ backgroundColor: '#f0f0f0', fontWeight: 'bold' }}>
+                <td style={{ padding: '6px', textAlign: 'center', fontSize: '14px' }}>TOTALI</td>
+                <td style={{ padding: '6px', textAlign: 'center' }}>-</td>
+                <td style={{ padding: '6px', textAlign: 'center', backgroundColor: '#e8f5e9' }}>
+                  {calculateColumnTotal('T1').toFixed(2)}
+                </td>
+                <td style={{ padding: '6px', textAlign: 'center', backgroundColor: '#e8f5e9' }}>
+                  {calculateColumnTotal('T2').toFixed(2)}
+                </td>
+                <td style={{ padding: '6px', textAlign: 'center', backgroundColor: '#e8f5e9' }}>
+                  {calculateColumnTotal('T3').toFixed(2)}
+                </td>
+                <td style={{ padding: '6px', textAlign: 'center', backgroundColor: '#e8f5e9' }}>
+                  {calculateColumnTotal('T4').toFixed(2)}
+                </td>
+                <td style={{ padding: '6px', textAlign: 'center', backgroundColor: '#e8f5e9' }}>
+                  {calculateColumnTotal('FP1').toFixed(2)}
+                </td>
+                <td style={{ padding: '6px', textAlign: 'center', backgroundColor: '#e8f5e9' }}>
+                  {calculateColumnTotal('FP2').toFixed(2)}
+                </td>
+                <td style={{ padding: '6px', textAlign: 'center', backgroundColor: '#e8f5e9' }}>
+                  {calculateColumnTotal('FP3').toFixed(2)}
+                </td>
+                <td style={{ padding: '6px', textAlign: 'center', backgroundColor: '#e8f5e9' }}>
+                  {calculateColumnTotal('Q').toFixed(2)}
+                </td>
+                <td style={{ padding: '6px', textAlign: 'center', backgroundColor: '#e8f5e9' }}>
+                  {calculateColumnTotal('R1').toFixed(2)}
+                </td>
+                <td style={{ padding: '6px', textAlign: 'center', backgroundColor: '#e8f5e9' }}>
+                  {calculateColumnTotal('R2').toFixed(2)}
+                </td>
+                <td style={{ padding: '6px', textAlign: 'center', backgroundColor: '#e8f5e9' }}>
+                  {calculateColumnTotal('R3').toFixed(2)}
+                </td>
+                <td style={{ padding: '6px', textAlign: 'center' }}>-</td>
+              </tr>
             </tbody>
           </table>
+        </div>
+
+        {/* KM Totali Evento Box */}
+        <div style={{
+          marginTop: '20px',
+          padding: '20px',
+          backgroundColor: '#4caf50',
+          borderRadius: '8px',
+          textAlign: 'center',
+        }}>
+          <h3 style={{ margin: 0, marginBottom: '10px', color: '#fff', fontSize: '18px' }}>
+            KM totali evento
+          </h3>
+          <div style={{
+            fontSize: '32px',
+            fontWeight: 'bold',
+            color: '#fff',
+          }}>
+            {calculateTotalEventKm().toFixed(2)} KM
+          </div>
         </div>
       </div>
 

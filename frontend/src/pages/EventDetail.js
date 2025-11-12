@@ -313,6 +313,61 @@ function EventDetail() {
     }
   };
 
+  // Helper function to find the best (fastest) sector time for each sector
+  const getBestSectorTimes = (laps) => {
+    if (!laps || laps.length === 0) return {};
+
+    const bestTimes = {
+      sector1: null,
+      sector2: null,
+      sector3: null,
+      sector4: null,
+    };
+
+    // Convert sector time strings to seconds for comparison
+    const parseTime = (timeStr) => {
+      if (!timeStr || timeStr === '-') return null;
+      const parts = timeStr.split('.');
+      if (parts.length === 2) {
+        const seconds = parseFloat(parts[0]);
+        const milliseconds = parseFloat(parts[1]) / 1000;
+        return seconds + milliseconds;
+      }
+      return parseFloat(timeStr);
+    };
+
+    laps.forEach(lap => {
+      ['sector1', 'sector2', 'sector3', 'sector4'].forEach(sector => {
+        const time = parseTime(lap[sector]);
+        if (time !== null && time > 0) {
+          if (bestTimes[sector] === null || time < bestTimes[sector]) {
+            bestTimes[sector] = time;
+          }
+        }
+      });
+    });
+
+    return bestTimes;
+  };
+
+  // Check if a sector time is the best time for that sector
+  const isBestSectorTime = (sectorTime, sectorName, bestTimes) => {
+    if (!sectorTime || sectorTime === '-') return false;
+    const parseTime = (timeStr) => {
+      if (!timeStr || timeStr === '-') return null;
+      const parts = timeStr.split('.');
+      if (parts.length === 2) {
+        const seconds = parseFloat(parts[0]);
+        const milliseconds = parseFloat(parts[1]) / 1000;
+        return seconds + milliseconds;
+      }
+      return parseFloat(timeStr);
+    };
+    const time = parseTime(sectorTime);
+    return time !== null && time > 0 && Math.abs(time - bestTimes[sectorName]) < 0.001;
+  };
+
+
   // Export event with all sessions and laps to file, plus ALL app data
   // Includes: events, eventFeatures, generalInformation, setup, runPlan, 
   // tirePressure, fuelConsumption, eventSchedule, trackConfiguration, settings
@@ -1261,62 +1316,81 @@ function EventDetail() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sessionLaps
-                    .sort((a, b) => a.lap_number - b.lap_number)
-                    .map(lap => (
-                      <tr key={lap.id}>
-                        <td>{lap.lap_number}</td>
-                        <td>
-                          {lap.lap_status ? (
-                            <div style={{
-                              padding: '4px 8px',
-                              borderRadius: '4px',
-                              fontSize: '12px',
-                              fontWeight: 'bold',
-                              textAlign: 'center',
-                              color: 'black',
-                              background: 
-                                lap.lap_status === 'RF' ? 'red' :
-                                lap.lap_status === 'FCY' ? 'yellow' :
-                                lap.lap_status === 'SC' ? 'yellow' :
-                                lap.lap_status === 'TFC' ? 'orange' : 'transparent'
-                            }}>
-                              {lap.lap_status}
+                  {(() => {
+                    const bestTimes = getBestSectorTimes(sessionLaps);
+                    return sessionLaps
+                      .sort((a, b) => a.lap_number - b.lap_number)
+                      .map(lap => (
+                        <tr key={lap.id}>
+                          <td>{lap.lap_number}</td>
+                          <td>
+                            {lap.lap_status ? (
+                              <div style={{
+                                padding: '4px 8px',
+                                borderRadius: '4px',
+                                fontSize: '12px',
+                                fontWeight: 'bold',
+                                textAlign: 'center',
+                                color: 'black',
+                                background: 
+                                  lap.lap_status === 'RF' ? 'red' :
+                                  lap.lap_status === 'FCY' ? 'yellow' :
+                                  lap.lap_status === 'SC' ? 'yellow' :
+                                  lap.lap_status === 'TFC' ? 'orange' : 'transparent'
+                              }}>
+                                {lap.lap_status}
+                              </div>
+                            ) : '-'}
+                          </td>
+                          <td><strong style={{ color: '#1976d2' }}>{lap.lap_time}</strong></td>
+                          <td style={{ 
+                            backgroundColor: isBestSectorTime(lap.sector1, 'sector1', bestTimes) ? '#c8e6c9' : 'transparent'
+                          }}>
+                            {lap.sector1 || '-'}
+                          </td>
+                          <td style={{ 
+                            backgroundColor: isBestSectorTime(lap.sector2, 'sector2', bestTimes) ? '#c8e6c9' : 'transparent'
+                          }}>
+                            {lap.sector2 || '-'}
+                          </td>
+                          <td style={{ 
+                            backgroundColor: isBestSectorTime(lap.sector3, 'sector3', bestTimes) ? '#c8e6c9' : 'transparent'
+                          }}>
+                            {lap.sector3 || '-'}
+                          </td>
+                          <td style={{ 
+                            backgroundColor: isBestSectorTime(lap.sector4, 'sector4', bestTimes) ? '#c8e6c9' : 'transparent'
+                          }}>
+                            {lap.sector4 || '-'}
+                          </td>
+                          <td>
+                            {selectedSession.fuel_start !== undefined && selectedSession.fuel_per_lap !== undefined
+                              ? calculateRemainingFuel(selectedSession.fuel_start, selectedSession.fuel_per_lap, lap.lap_number).toFixed(2)
+                              : '-'}
+                          </td>
+                          <td>{lap.tire_set || '-'}</td>
+                          <td>{lap.notes || '-'}</td>
+                          <td>
+                            <div style={{ display: 'flex', gap: '5px' }}>
+                              <button
+                                className="btn btn-secondary"
+                                onClick={() => handleEditLap(lap)}
+                                style={{ fontSize: '12px', padding: '4px 8px' }}
+                              >
+                                ✏️
+                              </button>
+                              <button
+                                className="btn btn-danger"
+                                onClick={() => handleDeleteLap(lap)}
+                                style={{ fontSize: '12px', padding: '4px 8px' }}
+                              >
+                                🗑️
+                              </button>
                             </div>
-                          ) : '-'}
-                        </td>
-                        <td><strong style={{ color: '#1976d2' }}>{lap.lap_time}</strong></td>
-                        <td>{lap.sector1 || '-'}</td>
-                        <td>{lap.sector2 || '-'}</td>
-                        <td>{lap.sector3 || '-'}</td>
-                        <td>{lap.sector4 || '-'}</td>
-                        <td>
-                          {selectedSession.fuel_start !== undefined && selectedSession.fuel_per_lap !== undefined
-                            ? calculateRemainingFuel(selectedSession.fuel_start, selectedSession.fuel_per_lap, lap.lap_number).toFixed(2)
-                            : '-'}
-                        </td>
-                        <td>{lap.tire_set || '-'}</td>
-                        <td>{lap.notes || '-'}</td>
-                        <td>
-                          <div style={{ display: 'flex', gap: '5px' }}>
-                            <button
-                              className="btn btn-secondary"
-                              onClick={() => handleEditLap(lap)}
-                              style={{ fontSize: '12px', padding: '4px 8px' }}
-                            >
-                              ✏️
-                            </button>
-                            <button
-                              className="btn btn-danger"
-                              onClick={() => handleDeleteLap(lap)}
-                              style={{ fontSize: '12px', padding: '4px 8px' }}
-                            >
-                              🗑️
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                        </tr>
+                      ));
+                  })()}
                 </tbody>
               </table>
             </div>

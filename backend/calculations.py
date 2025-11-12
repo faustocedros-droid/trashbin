@@ -271,3 +271,38 @@ class RacingCalculations:
             'aero_tendency': aero_balance,
             'mechanical_tendency': mech_balance
         }
+    
+    @staticmethod
+    def calculate_best_lap_time(laps):
+        """
+        Calculate the best lap time from a list of laps
+        
+        Args:
+            laps: List of lap objects with lap_time attribute
+            
+        Returns:
+            Best lap time string in MM:SS.mmm format or None if no valid laps
+        """
+        if not laps:
+            return None
+        
+        # Filter out laps with no lap_time or empty lap_time
+        valid_times = [lap.lap_time for lap in laps if lap.lap_time and lap.lap_time.strip()]
+        
+        if not valid_times:
+            return None
+        
+        # Convert lap times to seconds for comparison
+        def time_to_seconds(time_str):
+            try:
+                parts = time_str.split(':')
+                if len(parts) != 2:
+                    return float('inf')
+                minutes, seconds = parts
+                return int(minutes) * 60 + float(seconds)
+            except (ValueError, AttributeError):
+                return float('inf')
+        
+        # Find the minimum time
+        best_time = min(valid_times, key=time_to_seconds)
+        return best_time

@@ -14,11 +14,21 @@ CORS(app)
 
 # Import and initialize database
 from models import db, RaceEvent, Session, Lap, TireData, EngineData, SetupData
+from calculations import RacingCalculations
 db.init_app(app)
 
 # Create tables
 with app.app_context():
     db.create_all()
+
+def update_session_best_lap(session_id):
+    """Helper function to update the best lap time for a session"""
+    session = Session.query.get(session_id)
+    if session:
+        laps = Lap.query.filter_by(session_id=session_id).all()
+        best_lap = RacingCalculations.calculate_best_lap_time(laps)
+        session.best_lap_time = best_lap
+        db.session.commit()
 
 # Routes
 @app.route('/api/health', methods=['GET'])
@@ -154,6 +164,10 @@ def handle_laps(session_id):
         )
         db.session.add(lap)
         db.session.commit()
+        
+        # Update session's best lap time
+        update_session_best_lap(session_id)
+        
         return jsonify(lap.to_dict()), 201
 
 @app.route('/api/laps/<int:lap_id>', methods=['GET', 'PUT', 'DELETE'])
@@ -177,11 +191,20 @@ def handle_lap(lap_id):
         lap.lap_status = data.get('lap_status', lap.lap_status)
         lap.notes = data.get('notes', lap.notes)
         db.session.commit()
+        
+        # Update session's best lap time
+        update_session_best_lap(lap.session_id)
+        
         return jsonify(lap.to_dict())
     
     elif request.method == 'DELETE':
+        session_id = lap.session_id
         db.session.delete(lap)
         db.session.commit()
+        
+        # Update session's best lap time
+        update_session_best_lap(session_id)
+        
         return '', 204
 
 @app.route('/api/sessions/<int:session_id>/tires', methods=['GET', 'POST'])

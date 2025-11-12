@@ -1004,6 +1004,34 @@ function EventDetail() {
               </div>
             )}
 
+            {/* PACE - Moving average of last 3 laps */}
+            {sessionLaps.length >= 4 && calculateSessionPace(sessionLaps.map(l => ({ 
+              ...l, 
+              lapTime: l.lap_time, 
+              lapNumber: l.lap_number
+            }))) && (
+              <div style={{ 
+                padding: '15px',
+                borderRadius: '6px',
+                textAlign: 'center',
+                fontWeight: 'bold',
+                fontSize: '18px',
+                background: '#40e0d0',
+                color: '#333'
+              }}>
+                <div style={{ fontSize: '14px', fontWeight: 'normal', marginBottom: '5px' }}>
+                  PACE
+                </div>
+                <div style={{ color: '#006666' }}>
+                  {calculateSessionPace(sessionLaps.map(l => ({ 
+                    ...l, 
+                    lapTime: l.lap_time, 
+                    lapNumber: l.lap_number
+                  })))}
+                </div>
+              </div>
+            )}
+
             {/* Theoretical best lap */}
             {sessionLaps.length > 0 && calculateTheoreticalBestLap(sessionLaps.map(l => ({ 
               ...l, 
@@ -1035,34 +1063,6 @@ function EventDetail() {
                     sector2: l.sector2,
                     sector3: l.sector3,
                     sector4: l.sector4
-                  })))}
-                </div>
-              </div>
-            )}
-
-            {/* PACE - Moving average of last 3 laps */}
-            {sessionLaps.length >= 4 && calculateSessionPace(sessionLaps.map(l => ({ 
-              ...l, 
-              lapTime: l.lap_time, 
-              lapNumber: l.lap_number
-            }))) && (
-              <div style={{ 
-                padding: '15px',
-                borderRadius: '6px',
-                textAlign: 'center',
-                fontWeight: 'bold',
-                fontSize: '18px',
-                background: '#40e0d0',
-                color: '#333'
-              }}>
-                <div style={{ fontSize: '14px', fontWeight: 'normal', marginBottom: '5px' }}>
-                  PACE
-                </div>
-                <div style={{ color: '#006666' }}>
-                  {calculateSessionPace(sessionLaps.map(l => ({ 
-                    ...l, 
-                    lapTime: l.lap_time, 
-                    lapNumber: l.lap_number
                   })))}
                 </div>
               </div>

@@ -268,7 +268,7 @@ function TirePressureSetup() {
         // Adjusted cold settings PSI (D22-E23)
         const D22 = D19 !== 0 ? (D7 / D19) - i.K22 * (i.H22 - i.H13) - i.K23 * (i.H23 - i.H16) : 0;
         const E22 = E19 !== 0 ? (E7 / E19) - i.K22 * (i.H22 - i.H13) - i.K23 * (i.H23 - i.H16) : 0;
-        const D23 = D20 !== 0 ? (D8 / D20) + i.K22 * (i.H22 - i.H13) + i.K23 : 0;
+        const D23 = D20 !== 0 ? (D8 / D20) + i.K22 * (i.H22 - i.H13) + i.K23 * (i.H23 - i.H16) : 0;
         const E23 = E20 !== 0 ? (E8 / E20) - i.K22 * (i.H22 - i.H13) - i.K23 * (i.H23 - i.H16) : 0;
 
         // Convert PSI to bar (D22-E23 to F22-G23)

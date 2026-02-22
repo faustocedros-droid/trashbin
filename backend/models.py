@@ -74,6 +74,7 @@ class Session(db.Model):
             'best_lap_time': self.best_lap_time,
             'session_status': self.session_status,
             'notes': self.notes,
+            'lap_count': len(self.laps),
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }

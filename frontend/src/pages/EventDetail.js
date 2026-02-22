@@ -924,6 +924,7 @@ function EventDetail() {
                 <th>Carburante (L)</th>
                 <th>Set Gomme</th>
                 <th>Miglior Giro</th>
+                <th>Giri Totali</th>
                 <th>Azioni</th>
               </tr>
             </thead>
@@ -940,6 +941,7 @@ function EventDetail() {
                   <td>{session.fuel_start || '-'}</td>
                   <td>{session.tire_set || '-'}</td>
                   <td>{session.best_lap_time || '-'}</td>
+                  <td>{session.lap_count !== undefined ? session.lap_count : '-'}</td>
                   <td>
                     <div style={{ display: 'flex', gap: '5px' }}>
                       <button

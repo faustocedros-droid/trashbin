@@ -16,6 +16,7 @@ import Setup from './pages/Setup';
 import FuelConsumption from './pages/FuelConsumption';
 import EventFeatures from './pages/EventFeatures';
 import DriversComments from './pages/DriversComments';
+import Joblist from './pages/Joblist';
 import notificationService from './services/notificationService';
 
 function App() {
@@ -172,6 +173,11 @@ function App() {
                             Run Plan Generator
                           </Link>
                         </li>
+                        <li style={{ padding: '5px 0' }}>
+                          <Link to="/runplan/joblist" onClick={() => { setMenuOpen(false); setRunPlanSubmenuOpen(false); }}>
+                            Joblist
+                          </Link>
+                        </li>
                       </ul>
                     )}
                   </div>
@@ -234,6 +240,7 @@ function App() {
             <Route path="/tire-pressure/setup" element={<TirePressureSetup />} />
             <Route path="/tire-pressure/database" element={<TirePressureDatabase />} />
             <Route path="/runplan/fp1" element={<RunPlanSheet />} />
+            <Route path="/runplan/joblist" element={<Joblist />} />
             <Route path="/fuel-consumption" element={<FuelConsumption />} />
             <Route path="/drivers-comments" element={<DriversComments />} />
             <Route path="/weather" element={<Weather />} />

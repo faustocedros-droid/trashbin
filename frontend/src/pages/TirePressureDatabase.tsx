@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 
 interface PressureEntry {
   id: string;
+  evento: string;
+  circuito: string;
   session: string;
   tireSet: string;
   coldPressures: {
@@ -46,6 +48,8 @@ function TirePressureDatabase() {
   const [sessionTable, setSessionTable] = useState<SessionRow[]>([]);
   const [formData, setFormData] = useState<PressureEntry>({
     id: '',
+    evento: '',
+    circuito: '',
     session: 'FP1',
     tireSet: '',
     coldPressures: { FL: '', FR: '', RL: '', RR: '' },
@@ -136,6 +140,8 @@ function TirePressureDatabase() {
   const resetForm = () => {
     setFormData({
       id: '',
+      evento: '',
+      circuito: '',
       session: 'FP1',
       tireSet: '',
       coldPressures: { FL: '', FR: '', RL: '', RR: '' },
@@ -631,6 +637,46 @@ function TirePressureDatabase() {
         <h2>{editingId ? 'Modifica Riga' : 'Aggiungi Nuova Riga'}</h2>
         
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginTop: '20px' }}>
+          {/* Evento */}
+          <div>
+            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+              Evento
+            </label>
+            <input
+              type="text"
+              value={formData.evento}
+              onChange={(e) => setFormData({ ...formData, evento: e.target.value })}
+              placeholder="es. Imola 2025"
+              style={{
+                width: '100%',
+                padding: '8px',
+                fontSize: '16px',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+              }}
+            />
+          </div>
+
+          {/* Circuito */}
+          <div>
+            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+              Circuito
+            </label>
+            <input
+              type="text"
+              value={formData.circuito}
+              onChange={(e) => setFormData({ ...formData, circuito: e.target.value })}
+              placeholder="es. Autodromo Enzo e Dino Ferrari"
+              style={{
+                width: '100%',
+                padding: '8px',
+                fontSize: '16px',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+              }}
+            />
+          </div>
+
           {/* Session */}
           <div>
             <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
@@ -1024,6 +1070,8 @@ function TirePressureDatabase() {
             <table className="table">
               <thead>
                 <tr>
+                  <th>Evento</th>
+                  <th>Circuito</th>
                   <th>Sessione</th>
                   <th>Set Gomme</th>
                   <th colSpan={4} style={{ backgroundColor: '#40E0D0', color: '#fff' }}>
@@ -1043,6 +1091,8 @@ function TirePressureDatabase() {
                   <th>Azioni</th>
                 </tr>
                 <tr>
+                  <th></th>
+                  <th></th>
                   <th></th>
                   <th></th>
                   <th style={{ backgroundColor: '#40E0D0', color: '#fff' }}>FL</th>
@@ -1065,6 +1115,8 @@ function TirePressureDatabase() {
               <tbody>
                 {entries.map((entry) => (
                   <tr key={entry.id}>
+                    <td>{entry.evento || ''}</td>
+                    <td>{entry.circuito || ''}</td>
                     <td>{entry.session}</td>
                     <td>{entry.tireSet}</td>
                     <td style={{ backgroundColor: '#E0F7F7' }}>{entry.coldPressures.FL}</td>

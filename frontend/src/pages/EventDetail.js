@@ -1304,6 +1304,7 @@ function EventDetail() {
               <table className="table">
                 <thead>
                   <tr>
+                    <th>Orario</th>
                     <th>Giro</th>
                     <th>Stato</th>
                     <th>Tempo Totale</th>
@@ -1324,6 +1325,22 @@ function EventDetail() {
                       .sort((a, b) => a.lap_number - b.lap_number)
                       .map(lap => (
                         <tr key={lap.id}>
+                          <td>
+                             <div style={{
+                               padding: '3px 7px',
+                               borderRadius: '4px',
+                               fontSize: '12px',
+                               fontWeight: 'bold',
+                               textAlign: 'center',
+                               background: '#e3f2fd',
+                               color: '#1565c0',
+                               whiteSpace: 'nowrap'
+                             }}>
+                               {lap.created_at
+                                 ? new Date(lap.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                                 : '-'}
+                             </div>
+                           </td>
                           <td>{lap.lap_number}</td>
                           <td>
                             {lap.lap_status ? (

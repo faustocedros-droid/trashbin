@@ -18,6 +18,7 @@ import EventFeatures from './pages/EventFeatures';
 import DriversComments from './pages/DriversComments';
 import Joblist from './pages/Joblist';
 import Timesheet from './pages/Timesheet';
+import ItalianGTEndRacePlan from './pages/ItalianGTEndRacePlan';
 import notificationService from './services/notificationService';
 
 function App() {
@@ -179,6 +180,11 @@ function App() {
                             Joblist
                           </Link>
                         </li>
+                        <li style={{ padding: '5px 0' }}>
+                          <Link to="/runplan/italian-gt" onClick={() => { setMenuOpen(false); setRunPlanSubmenuOpen(false); }}>
+                            Italian GT End RacePlan
+                          </Link>
+                        </li>
                       </ul>
                     )}
                   </div>
@@ -243,6 +249,7 @@ function App() {
             <Route path="/tire-pressure/database" element={<TirePressureDatabase />} />
             <Route path="/runplan/fp1" element={<RunPlanSheet />} />
             <Route path="/runplan/joblist" element={<Joblist />} />
+            <Route path="/runplan/italian-gt" element={<ItalianGTEndRacePlan />} />
             <Route path="/fuel-consumption" element={<FuelConsumption />} />
             <Route path="/drivers-comments" element={<DriversComments />} />
             <Route path="/timesheet" element={<Timesheet />} />

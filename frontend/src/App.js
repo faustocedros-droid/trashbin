@@ -19,6 +19,7 @@ import DriversComments from './pages/DriversComments';
 import Joblist from './pages/Joblist';
 import Timesheet from './pages/Timesheet';
 import ItalianGTEndRacePlan from './pages/ItalianGTEndRacePlan';
+import TireSetsMileage from './pages/TireSetsMileage';
 import notificationService from './services/notificationService';
 
 function App() {
@@ -221,6 +222,11 @@ function App() {
                             Tire pressure database
                           </Link>
                         </li>
+                        <li style={{ padding: '5px 0' }}>
+                          <Link to="/tire-pressure/sets-mileage" onClick={() => { setMenuOpen(false); setTirePressureSubmenuOpen(false); }}>
+                            Tire sets mileage
+                          </Link>
+                        </li>
                       </ul>
                     )}
                   </div>
@@ -247,6 +253,7 @@ function App() {
             <Route path="/tire-pressure/sets-management" element={<TirePressureSetsManagement />} />
             <Route path="/tire-pressure/setup" element={<TirePressureSetup />} />
             <Route path="/tire-pressure/database" element={<TirePressureDatabase />} />
+            <Route path="/tire-pressure/sets-mileage" element={<TireSetsMileage />} />
             <Route path="/runplan/fp1" element={<RunPlanSheet />} />
             <Route path="/runplan/joblist" element={<Joblist />} />
             <Route path="/runplan/italian-gt" element={<ItalianGTEndRacePlan />} />

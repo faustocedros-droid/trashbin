@@ -292,6 +292,41 @@ def _has_allowed_signature(file_storage, file_kind: str) -> bool:
     return False
 
 
+def _detected_video_suffix(file_storage) -> str:
+    stream = file_storage.stream
+    current_position = stream.tell()
+    header = stream.read(64)
+    stream.seek(current_position)
+
+    if len(header) >= 12 and header[4:8] == b'ftyp':
+        brand = header[8:12].lower()
+        if brand in {b'qt  ', b'moov'}:
+            return '.mov'
+        return '.mp4'
+    if len(header) >= 12 and header[:4] == b'RIFF' and header[8:12] == b'AVI ':
+        return '.avi'
+    if len(header) >= 4 and header[:4] == b'\x1A\x45\xDF\xA3':
+        return '.mkv'
+    return '.mp4'
+
+
+def _detected_image_suffix(file_storage) -> str:
+    stream = file_storage.stream
+    current_position = stream.tell()
+    header = stream.read(32)
+    stream.seek(current_position)
+
+    if len(header) >= 8 and header[:8] == b'\x89PNG\r\n\x1a\n':
+        return '.png'
+    if len(header) >= 3 and header[:3] == b'\xFF\xD8\xFF':
+        return '.jpg'
+    if len(header) >= 2 and header[:2] == b'BM':
+        return '.bmp'
+    if len(header) >= 12 and header[:4] == b'RIFF' and header[8:12] == b'WEBP':
+        return '.webp'
+    return '.png'
+
+
 @app.route('/api/onboard/compare', methods=['POST'])
 def compare_onboard_videos():
     """Automatic onboard comparison with optional track map"""
@@ -359,16 +394,16 @@ def compare_onboard_videos():
     temp_video_b_path = None
     temp_track_map_path = None
     try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as temp_a:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=_detected_video_suffix(video_a)) as temp_a:
             temp_video_a_path = temp_a.name
             video_a.save(temp_a)
 
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as temp_b:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=_detected_video_suffix(video_b)) as temp_b:
             temp_video_b_path = temp_b.name
             video_b.save(temp_b)
 
         if track_map:
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as temp_map:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=_detected_image_suffix(track_map)) as temp_map:
                 temp_track_map_path = temp_map.name
                 track_map.save(temp_map)
 
@@ -383,7 +418,7 @@ def compare_onboard_videos():
         )
 
         analysis['track_map_provided'] = bool(track_map)
-        analysis['track_map_name'] = track_map.filename if track_map else None
+        analysis['track_map_name'] = os.path.basename(track_map.filename) if track_map else None
 
         return jsonify({
             'status': 'success',

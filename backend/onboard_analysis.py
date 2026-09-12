@@ -317,7 +317,7 @@ def analyze_video(video_path: str, sample_rate_hz: float = 8.0) -> VideoAnalysis
     return VideoAnalysisResult(
         speeds=speeds,
         steering=steering,
-        centers=smoothed_points,
+        centers=smoothed_points.copy(),
         map_points=smoothed_points,
         map_outline=map_outline,
         duration_seconds=duration_seconds,
@@ -486,7 +486,8 @@ def _extract_curve_indices(map_points: np.ndarray) -> List[int]:
             continue
         mapped_idx = idx + 1
         if maxima and mapped_idx - maxima[-1] < min_distance:
-            if value > turn_strength[maxima[-1] - 1]:
+            previous_idx = min(max(0, maxima[-1] - 1), turn_strength.size - 1)
+            if value > turn_strength[previous_idx]:
                 maxima[-1] = mapped_idx
             continue
         maxima.append(mapped_idx)

@@ -184,10 +184,7 @@ function OnboardComparisonSession() {
                 <source src={videoA.previewUrl} type={videoA.mimeType} />
               </video>
             )}
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '20px' }}>
-            <div>
+            <div style={{ marginTop: '20px' }}>
               <label className="btn btn-secondary" htmlFor="csv-upload-a" style={{ display: 'inline-block' }}>
                 Carica CSV giro A
                 <input
@@ -200,20 +197,6 @@ function OnboardComparisonSession() {
                 />
               </label>
               <p style={{ marginTop: '10px', color: '#666' }}>{csvA?.name || 'Nessun CSV selezionato'}</p>
-            </div>
-            <div>
-              <label className="btn btn-secondary" htmlFor="csv-upload-b" style={{ display: 'inline-block' }}>
-                Carica CSV giro B
-                <input
-                  id="csv-upload-b"
-                  type="file"
-                  accept=".csv,text/csv"
-                  onChange={(e) => handleCsvUpload(e, 'B')}
-                  aria-label="Carica CSV traiettoria B"
-                  style={{ display: 'none' }}
-                />
-              </label>
-              <p style={{ marginTop: '10px', color: '#666' }}>{csvB?.name || 'Nessun CSV selezionato'}</p>
             </div>
           </div>
 
@@ -235,6 +218,20 @@ function OnboardComparisonSession() {
                 <source src={videoB.previewUrl} type={videoB.mimeType} />
               </video>
             )}
+            <div style={{ marginTop: '20px' }}>
+              <label className="btn btn-secondary" htmlFor="csv-upload-b" style={{ display: 'inline-block' }}>
+                Carica CSV giro B
+                <input
+                  id="csv-upload-b"
+                  type="file"
+                  accept=".csv,text/csv"
+                  onChange={(e) => handleCsvUpload(e, 'B')}
+                  aria-label="Carica CSV traiettoria B"
+                  style={{ display: 'none' }}
+                />
+              </label>
+              <p style={{ marginTop: '10px', color: '#666' }}>{csvB?.name || 'Nessun CSV selezionato'}</p>
+            </div>
           </div>
         </div>
 

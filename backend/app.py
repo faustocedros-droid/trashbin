@@ -3,6 +3,7 @@ from flask_cors import CORS
 from datetime import datetime
 import os
 import tempfile
+import logging
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -18,6 +19,7 @@ from models import db, RaceEvent, Session, Lap, TireData, EngineData, SetupData
 from calculations import RacingCalculations
 from onboard_analysis import analyze_onboard_pair
 db.init_app(app)
+logger = logging.getLogger(__name__)
 
 # Create tables
 with app.app_context():
@@ -247,6 +249,13 @@ def archive_event():
         'event_id': event_id
     }), 200
 
+
+def _safe_suffix(filename: str, default_suffix: str, allowed_suffixes: set[str]) -> str:
+    extension = os.path.splitext((filename or '').strip())[-1].lower()
+    if extension in allowed_suffixes:
+        return extension
+    return default_suffix
+
 @app.route('/api/onboard/compare', methods=['POST'])
 def compare_onboard_videos():
     """Automatic onboard comparison with optional track map"""
@@ -270,18 +279,21 @@ def compare_onboard_videos():
     temp_track_map_path = None
 
     try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(video_a.filename or '')[1] or '.mp4') as temp_a:
-            video_a.save(temp_a.name)
+        video_suffix = _safe_suffix(video_a.filename or '', '.mp4', {'.mp4', '.mov', '.avi', '.mkv', '.webm', '.m4v'})
+        with tempfile.NamedTemporaryFile(delete=False, suffix=video_suffix) as temp_a:
             temp_video_a_path = temp_a.name
+            video_a.save(temp_a)
 
-        with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(video_b.filename or '')[1] or '.mp4') as temp_b:
-            video_b.save(temp_b.name)
+        video_suffix_b = _safe_suffix(video_b.filename or '', '.mp4', {'.mp4', '.mov', '.avi', '.mkv', '.webm', '.m4v'})
+        with tempfile.NamedTemporaryFile(delete=False, suffix=video_suffix_b) as temp_b:
             temp_video_b_path = temp_b.name
+            video_b.save(temp_b)
 
         if track_map:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(track_map.filename or '')[1] or '.png') as temp_map:
-                track_map.save(temp_map.name)
+            map_suffix = _safe_suffix(track_map.filename or '', '.png', {'.png', '.jpg', '.jpeg', '.bmp', '.webp'})
+            with tempfile.NamedTemporaryFile(delete=False, suffix=map_suffix) as temp_map:
                 temp_track_map_path = temp_map.name
+                track_map.save(temp_map)
 
         analysis = analyze_onboard_pair(
             video_a_path=temp_video_a_path,
@@ -298,11 +310,13 @@ def compare_onboard_videos():
             'analysis': analysis
         }), 200
     except ValueError as error:
+        logger.warning('Onboard analysis validation error: %s', error)
         return jsonify({
             'status': 'error',
-            'message': str(error)
+            'message': 'I file caricati non consentono un’analisi automatica valida. Verifica formato e durata.'
         }), 400
-    except Exception:
+    except Exception as error:
+        logger.exception('Unexpected onboard analysis error: %s', error)
         return jsonify({
             'status': 'error',
             'message': 'Errore durante l’analisi automatica onboard'

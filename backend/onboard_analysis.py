@@ -53,7 +53,7 @@ def analyze_video(video_path: str, sample_rate_hz: float = 6.0) -> VideoAnalysis
 
     prev_gray = cv2.cvtColor(cv2.resize(frame, (320, 180)), cv2.COLOR_BGR2GRAY)
     prev_edges = cv2.Canny(prev_gray, 70, 140)
-    y_coords, x_coords = np.nonzero(prev_edges)
+    _, x_coords = np.nonzero(prev_edges)
     prev_center_x = float(np.mean(x_coords)) if x_coords.size else prev_gray.shape[1] / 2
 
     raw_speeds: List[float] = [0.0]
@@ -75,7 +75,7 @@ def analyze_video(video_path: str, sample_rate_hz: float = 6.0) -> VideoAnalysis
         motion_intensity = float(np.mean(diff))
 
         edges = cv2.Canny(gray, 70, 140)
-        y_coords, x_coords = np.nonzero(edges)
+        _, x_coords = np.nonzero(edges)
         center_x = float(np.mean(x_coords)) if x_coords.size else prev_center_x
 
         steering = abs(center_x - prev_center_x) / gray.shape[1] * 100.0
@@ -265,6 +265,14 @@ def _build_report(
     braking_b = np.mean([p["video_b"]["braking_speed_kmh"] for p in points]) if points else 0
     min_a = np.mean([p["video_a"]["min_corner_speed_kmh"] for p in points]) if points else 0
     min_b = np.mean([p["video_b"]["min_corner_speed_kmh"] for p in points]) if points else 0
+    corrections_a = np.mean([p["video_a"]["braking_modulation_score"] for p in points]) if points else 0
+    corrections_b = np.mean([p["video_b"]["braking_modulation_score"] for p in points]) if points else 0
+    throttle_gap_a = np.mean(
+        [p["video_a"]["full_throttle_pct"] - p["video_a"]["throttle_open_pct"] for p in points]
+    ) if points else 0
+    throttle_gap_b = np.mean(
+        [p["video_b"]["full_throttle_pct"] - p["video_b"]["throttle_open_pct"] for p in points]
+    ) if points else 0
 
     if abs(braking_a - braking_b) < 0.6:
         lines.append("- Velocità alla staccata media: profili equivalenti.")
@@ -305,8 +313,8 @@ def _build_report(
         [
             "",
             "Coaching finale",
-            f"- {driver_a}: consolidare i segmenti con maggiore variabilità di correzione per ridurre dispersione sul giro.",
-            f"- {driver_b}: lavorare su rilascio freno e tempo di ritorno a full gas nei segmenti lenti.",
+            f"- {driver_a if corrections_a >= corrections_b else driver_b}: ridurre la variabilità in staccata e limitare correzioni superflue in inserimento.",
+            f"- {driver_a if throttle_gap_a >= throttle_gap_b else driver_b}: lavorare sulla transizione apertura gas → full gas per anticipare l'accelerazione in uscita.",
             "- Ripetere l'analisi dopo run dedicato per validare il trend del delta prestazionale.",
         ]
     )

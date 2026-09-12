@@ -341,11 +341,31 @@ def _has_csv_structure(file_storage) -> bool:
         return False
 
     lines = [line for line in text.splitlines() if line.strip()]
-    if len(lines) < 3:
+    if len(lines) <= 18:
         return False
 
     delimiter_hits = sum(1 for line in lines[:8] if ',' in line or ';' in line or '\t' in line)
-    return delimiter_hits >= 2
+    if delimiter_hits < 2:
+        return False
+
+    data_line = lines[18]
+    delimiter = ';' if data_line.count(';') >= data_line.count(',') else ','
+    if '\t' in data_line and data_line.count('\t') > max(data_line.count(';'), data_line.count(',')):
+        delimiter = '\t'
+
+    columns = [value.strip() for value in data_line.split(delimiter)]
+    if len(columns) < 7:
+        return False
+
+    def _as_number(text: str):
+        try:
+            return float(text.replace(',', '.'))
+        except Exception:
+            return None
+
+    latitude = _as_number(columns[3]) if len(columns) > 3 else None
+    longitude = _as_number(columns[4]) if len(columns) > 4 else None
+    return latitude is not None and longitude is not None
 
 
 @app.route('/api/onboard/compare', methods=['POST'])

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import os
+from datetime import datetime
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
@@ -35,6 +36,13 @@ class MapRegion:
 
 
 _CSV_DATA_START_ROW = 18  # Row 19 in 1-indexed CSV files.
+_CSV_TIMESTAMP_INDEX = 0
+_CSV_GPS_UTC_INDEX = 1
+_CSV_ALTITUDE_INDEX = 2
+_CSV_LATITUDE_INDEX = 3
+_CSV_LONGITUDE_INDEX = 4
+_CSV_HEADING_INDEX = 5
+_CSV_SATELLITES_INDEX = 6
 
 
 def _parse_elapsed_seconds(value: str) -> Optional[float]:
@@ -64,6 +72,35 @@ def _parse_elapsed_seconds(value: str) -> Optional[float]:
             return hours * 3600.0 + minutes * 60.0 + seconds
         except ValueError:
             return None
+
+    return None
+
+
+def _parse_timestamp_seconds(value: str) -> Optional[float]:
+    parsed = _parse_elapsed_seconds(value)
+    if parsed is not None:
+        return parsed
+
+    text = (value or "").strip()
+    if not text:
+        return None
+
+    iso_candidate = text.replace("Z", "+00:00")
+    try:
+        return datetime.fromisoformat(iso_candidate).timestamp()
+    except ValueError:
+        pass
+
+    for fmt in (
+        "%Y-%m-%d %H:%M:%S.%f",
+        "%Y-%m-%d %H:%M:%S",
+        "%d/%m/%Y %H:%M:%S.%f",
+        "%d/%m/%Y %H:%M:%S",
+    ):
+        try:
+            return datetime.strptime(text, fmt).timestamp()
+        except ValueError:
+            continue
 
     return None
 
@@ -233,7 +270,7 @@ def _load_csv_trajectory(
     csv_path: Optional[str],
     target_count: int,
     video_duration_seconds: float,
-) -> Optional[Tuple[np.ndarray, np.ndarray]]:
+) -> Optional[Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]]:
     if not csv_path or target_count <= 1:
         return None
 
@@ -256,18 +293,27 @@ def _load_csv_trajectory(
     elapsed: List[float] = []
     latitudes: List[float] = []
     longitudes: List[float] = []
+    headings: List[float] = []
 
     for row in rows[_CSV_DATA_START_ROW:]:
-        if len(row) < 3:
+        if len(row) <= _CSV_SATELLITES_INDEX:
             continue
-        t = _parse_elapsed_seconds(row[0])
-        lat = _parse_float(row[1])
-        lon = _parse_float(row[2])
+        t = _parse_timestamp_seconds(row[_CSV_TIMESTAMP_INDEX])
+        if t is None:
+            t = _parse_timestamp_seconds(row[_CSV_GPS_UTC_INDEX])
+        _altitude = _parse_float(row[_CSV_ALTITUDE_INDEX])
+        lat = _parse_float(row[_CSV_LATITUDE_INDEX])
+        lon = _parse_float(row[_CSV_LONGITUDE_INDEX])
+        heading = _parse_float(row[_CSV_HEADING_INDEX])
+        satellites = _parse_float(row[_CSV_SATELLITES_INDEX])
         if t is None or lat is None or lon is None:
+            continue
+        if satellites is not None and satellites < 4:
             continue
         elapsed.append(t)
         latitudes.append(lat)
         longitudes.append(lon)
+        headings.append(np.nan if heading is None else heading)
 
     if len(elapsed) < 6:
         return None
@@ -275,17 +321,20 @@ def _load_csv_trajectory(
     elapsed_arr = np.array(elapsed, dtype=np.float32)
     lat_arr = np.array(latitudes, dtype=np.float32)
     lon_arr = np.array(longitudes, dtype=np.float32)
+    heading_arr = np.array(headings, dtype=np.float32)
 
     order = np.argsort(elapsed_arr)
     elapsed_arr = elapsed_arr[order]
     lat_arr = lat_arr[order]
     lon_arr = lon_arr[order]
+    heading_arr = heading_arr[order]
 
     unique_mask = np.ones_like(elapsed_arr, dtype=bool)
     unique_mask[1:] = elapsed_arr[1:] > elapsed_arr[:-1]
     elapsed_arr = elapsed_arr[unique_mask]
     lat_arr = lat_arr[unique_mask]
     lon_arr = lon_arr[unique_mask]
+    heading_arr = heading_arr[unique_mask]
 
     if elapsed_arr.size < 4:
         return None
@@ -317,8 +366,22 @@ def _load_csv_trajectory(
     normalized_path = np.clip(normalized_path, 0.0, 1.0)
     normalized_path = _moving_average(normalized_path, window=5)
 
+    heading_steering: Optional[np.ndarray] = None
+    valid_heading = np.isfinite(heading_arr)
+    if np.any(valid_heading):
+        heading_work = heading_arr.copy()
+        if np.any(~valid_heading):
+            valid_idx = np.where(valid_heading)[0]
+            heading_work[~valid_heading] = np.interp(np.where(~valid_heading)[0], valid_idx, heading_work[valid_idx])
+        interp_heading = np.interp(target_times, source_times, heading_work)
+        heading_delta = np.diff(interp_heading)
+        heading_delta = (heading_delta + 180.0) % 360.0 - 180.0
+        heading_steering = np.concatenate(([0.0], np.abs(heading_delta))).astype(np.float32)
+        heading_steering = _moving_average(heading_steering, window=5)
+        heading_steering = np.clip(heading_steering * 1.8, 0.0, 100.0)
+
     outline = _downsample_points(normalized_path, limit=300)
-    return normalized_path, outline
+    return normalized_path, outline, heading_steering
 
 
 def _detect_map_region(frame: np.ndarray) -> Optional[MapRegion]:
@@ -474,10 +537,13 @@ def analyze_video(video_path: str, csv_path: Optional[str] = None, sample_rate_h
 
     csv_trajectory = _load_csv_trajectory(csv_path, target_count=speeds.shape[0], video_duration_seconds=duration_seconds)
     if csv_trajectory is not None:
-        csv_path_points, csv_outline = csv_trajectory
+        csv_path_points, csv_outline, csv_steering = csv_trajectory
         smoothed_points = csv_path_points
         map_outline = csv_outline
-        steering = _compute_steering_from_path(smoothed_points)
+        if csv_steering is not None and csv_steering.shape[0] == speeds.shape[0]:
+            steering = csv_steering
+        else:
+            steering = _compute_steering_from_path(smoothed_points)
 
     return VideoAnalysisResult(
         speeds=speeds,

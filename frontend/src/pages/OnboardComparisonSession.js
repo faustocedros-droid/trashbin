@@ -163,7 +163,7 @@ function OnboardComparisonSession() {
       <div className="card">
         <h2>Caricamento file</h2>
         <p style={{ color: '#666' }}>
-          CSV richiesti: da riga 19, colonne tempo trascorso, latitudine, longitudine, altitudine.
+          CSV richiesti: da riga 19, colonne timestamp, GPS time UTC, altitudine, latitudine, longitudine, heading, satelliti usati.
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
           <div>

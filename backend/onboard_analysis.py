@@ -14,6 +14,7 @@ class VideoAnalysisResult:
     steering: np.ndarray
     centers: np.ndarray
     map_points: np.ndarray
+    map_outline: np.ndarray
     duration_seconds: float
 
 
@@ -23,6 +24,13 @@ class CurveSegment:
     corner_index: int
     start: int
     end: int
+
+
+@dataclass
+class MapRegion:
+    bbox: Tuple[int, int, int, int]
+    track_points: np.ndarray
+    outline: np.ndarray
 
 
 def _safe_percentile(values: np.ndarray, pct: float, fallback: float) -> float:
@@ -57,7 +65,11 @@ def _moving_average(values: np.ndarray, window: int = 5) -> np.ndarray:
     return output
 
 
-def _detect_red_dot_position(frame: np.ndarray, last_point: Optional[np.ndarray]) -> Optional[np.ndarray]:
+def _detect_red_dot_position(
+    frame: np.ndarray,
+    last_point: Optional[np.ndarray],
+    map_region: Optional[MapRegion] = None,
+) -> Optional[np.ndarray]:
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
     lower_red_1 = np.array([0, 90, 80], dtype=np.uint8)
@@ -71,6 +83,14 @@ def _detect_red_dot_position(frame: np.ndarray, last_point: Optional[np.ndarray]
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     candidates: List[Tuple[np.ndarray, float]] = []
 
+    roi_x0 = roi_y0 = roi_x1 = roi_y1 = None
+    if map_region is not None:
+        x, y, w, h = map_region.bbox
+        roi_x0 = max(0, x - 14)
+        roi_y0 = max(0, y - 14)
+        roi_x1 = min(frame.shape[1] - 1, x + w + 14)
+        roi_y1 = min(frame.shape[0] - 1, y + h + 14)
+
     for contour in contours:
         area = cv2.contourArea(contour)
         if area < 2 or area > 220:
@@ -82,6 +102,10 @@ def _detect_red_dot_position(frame: np.ndarray, last_point: Optional[np.ndarray]
 
         center_x = moments["m10"] / moments["m00"]
         center_y = moments["m01"] / moments["m00"]
+        if roi_x0 is not None:
+            if center_x < roi_x0 or center_x > roi_x1 or center_y < roi_y0 or center_y > roi_y1:
+                continue
+
         perimeter = cv2.arcLength(contour, True)
         circularity = 0.0
         if perimeter > 0:
@@ -94,14 +118,23 @@ def _detect_red_dot_position(frame: np.ndarray, last_point: Optional[np.ndarray]
         return None
 
     if last_point is None:
-        return max(candidates, key=lambda c: c[1])[0]
+        selected = max(candidates, key=lambda c: c[1])[0]
+    else:
+        def _score(candidate: Tuple[np.ndarray, float]) -> float:
+            point, base_score = candidate
+            distance_penalty = np.linalg.norm(point - last_point) / 120.0
+            return base_score - distance_penalty
 
-    def _score(candidate: Tuple[np.ndarray, float]) -> float:
-        point, base_score = candidate
-        distance_penalty = np.linalg.norm(point - last_point) / 120.0
-        return base_score - distance_penalty
+        selected = max(candidates, key=_score)[0]
 
-    return max(candidates, key=_score)[0]
+    if map_region is not None and map_region.track_points.size > 0:
+        deltas = map_region.track_points - selected
+        nearest_idx = int(np.argmin(np.sum(deltas * deltas, axis=1)))
+        nearest_point = map_region.track_points[nearest_idx]
+        if np.linalg.norm(nearest_point - selected) <= 24.0:
+            selected = nearest_point.astype(np.float32)
+
+    return selected
 
 
 def _normalize_map_points(raw_points: np.ndarray) -> np.ndarray:
@@ -120,6 +153,75 @@ def _normalize_map_points(raw_points: np.ndarray) -> np.ndarray:
     return np.column_stack([normalized_x, normalized_y]).astype(np.float32)
 
 
+def _normalize_map_points_by_bbox(raw_points: np.ndarray, bbox: Tuple[int, int, int, int]) -> np.ndarray:
+    x, y, w, h = bbox
+    w = max(1, w)
+    h = max(1, h)
+    normalized_x = (raw_points[:, 0] - x) / w
+    normalized_y = (raw_points[:, 1] - y) / h
+    normalized = np.column_stack([normalized_x, normalized_y]).astype(np.float32)
+    return np.clip(normalized, 0.0, 1.0)
+
+
+def _detect_map_region(frame: np.ndarray) -> Optional[MapRegion]:
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    lower_yellow = np.array([12, 80, 80], dtype=np.uint8)
+    upper_yellow = np.array([45, 255, 255], dtype=np.uint8)
+
+    mask = cv2.inRange(hsv, lower_yellow, upper_yellow)
+    kernel = np.ones((3, 3), dtype=np.uint8)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=2)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=1)
+
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    best_contour = None
+    best_score = -1.0
+
+    height, width = frame.shape[:2]
+    for contour in contours:
+        area = cv2.contourArea(contour)
+        if area < 350:
+            continue
+
+        x, y, w, h = cv2.boundingRect(contour)
+        if w < 20 or h < 20:
+            continue
+
+        center_y = y + h / 2
+        lower_bonus = 1.0 if center_y > height * 0.35 else 0.6
+        central_bonus = 1.0 - min(1.0, abs((x + w / 2) - width / 2) / (width / 2))
+        score = area * lower_bonus * (0.55 + 0.45 * central_bonus)
+        if score > best_score:
+            best_score = score
+            best_contour = contour
+
+    if best_contour is None:
+        return None
+
+    x, y, w, h = cv2.boundingRect(best_contour)
+    x = max(0, x - 6)
+    y = max(0, y - 6)
+    w = min(width - x, w + 12)
+    h = min(height - y, h + 12)
+
+    roi_mask = mask[y:y + h, x:x + w]
+    ys, xs = np.where(roi_mask > 0)
+    if xs.size == 0:
+        return None
+
+    track_points = np.column_stack([xs + x, ys + y]).astype(np.float32)
+    sampled_idx = np.linspace(0, track_points.shape[0] - 1, min(5000, track_points.shape[0])).astype(int)
+    sampled_track_points = track_points[sampled_idx]
+
+    epsilon = 0.0025 * cv2.arcLength(best_contour, True)
+    polygon = cv2.approxPolyDP(best_contour, epsilon, True).reshape(-1, 2).astype(np.float32)
+    if polygon.shape[0] < 3:
+        polygon = best_contour.reshape(-1, 2).astype(np.float32)
+
+    outline_normalized = _normalize_map_points_by_bbox(polygon, (x, y, w, h))
+    return MapRegion(bbox=(x, y, w, h), track_points=sampled_track_points, outline=outline_normalized)
+
+
 def analyze_video(video_path: str, sample_rate_hz: float = 8.0) -> VideoAnalysisResult:
     capture = cv2.VideoCapture(video_path)
     if not capture.isOpened():
@@ -136,11 +238,16 @@ def analyze_video(video_path: str, sample_rate_hz: float = 8.0) -> VideoAnalysis
         raise ValueError(f"Il video {os.path.basename(video_path)} non contiene frame leggibili")
 
     resized = cv2.resize(frame, (640, 360))
+    map_region = _detect_map_region(resized)
     prev_gray = cv2.cvtColor(cv2.resize(frame, (320, 180)), cv2.COLOR_BGR2GRAY)
 
-    detected = _detect_red_dot_position(resized, None)
+    detected = _detect_red_dot_position(resized, None, map_region)
     if detected is None:
-        detected = np.array([resized.shape[1] / 2, resized.shape[0] / 2], dtype=np.float32)
+        if map_region is not None:
+            x, y, w, h = map_region.bbox
+            detected = np.array([x + w / 2, y + h / 2], dtype=np.float32)
+        else:
+            detected = np.array([resized.shape[1] / 2, resized.shape[0] / 2], dtype=np.float32)
 
     raw_speeds: List[float] = [0.0]
     steering_values: List[float] = [0.0]
@@ -163,7 +270,7 @@ def analyze_video(video_path: str, sample_rate_hz: float = 8.0) -> VideoAnalysis
         motion_intensity = float(np.mean(diff))
 
         resized = cv2.resize(frame, (640, 360))
-        detected = _detect_red_dot_position(resized, previous_map_point)
+        detected = _detect_red_dot_position(resized, previous_map_point, map_region)
         if detected is None:
             detected = previous_map_point
 
@@ -183,7 +290,12 @@ def analyze_video(video_path: str, sample_rate_hz: float = 8.0) -> VideoAnalysis
     steering = np.array(steering_values, dtype=np.float32)
 
     raw_map_points = np.array(map_points, dtype=np.float32)
-    normalized_points = _normalize_map_points(raw_map_points)
+    if map_region is not None:
+        normalized_points = _normalize_map_points_by_bbox(raw_map_points, map_region.bbox)
+        map_outline = map_region.outline
+    else:
+        normalized_points = _normalize_map_points(raw_map_points)
+        map_outline = np.zeros((0, 2), dtype=np.float32)
     smoothed_points = _moving_average(normalized_points, window=5)
 
     return VideoAnalysisResult(
@@ -191,6 +303,7 @@ def analyze_video(video_path: str, sample_rate_hz: float = 8.0) -> VideoAnalysis
         steering=steering,
         centers=smoothed_points,
         map_points=smoothed_points,
+        map_outline=map_outline,
         duration_seconds=duration_seconds,
     )
 
@@ -530,6 +643,7 @@ def analyze_onboard_pair(
         steering=result_a.steering[:analysis_length],
         centers=result_a.centers[:analysis_length],
         map_points=result_a.map_points[:analysis_length],
+        map_outline=result_a.map_outline,
         duration_seconds=result_a.duration_seconds,
     )
     truncated_b = VideoAnalysisResult(
@@ -537,10 +651,21 @@ def analyze_onboard_pair(
         steering=result_b.steering[:analysis_length],
         centers=result_b.centers[:analysis_length],
         map_points=result_b.map_points[:analysis_length],
+        map_outline=result_b.map_outline,
         duration_seconds=result_b.duration_seconds,
     )
 
     base_path = (truncated_a.map_points + truncated_b.map_points) / 2.0
+    if truncated_a.map_outline.size > 0 and truncated_b.map_outline.size > 0:
+        if truncated_a.map_outline.shape == truncated_b.map_outline.shape:
+            base_outline = (truncated_a.map_outline + truncated_b.map_outline) / 2.0
+        else:
+            base_outline = truncated_a.map_outline
+    elif truncated_a.map_outline.size > 0:
+        base_outline = truncated_a.map_outline
+    else:
+        base_outline = truncated_b.map_outline
+
     corner_indices = _extract_curve_indices(base_path)
     curve_segments = _build_curve_segments(analysis_length, corner_indices)
 
@@ -553,6 +678,7 @@ def analyze_onboard_pair(
     report = _build_report(session_name, track_name, driver_a_name, driver_b_name, curves)
 
     path = [{"x": round(float(point[0]), 4), "y": round(float(point[1]), 4)} for point in base_path]
+    circuit_outline = [{"x": round(float(point[0]), 4), "y": round(float(point[1]), 4)} for point in base_outline]
     curve_markers = [
         {
             "name": curve["curve_name"],
@@ -574,6 +700,7 @@ def analyze_onboard_pair(
         "curves": curves,
         "track_overlay": {
             "source": "onboard_gps_red_dot",
+            "circuit_outline": circuit_outline,
             "path": path,
             "curve_markers": curve_markers,
         },

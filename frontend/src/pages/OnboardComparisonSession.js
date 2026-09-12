@@ -108,6 +108,15 @@ function OnboardComparisonSession() {
       .join(' ');
   }, [analysis]);
 
+  const circuitOutlinePolyline = useMemo(() => {
+    if (!analysis?.track_overlay?.circuit_outline || analysis.track_overlay.circuit_outline.length === 0) {
+      return '';
+    }
+    return analysis.track_overlay.circuit_outline
+      .map((point) => `${Math.round(point.x * 1000)},${Math.round(point.y * 1000)}`)
+      .join(' ');
+  }, [analysis]);
+
   return (
     <div className="container">
       <div className="card">
@@ -218,11 +227,22 @@ function OnboardComparisonSession() {
             </p>
             <div style={{ border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden', background: '#111' }}>
               <svg viewBox="0 0 1000 1000" width="100%" style={{ display: 'block' }}>
+                {circuitOutlinePolyline && (
+                  <polygon
+                    points={circuitOutlinePolyline}
+                    fill="none"
+                    stroke="#ffb300"
+                    strokeWidth="10"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    opacity="0.95"
+                  />
+                )}
                 {mapPolyline && (
                   <polyline
                     points={mapPolyline}
                     fill="none"
-                    stroke="#4fc3f7"
+                    stroke="#43a047"
                     strokeWidth="6"
                     strokeLinecap="round"
                     strokeLinejoin="round"

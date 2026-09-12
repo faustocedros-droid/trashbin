@@ -292,6 +292,13 @@ def _has_allowed_signature(file_storage, file_kind: str) -> bool:
     return False
 
 
+def _safe_extension(filename: str, allowed_extensions: Set[str], default_extension: str) -> str:
+    extension = os.path.splitext((filename or '').lower())[1]
+    if extension in allowed_extensions:
+        return extension
+    return default_extension
+
+
 @app.route('/api/onboard/compare', methods=['POST'])
 def compare_onboard_videos():
     """Automatic onboard comparison with optional track map"""
@@ -368,7 +375,8 @@ def compare_onboard_videos():
             video_b.save(temp_b)
 
         if track_map:
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as temp_map:
+            map_extension = _safe_extension(track_map.filename, allowed_map_extensions, '.png')
+            with tempfile.NamedTemporaryFile(delete=False, suffix=map_extension) as temp_map:
                 temp_track_map_path = temp_map.name
                 track_map.save(temp_map)
 
@@ -379,9 +387,11 @@ def compare_onboard_videos():
             track_name=track_name,
             driver_a_name=driver_a_name,
             driver_b_name=driver_b_name,
-            track_map_name=track_map.filename if track_map else None,
             track_map_path=temp_track_map_path
         )
+
+        analysis['track_map_provided'] = bool(track_map)
+        analysis['track_map_name'] = track_map.filename if track_map else None
 
         return jsonify({
             'status': 'success',

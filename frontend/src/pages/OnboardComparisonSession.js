@@ -249,7 +249,7 @@ function OnboardComparisonSession() {
                   />
                 )}
                 {analysis.track_overlay?.curve_markers?.map((marker, index) => (
-                  <g key={marker.name}>
+                  <g key={`${index}-${marker.name}`}>
                     <circle cx={marker.x * 1000} cy={marker.y * 1000} r="13" fill="#ff3b30" stroke="#fff" strokeWidth="2" />
                     <text
                       x={marker.x * 1000 + 18}

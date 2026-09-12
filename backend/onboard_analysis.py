@@ -482,7 +482,7 @@ def _extract_curve_indices(map_points: np.ndarray) -> List[int]:
         value = turn_strength[idx]
         if value < threshold:
             continue
-        if value < turn_strength[idx - 1] or value < turn_strength[idx + 1]:
+        if value <= turn_strength[idx - 1] or value < turn_strength[idx + 1]:
             continue
         mapped_idx = idx + 1
         if maxima and mapped_idx - maxima[-1] < min_distance:
@@ -497,7 +497,7 @@ def _extract_curve_indices(map_points: np.ndarray) -> List[int]:
 
     target = max(4, min(16, map_points.shape[0] // 28))
     if len(maxima) > target:
-        ranked = sorted(maxima, key=lambda idx: turn_strength[idx - 1], reverse=True)
+        ranked = sorted(maxima, key=lambda idx: turn_strength[min(max(0, idx - 1), turn_strength.size - 1)], reverse=True)
         maxima = sorted(ranked[:target])
 
     return maxima
@@ -645,7 +645,6 @@ def analyze_onboard_pair(
     track_name: str,
     driver_a_name: str,
     driver_b_name: str,
-    track_map_name: Optional[str] = None,
     track_map_path: Optional[str] = None,
 ) -> Dict[str, object]:
     result_a = analyze_video(video_a_path)
@@ -714,8 +713,6 @@ def analyze_onboard_pair(
         "track_name": track_name,
         "driver_a_name": driver_a_name,
         "driver_b_name": driver_b_name,
-        "track_map_provided": bool(track_map_name),
-        "track_map_name": track_map_name,
         "analysis_mode": "automatic_gps_red_dot_curve_analysis",
         "sample_count": analysis_length,
         "curves": curves,

@@ -43,4 +43,14 @@ export const archiveAPI = {
   archiveEvent: (eventId) => apiClient.post('/archive', { event_id: eventId }),
 };
 
+// Onboard comparison API
+export const onboardAPI = {
+  compare: (formData) =>
+    apiClient.post('/onboard/compare', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }),
+};
+
 export default apiClient;

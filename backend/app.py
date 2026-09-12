@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from datetime import datetime
 import os
+import tempfile
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -15,6 +16,7 @@ CORS(app)
 # Import and initialize database
 from models import db, RaceEvent, Session, Lap, TireData, EngineData, SetupData
 from calculations import RacingCalculations
+from onboard_analysis import analyze_onboard_pair
 db.init_app(app)
 
 # Create tables
@@ -244,6 +246,71 @@ def archive_event():
         'message': 'OneDrive archiving will be implemented in future release',
         'event_id': event_id
     }), 200
+
+@app.route('/api/onboard/compare', methods=['POST'])
+def compare_onboard_videos():
+    """Automatic onboard comparison with optional track map"""
+    video_a = request.files.get('video_a')
+    video_b = request.files.get('video_b')
+    track_map = request.files.get('track_map')
+
+    if not video_a or not video_b:
+        return jsonify({
+            'status': 'error',
+            'message': 'Sono richiesti due video onboard (video_a e video_b)'
+        }), 400
+
+    session_name = request.form.get('session_name', 'Sessione confronto onboard automatica')
+    track_name = request.form.get('track_name', '')
+    driver_a_name = request.form.get('driver_a_name', 'Pilota A')
+    driver_b_name = request.form.get('driver_b_name', 'Pilota B')
+
+    temp_video_a_path = None
+    temp_video_b_path = None
+    temp_track_map_path = None
+
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(video_a.filename or '')[1] or '.mp4') as temp_a:
+            video_a.save(temp_a.name)
+            temp_video_a_path = temp_a.name
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(video_b.filename or '')[1] or '.mp4') as temp_b:
+            video_b.save(temp_b.name)
+            temp_video_b_path = temp_b.name
+
+        if track_map:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(track_map.filename or '')[1] or '.png') as temp_map:
+                track_map.save(temp_map.name)
+                temp_track_map_path = temp_map.name
+
+        analysis = analyze_onboard_pair(
+            video_a_path=temp_video_a_path,
+            video_b_path=temp_video_b_path,
+            session_name=session_name,
+            track_name=track_name,
+            driver_a_name=driver_a_name,
+            driver_b_name=driver_b_name,
+            track_map_name=track_map.filename if track_map else None
+        )
+
+        return jsonify({
+            'status': 'success',
+            'analysis': analysis
+        }), 200
+    except ValueError as error:
+        return jsonify({
+            'status': 'error',
+            'message': str(error)
+        }), 400
+    except Exception:
+        return jsonify({
+            'status': 'error',
+            'message': 'Errore durante l’analisi automatica onboard'
+        }), 500
+    finally:
+        for path in [temp_video_a_path, temp_video_b_path, temp_track_map_path]:
+            if path and os.path.exists(path):
+                os.remove(path)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

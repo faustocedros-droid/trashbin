@@ -482,7 +482,7 @@ def _extract_curve_indices(map_points: np.ndarray) -> List[int]:
         value = turn_strength[idx]
         if value < threshold:
             continue
-        if value <= turn_strength[idx - 1] or value < turn_strength[idx + 1]:
+        if value <= turn_strength[idx - 1] or value <= turn_strength[idx + 1]:
             continue
         mapped_idx = idx + 1
         if maxima and mapped_idx - maxima[-1] < min_distance:

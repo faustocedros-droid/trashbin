@@ -20,6 +20,7 @@ import Joblist from './pages/Joblist';
 import Timesheet from './pages/Timesheet';
 import ItalianGTEndRacePlan from './pages/ItalianGTEndRacePlan';
 import TireSetsMileage from './pages/TireSetsMileage';
+import OnboardComparisonSession from './pages/OnboardComparisonSession';
 import notificationService from './services/notificationService';
 
 function App() {
@@ -234,6 +235,7 @@ function App() {
                 <li><Link to="/fuel-consumption" onClick={() => setMenuOpen(false)}>Fuel Consumption</Link></li>
                 <li><Link to="/drivers-comments" onClick={() => setMenuOpen(false)}>Drivers Comments</Link></li>
                 <li><Link to="/timesheet" onClick={() => setMenuOpen(false)}>Timesheet</Link></li>
+                <li><Link to="/onboard-comparison" onClick={() => setMenuOpen(false)}>Onboard Comparison</Link></li>
                 <li><Link to="/weather" onClick={() => setMenuOpen(false)}>Meteo</Link></li>
                 <li><Link to="/settings" onClick={() => setMenuOpen(false)}>Impostazioni</Link></li>
               </ul>
@@ -260,6 +262,7 @@ function App() {
             <Route path="/fuel-consumption" element={<FuelConsumption />} />
             <Route path="/drivers-comments" element={<DriversComments />} />
             <Route path="/timesheet" element={<Timesheet />} />
+            <Route path="/onboard-comparison" element={<OnboardComparisonSession />} />
             <Route path="/weather" element={<Weather />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>

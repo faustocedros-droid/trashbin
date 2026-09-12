@@ -1,13 +1,20 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from datetime import datetime
+import csv
 import os
+import tempfile
+import logging
+from typing import Set
+from werkzeug.exceptions import RequestEntityTooLarge
+from werkzeug.utils import secure_filename
 
 # Initialize Flask app
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///racing.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+app.config['MAX_CONTENT_LENGTH'] = 800 * 1024 * 1024  # 800 MB
 
 # Initialize extensions
 CORS(app)
@@ -15,7 +22,9 @@ CORS(app)
 # Import and initialize database
 from models import db, RaceEvent, Session, Lap, TireData, EngineData, SetupData
 from calculations import RacingCalculations
+from onboard_analysis import analyze_onboard_pair
 db.init_app(app)
+logger = logging.getLogger(__name__)
 
 # Create tables
 with app.app_context():
@@ -244,6 +253,321 @@ def archive_event():
         'message': 'OneDrive archiving will be implemented in future release',
         'event_id': event_id
     }), 200
+
+
+def _is_allowed_upload(file_storage, allowed_mimes: Set[str], allowed_extensions: Set[str]) -> bool:
+    filename = (file_storage.filename or '').lower()
+    extension = os.path.splitext(filename)[1]
+    mime = (file_storage.mimetype or '').lower()
+    return extension in allowed_extensions and mime in allowed_mimes
+
+
+def _is_allowed_csv_upload(file_storage, allowed_mimes: Set[str], allowed_extensions: Set[str]) -> bool:
+    filename = (file_storage.filename or '').lower()
+    extension = os.path.splitext(filename)[1]
+    if extension not in allowed_extensions:
+        return False
+
+    mime = (file_storage.mimetype or '').lower()
+    if mime in allowed_mimes:
+        return True
+
+    # Some browsers/OSes send CSV files as generic binary uploads.
+    return mime in {'application/octet-stream', ''}
+
+
+def _has_allowed_signature(file_storage, file_kind: str) -> bool:
+    try:
+        stream = file_storage.stream
+        current_position = stream.tell()
+        header = stream.read(64)
+        stream.seek(current_position)
+    except Exception:
+        return False
+
+    if file_kind == 'video':
+        if len(header) >= 12 and header[4:8] == b'ftyp':
+            return True  # mp4/mov/m4v family
+        if len(header) >= 12 and header[:4] == b'RIFF' and header[8:12] == b'AVI ':
+            return True
+        if len(header) >= 4 and header[:4] == b'\x1A\x45\xDF\xA3':
+            return True  # mkv/webm
+        return False
+
+    if file_kind == 'image':
+        if len(header) >= 8 and header[:8] == b'\x89PNG\r\n\x1a\n':
+            return True
+        if len(header) >= 3 and header[:3] == b'\xFF\xD8\xFF':
+            return True  # jpeg
+        if len(header) >= 2 and header[:2] == b'BM':
+            return True  # bmp
+        if len(header) >= 12 and header[:4] == b'RIFF' and header[8:12] == b'WEBP':
+            return True
+        return False
+
+    return False
+
+
+def _detected_video_suffix(file_storage) -> str:
+    try:
+        stream = file_storage.stream
+        current_position = stream.tell()
+        header = stream.read(64)
+        stream.seek(current_position)
+    except Exception:
+        return '.mp4'
+
+    if len(header) >= 12 and header[4:8] == b'ftyp':
+        brand = header[8:12].lower()
+        if brand in {b'qt  ', b'moov'}:
+            return '.mov'
+        return '.mp4'
+    if len(header) >= 12 and header[:4] == b'RIFF' and header[8:12] == b'AVI ':
+        return '.avi'
+    if len(header) >= 4 and header[:4] == b'\x1A\x45\xDF\xA3':
+        return '.mkv'
+    return '.mp4'
+
+
+def _detected_image_suffix(file_storage) -> str:
+    try:
+        stream = file_storage.stream
+        current_position = stream.tell()
+        header = stream.read(32)
+        stream.seek(current_position)
+    except Exception:
+        return '.png'
+
+    if len(header) >= 8 and header[:8] == b'\x89PNG\r\n\x1a\n':
+        return '.png'
+    if len(header) >= 3 and header[:3] == b'\xFF\xD8\xFF':
+        return '.jpg'
+    if len(header) >= 2 and header[:2] == b'BM':
+        return '.bmp'
+    if len(header) >= 12 and header[:4] == b'RIFF' and header[8:12] == b'WEBP':
+        return '.webp'
+    return '.png'
+
+
+def _has_csv_structure(file_storage) -> bool:
+    try:
+        stream = file_storage.stream
+        current_position = stream.tell()
+        head = stream.read(4096)
+        stream.seek(current_position)
+        text = head.decode('utf-8', errors='ignore')
+    except Exception:
+        return False
+
+    if not text.strip():
+        return False
+
+    raw_lines = text.splitlines()
+    if len(raw_lines) <= 18:
+        return False
+
+    sample = "\n".join(raw_lines[:40])
+    try:
+        dialect = csv.Sniffer().sniff(sample, delimiters=",;\t")
+        delimiter = dialect.delimiter
+    except Exception:
+        delimiter = ","
+
+    rows = list(csv.reader(raw_lines, delimiter=delimiter))
+    if len(rows) <= 18:
+        return False
+
+    def _as_number(text: str):
+        try:
+            return float(text.replace(',', '.'))
+        except Exception:
+            return None
+
+    for row in rows[18:]:
+        if len(row) < 7:
+            continue
+        latitude = _as_number(row[3])
+        longitude = _as_number(row[4])
+        if latitude is not None and longitude is not None:
+            return True
+
+    return False
+
+
+def _build_onboard_validation_message(error: ValueError) -> str:
+    raw_message = (str(error) or "").lower()
+    if "aprire il video" in raw_message:
+        return "Impossibile aprire uno dei video caricati."
+    if "non contiene frame leggibili" in raw_message:
+        return "Uno dei video non contiene frame leggibili."
+    if "troppo corti" in raw_message:
+        return "I video caricati sono troppo corti per il confronto automatico."
+    if "nessun dato valido" in raw_message:
+        return "I dati CSV non contengono campioni GPS validi."
+    if "campioni insufficienti" in raw_message:
+        return "Dati insufficienti per costruire il confronto curva per curva."
+    return "I file caricati non consentono una analisi automatica valida. Verifica formato e durata."
+
+
+@app.route('/api/onboard/compare', methods=['POST'])
+def compare_onboard_videos():
+    """Automatic onboard comparison with optional track map"""
+    video_a = request.files.get('video_a')
+    video_b = request.files.get('video_b')
+    csv_a = request.files.get('csv_a')
+    csv_b = request.files.get('csv_b')
+    track_map = request.files.get('track_map')
+
+    if not video_a or not video_b or not csv_a or not csv_b:
+        return jsonify({
+            'status': 'error',
+            'message': 'Sono richiesti due video e due file CSV traiettoria (video_a, video_b, csv_a, csv_b)'
+        }), 400
+
+    allowed_video_mimes = {
+        'video/mp4',
+        'video/quicktime',
+        'video/x-msvideo',
+        'video/x-matroska',
+        'video/webm',
+        'video/x-m4v',
+    }
+    allowed_video_extensions = {'.mp4', '.mov', '.avi', '.mkv', '.webm', '.m4v'}
+    allowed_csv_mimes = {'text/csv', 'text/plain', 'application/vnd.ms-excel'}
+    allowed_csv_extensions = {'.csv'}
+    allowed_map_mimes = {'image/png', 'image/jpeg', 'image/jpg', 'image/bmp', 'image/webp'}
+    allowed_map_extensions = {'.png', '.jpg', '.jpeg', '.bmp', '.webp'}
+
+    if not _is_allowed_upload(video_a, allowed_video_mimes, allowed_video_extensions):
+        return jsonify({
+            'status': 'error',
+            'message': 'Formato video A non supportato'
+        }), 400
+    if not _has_allowed_signature(video_a, 'video'):
+        return jsonify({
+            'status': 'error',
+            'message': 'Contenuto video A non valido'
+        }), 400
+
+    if not _is_allowed_upload(video_b, allowed_video_mimes, allowed_video_extensions):
+        return jsonify({
+            'status': 'error',
+            'message': 'Formato video B non supportato'
+        }), 400
+    if not _has_allowed_signature(video_b, 'video'):
+        return jsonify({
+            'status': 'error',
+            'message': 'Contenuto video B non valido'
+        }), 400
+
+    if not _is_allowed_csv_upload(csv_a, allowed_csv_mimes, allowed_csv_extensions):
+        return jsonify({
+            'status': 'error',
+            'message': 'Formato CSV A non supportato'
+        }), 400
+    if not _has_csv_structure(csv_a):
+        return jsonify({
+            'status': 'error',
+            'message': 'Contenuto CSV A non valido'
+        }), 400
+
+    if not _is_allowed_csv_upload(csv_b, allowed_csv_mimes, allowed_csv_extensions):
+        return jsonify({
+            'status': 'error',
+            'message': 'Formato CSV B non supportato'
+        }), 400
+    if not _has_csv_structure(csv_b):
+        return jsonify({
+            'status': 'error',
+            'message': 'Contenuto CSV B non valido'
+        }), 400
+
+    if track_map and not _is_allowed_upload(track_map, allowed_map_mimes, allowed_map_extensions):
+        return jsonify({
+            'status': 'error',
+            'message': 'Formato mappa tracciato non supportato'
+        }), 400
+    if track_map and not _has_allowed_signature(track_map, 'image'):
+        return jsonify({
+            'status': 'error',
+            'message': 'Contenuto mappa tracciato non valido'
+        }), 400
+
+    session_name = request.form.get('session_name', 'Sessione confronto onboard automatica')
+    track_name = request.form.get('track_name', '')
+    driver_a_name = request.form.get('driver_a_name', 'Pilota A')
+    driver_b_name = request.form.get('driver_b_name', 'Pilota B')
+
+    temp_video_a_path = None
+    temp_video_b_path = None
+    temp_csv_a_path = None
+    temp_csv_b_path = None
+    temp_track_map_path = None
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=_detected_video_suffix(video_a)) as temp_a:
+            temp_video_a_path = temp_a.name
+            video_a.save(temp_a)
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=_detected_video_suffix(video_b)) as temp_b:
+            temp_video_b_path = temp_b.name
+            video_b.save(temp_b)
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.csv') as temp_csv_a:
+            temp_csv_a_path = temp_csv_a.name
+            csv_a.save(temp_csv_a)
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.csv') as temp_csv_b:
+            temp_csv_b_path = temp_csv_b.name
+            csv_b.save(temp_csv_b)
+
+        if track_map:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=_detected_image_suffix(track_map)) as temp_map:
+                temp_track_map_path = temp_map.name
+                track_map.save(temp_map)
+
+        analysis = analyze_onboard_pair(
+            video_a_path=temp_video_a_path,
+            video_b_path=temp_video_b_path,
+            csv_a_path=temp_csv_a_path,
+            csv_b_path=temp_csv_b_path,
+            session_name=session_name,
+            track_name=track_name,
+            driver_a_name=driver_a_name,
+            driver_b_name=driver_b_name,
+            track_map_path=temp_track_map_path
+        )
+
+        analysis['track_map_provided'] = bool(track_map)
+        analysis['track_map_name'] = secure_filename(track_map.filename) if track_map else None
+
+        return jsonify({
+            'status': 'success',
+            'analysis': analysis
+        }), 200
+    except ValueError as error:
+        logger.warning('Onboard analysis validation error: %s', error)
+        return jsonify({
+            'status': 'error',
+            'message': _build_onboard_validation_message(error)
+        }), 400
+    except Exception as error:
+        logger.exception('Unexpected onboard analysis error: %s', error)
+        return jsonify({
+            'status': 'error',
+            'message': 'Errore durante la analisi automatica onboard'
+        }), 500
+    finally:
+        for path in [temp_video_a_path, temp_video_b_path, temp_csv_a_path, temp_csv_b_path, temp_track_map_path]:
+            if path and os.path.exists(path):
+                os.remove(path)
+
+
+@app.errorhandler(RequestEntityTooLarge)
+def handle_request_entity_too_large(_error):
+    return jsonify({
+        'status': 'error',
+        'message': 'Upload troppo grande: limite massimo 800 MB complessivi.'
+    }), 413
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

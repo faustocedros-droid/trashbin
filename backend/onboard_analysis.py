@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 import os
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
@@ -31,6 +32,54 @@ class MapRegion:
     bbox: Tuple[int, int, int, int]
     track_points: np.ndarray
     outline: np.ndarray
+
+
+def _parse_elapsed_seconds(value: str) -> Optional[float]:
+    text = (value or "").strip()
+    if not text:
+        return None
+
+    normalized = text.replace(",", ".")
+    try:
+        return float(normalized)
+    except ValueError:
+        pass
+
+    parts = normalized.split(":")
+    if len(parts) == 2:
+        try:
+            minutes = float(parts[0])
+            seconds = float(parts[1])
+            return minutes * 60.0 + seconds
+        except ValueError:
+            return None
+    if len(parts) == 3:
+        try:
+            hours = float(parts[0])
+            minutes = float(parts[1])
+            seconds = float(parts[2])
+            return hours * 3600.0 + minutes * 60.0 + seconds
+        except ValueError:
+            return None
+
+    return None
+
+
+def _parse_float(value: str) -> Optional[float]:
+    text = (value or "").strip()
+    if not text:
+        return None
+    try:
+        return float(text.replace(",", "."))
+    except ValueError:
+        return None
+
+
+def _downsample_points(points: np.ndarray, limit: int = 250) -> np.ndarray:
+    if points.shape[0] <= limit:
+        return points
+    idx = np.linspace(0, points.shape[0] - 1, limit).astype(int)
+    return points[idx]
 
 
 def _safe_percentile(values: np.ndarray, pct: float, fallback: float) -> float:
@@ -163,6 +212,109 @@ def _normalize_map_points_by_bbox(raw_points: np.ndarray, bbox: Tuple[int, int, 
     return np.clip(normalized, 0.0, 1.0)
 
 
+def _compute_steering_from_path(path_points: np.ndarray) -> np.ndarray:
+    if path_points.shape[0] < 2:
+        return np.zeros((path_points.shape[0],), dtype=np.float32)
+
+    deltas = np.diff(path_points, axis=0)
+    distances = np.linalg.norm(deltas, axis=1) * 100.0
+    steering = np.concatenate(([0.0], distances))
+    return steering.astype(np.float32)
+
+
+def _load_csv_trajectory(
+    csv_path: Optional[str],
+    target_count: int,
+    video_duration_seconds: float,
+) -> Optional[Tuple[np.ndarray, np.ndarray]]:
+    if not csv_path or target_count <= 1:
+        return None
+
+    with open(csv_path, "r", encoding="utf-8-sig", errors="replace") as file:
+        raw_text = file.read()
+    if not raw_text.strip():
+        return None
+
+    sample = "\n".join(raw_text.splitlines()[:40])
+    try:
+        dialect = csv.Sniffer().sniff(sample, delimiters=",;\t")
+        delimiter = dialect.delimiter
+    except Exception:
+        delimiter = ","
+
+    rows = list(csv.reader(raw_text.splitlines(), delimiter=delimiter))
+    if len(rows) <= 18:
+        return None
+
+    elapsed: List[float] = []
+    latitudes: List[float] = []
+    longitudes: List[float] = []
+
+    for row in rows[18:]:
+        if len(row) < 3:
+            continue
+        t = _parse_elapsed_seconds(row[0])
+        lat = _parse_float(row[1])
+        lon = _parse_float(row[2])
+        if t is None or lat is None or lon is None:
+            continue
+        elapsed.append(t)
+        latitudes.append(lat)
+        longitudes.append(lon)
+
+    if len(elapsed) < 6:
+        return None
+
+    elapsed_arr = np.array(elapsed, dtype=np.float32)
+    lat_arr = np.array(latitudes, dtype=np.float32)
+    lon_arr = np.array(longitudes, dtype=np.float32)
+
+    order = np.argsort(elapsed_arr)
+    elapsed_arr = elapsed_arr[order]
+    lat_arr = lat_arr[order]
+    lon_arr = lon_arr[order]
+
+    unique_mask = np.ones_like(elapsed_arr, dtype=bool)
+    unique_mask[1:] = elapsed_arr[1:] > elapsed_arr[:-1]
+    elapsed_arr = elapsed_arr[unique_mask]
+    lat_arr = lat_arr[unique_mask]
+    lon_arr = lon_arr[unique_mask]
+
+    if elapsed_arr.size < 4:
+        return None
+
+    lat0 = float(np.mean(lat_arr))
+    lon0 = float(np.mean(lon_arr))
+    x_meters = (lon_arr - lon0) * np.cos(np.radians(lat0)) * 111320.0
+    y_meters = (lat_arr - lat0) * 110540.0
+    points_meters = np.column_stack([x_meters, y_meters]).astype(np.float32)
+
+    x_min, x_max = float(np.min(points_meters[:, 0])), float(np.max(points_meters[:, 0]))
+    y_min, y_max = float(np.min(points_meters[:, 1])), float(np.max(points_meters[:, 1]))
+    x_range = max(1e-6, x_max - x_min)
+    y_range = max(1e-6, y_max - y_min)
+
+    source_duration = float(elapsed_arr[-1] - elapsed_arr[0])
+    if source_duration <= 1e-3:
+        source_duration = max(1.0, video_duration_seconds)
+
+    target_duration = max(1.0, video_duration_seconds) if video_duration_seconds > 0 else source_duration
+    target_times = np.linspace(0.0, target_duration, target_count, dtype=np.float32)
+    source_times = elapsed_arr - elapsed_arr[0]
+    if source_duration > 0:
+        source_times = source_times * (target_duration / source_duration)
+
+    interp_x = np.interp(target_times, source_times, points_meters[:, 0])
+    interp_y = np.interp(target_times, source_times, points_meters[:, 1])
+
+    normalized_path = np.column_stack([(interp_x - x_min) / x_range, (interp_y - y_min) / y_range]).astype(np.float32)
+    normalized_path = np.clip(normalized_path, 0.0, 1.0)
+    normalized_path = _moving_average(normalized_path, window=5)
+
+    outline = _downsample_points(normalized_path, limit=300)
+    return normalized_path, outline
+
+
 def _detect_map_region(frame: np.ndarray) -> Optional[MapRegion]:
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     lower_yellow = np.array([12, 80, 80], dtype=np.uint8)
@@ -238,7 +390,7 @@ def _extract_outline_from_reference_map(track_map_path: Optional[str]) -> np.nda
     return region.outline
 
 
-def analyze_video(video_path: str, sample_rate_hz: float = 8.0) -> VideoAnalysisResult:
+def analyze_video(video_path: str, csv_path: Optional[str] = None, sample_rate_hz: float = 8.0) -> VideoAnalysisResult:
     capture = cv2.VideoCapture(video_path)
     if not capture.isOpened():
         raise ValueError(f"Impossibile aprire il video: {os.path.basename(video_path)}")
@@ -313,6 +465,13 @@ def analyze_video(video_path: str, sample_rate_hz: float = 8.0) -> VideoAnalysis
         normalized_points = _normalize_map_points(raw_map_points)
         map_outline = np.zeros((0, 2), dtype=np.float32)
     smoothed_points = _moving_average(normalized_points, window=5)
+
+    csv_trajectory = _load_csv_trajectory(csv_path, target_count=speeds.shape[0], video_duration_seconds=duration_seconds)
+    if csv_trajectory is not None:
+        csv_path_points, csv_outline = csv_trajectory
+        smoothed_points = csv_path_points
+        map_outline = csv_outline
+        steering = _compute_steering_from_path(smoothed_points)
 
     return VideoAnalysisResult(
         speeds=speeds,
@@ -642,14 +801,16 @@ def _build_report(
 def analyze_onboard_pair(
     video_a_path: str,
     video_b_path: str,
+    csv_a_path: Optional[str],
+    csv_b_path: Optional[str],
     session_name: str,
     track_name: str,
     driver_a_name: str,
     driver_b_name: str,
     track_map_path: Optional[str] = None,
 ) -> Dict[str, object]:
-    result_a = analyze_video(video_a_path)
-    result_b = analyze_video(video_b_path)
+    result_a = analyze_video(video_a_path, csv_path=csv_a_path)
+    result_b = analyze_video(video_b_path, csv_path=csv_b_path)
 
     analysis_length = int(min(result_a.speeds.size, result_b.speeds.size))
     if analysis_length < 18:
@@ -714,7 +875,8 @@ def analyze_onboard_pair(
         "track_name": track_name,
         "driver_a_name": driver_a_name,
         "driver_b_name": driver_b_name,
-        "analysis_mode": "automatic_gps_red_dot_curve_analysis",
+        "analysis_mode": "automatic_csv_aligned_trajectory_analysis",
+        "csv_trajectory_used": bool(csv_a_path and csv_b_path),
         "sample_count": analysis_length,
         "curves": curves,
         "track_overlay": {

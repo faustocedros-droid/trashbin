@@ -327,17 +327,40 @@ def _detected_image_suffix(file_storage) -> str:
     return '.png'
 
 
+def _has_csv_structure(file_storage) -> bool:
+    try:
+        stream = file_storage.stream
+        current_position = stream.tell()
+        head = stream.read(4096)
+        stream.seek(current_position)
+        text = head.decode('utf-8', errors='ignore')
+    except Exception:
+        return False
+
+    if not text.strip():
+        return False
+
+    lines = [line for line in text.splitlines() if line.strip()]
+    if len(lines) < 3:
+        return False
+
+    delimiter_hits = sum(1 for line in lines[:8] if ',' in line or ';' in line or '\t' in line)
+    return delimiter_hits >= 2
+
+
 @app.route('/api/onboard/compare', methods=['POST'])
 def compare_onboard_videos():
     """Automatic onboard comparison with optional track map"""
     video_a = request.files.get('video_a')
     video_b = request.files.get('video_b')
+    csv_a = request.files.get('csv_a')
+    csv_b = request.files.get('csv_b')
     track_map = request.files.get('track_map')
 
-    if not video_a or not video_b:
+    if not video_a or not video_b or not csv_a or not csv_b:
         return jsonify({
             'status': 'error',
-            'message': 'Sono richiesti due video onboard (video_a e video_b)'
+            'message': 'Sono richiesti due video e due file CSV traiettoria (video_a, video_b, csv_a, csv_b)'
         }), 400
 
     allowed_video_mimes = {
@@ -349,6 +372,8 @@ def compare_onboard_videos():
         'video/x-m4v',
     }
     allowed_video_extensions = {'.mp4', '.mov', '.avi', '.mkv', '.webm', '.m4v'}
+    allowed_csv_mimes = {'text/csv', 'text/plain', 'application/vnd.ms-excel'}
+    allowed_csv_extensions = {'.csv'}
     allowed_map_mimes = {'image/png', 'image/jpeg', 'image/jpg', 'image/bmp', 'image/webp'}
     allowed_map_extensions = {'.png', '.jpg', '.jpeg', '.bmp', '.webp'}
 
@@ -374,6 +399,28 @@ def compare_onboard_videos():
             'message': 'Contenuto video B non valido'
         }), 400
 
+    if not _is_allowed_upload(csv_a, allowed_csv_mimes, allowed_csv_extensions):
+        return jsonify({
+            'status': 'error',
+            'message': 'Formato CSV A non supportato'
+        }), 400
+    if not _has_csv_structure(csv_a):
+        return jsonify({
+            'status': 'error',
+            'message': 'Contenuto CSV A non valido'
+        }), 400
+
+    if not _is_allowed_upload(csv_b, allowed_csv_mimes, allowed_csv_extensions):
+        return jsonify({
+            'status': 'error',
+            'message': 'Formato CSV B non supportato'
+        }), 400
+    if not _has_csv_structure(csv_b):
+        return jsonify({
+            'status': 'error',
+            'message': 'Contenuto CSV B non valido'
+        }), 400
+
     if track_map and not _is_allowed_upload(track_map, allowed_map_mimes, allowed_map_extensions):
         return jsonify({
             'status': 'error',
@@ -392,6 +439,8 @@ def compare_onboard_videos():
 
     temp_video_a_path = None
     temp_video_b_path = None
+    temp_csv_a_path = None
+    temp_csv_b_path = None
     temp_track_map_path = None
     try:
         with tempfile.NamedTemporaryFile(delete=False, suffix=_detected_video_suffix(video_a)) as temp_a:
@@ -402,6 +451,14 @@ def compare_onboard_videos():
             temp_video_b_path = temp_b.name
             video_b.save(temp_b)
 
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.csv') as temp_csv_a:
+            temp_csv_a_path = temp_csv_a.name
+            csv_a.save(temp_csv_a)
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.csv') as temp_csv_b:
+            temp_csv_b_path = temp_csv_b.name
+            csv_b.save(temp_csv_b)
+
         if track_map:
             with tempfile.NamedTemporaryFile(delete=False, suffix=_detected_image_suffix(track_map)) as temp_map:
                 temp_track_map_path = temp_map.name
@@ -410,6 +467,8 @@ def compare_onboard_videos():
         analysis = analyze_onboard_pair(
             video_a_path=temp_video_a_path,
             video_b_path=temp_video_b_path,
+            csv_a_path=temp_csv_a_path,
+            csv_b_path=temp_csv_b_path,
             session_name=session_name,
             track_name=track_name,
             driver_a_name=driver_a_name,
@@ -437,7 +496,7 @@ def compare_onboard_videos():
             'message': 'Errore durante l’analisi automatica onboard'
         }), 500
     finally:
-        for path in [temp_video_a_path, temp_video_b_path, temp_track_map_path]:
+        for path in [temp_video_a_path, temp_video_b_path, temp_csv_a_path, temp_csv_b_path, temp_track_map_path]:
             if path and os.path.exists(path):
                 os.remove(path)
 

@@ -17,6 +17,8 @@ function OnboardComparisonSession() {
   const [videoA, setVideoA] = useState(buildVideoState());
   const [videoB, setVideoB] = useState(buildVideoState());
   const [trackMap, setTrackMap] = useState(null);
+  const [csvA, setCsvA] = useState(null);
+  const [csvB, setCsvB] = useState(null);
 
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -68,9 +70,20 @@ function OnboardComparisonSession() {
     setError('');
   };
 
+  const handleCsvUpload = (event, side) => {
+    const file = event.target.files?.[0] || null;
+    if (side === 'A') {
+      setCsvA(file);
+    } else {
+      setCsvB(file);
+    }
+    setAnalysis(null);
+    setError('');
+  };
+
   const runAutomaticAnalysis = async () => {
-    if (!videoA.file || !videoB.file) {
-      setError('Carica entrambi i video onboard prima di avviare l’analisi automatica.');
+    if (!videoA.file || !videoB.file || !csvA || !csvB) {
+      setError('Carica entrambi i video e i due CSV traiettoria prima di avviare l’analisi automatica.');
       return;
     }
 
@@ -81,6 +94,8 @@ function OnboardComparisonSession() {
       const formData = new FormData();
       formData.append('video_a', videoA.file);
       formData.append('video_b', videoB.file);
+      formData.append('csv_a', csvA);
+      formData.append('csv_b', csvB);
       formData.append('session_name', sessionName);
       formData.append('track_name', trackName);
       formData.append('driver_a_name', normalizedDriverA);
@@ -122,7 +137,7 @@ function OnboardComparisonSession() {
       <div className="card">
         <h1>Sessione confronto onboard (automatica)</h1>
         <p style={{ color: '#666' }}>
-          L’app rileva il pallino rosso GPS nella mappa onboard e produce automaticamente un confronto curva-per-curva.
+          L’app usa le traiettorie CSV di ciascun giro, allineate al rispettivo video, per produrre un confronto curva-per-curva.
         </p>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
@@ -147,6 +162,9 @@ function OnboardComparisonSession() {
 
       <div className="card">
         <h2>Caricamento file</h2>
+        <p style={{ color: '#666' }}>
+          CSV richiesti: da riga 19, colonne tempo trascorso, latitudine, longitudine, altitudine.
+        </p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
           <div>
             <label className="btn btn-primary" htmlFor="video-upload-a" style={{ display: 'inline-block' }}>
@@ -166,6 +184,37 @@ function OnboardComparisonSession() {
                 <source src={videoA.previewUrl} type={videoA.mimeType} />
               </video>
             )}
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '20px' }}>
+            <div>
+              <label className="btn btn-secondary" htmlFor="csv-upload-a" style={{ display: 'inline-block' }}>
+                Carica CSV giro A
+                <input
+                  id="csv-upload-a"
+                  type="file"
+                  accept=".csv,text/csv"
+                  onChange={(e) => handleCsvUpload(e, 'A')}
+                  aria-label="Carica CSV traiettoria A"
+                  style={{ display: 'none' }}
+                />
+              </label>
+              <p style={{ marginTop: '10px', color: '#666' }}>{csvA?.name || 'Nessun CSV selezionato'}</p>
+            </div>
+            <div>
+              <label className="btn btn-secondary" htmlFor="csv-upload-b" style={{ display: 'inline-block' }}>
+                Carica CSV giro B
+                <input
+                  id="csv-upload-b"
+                  type="file"
+                  accept=".csv,text/csv"
+                  onChange={(e) => handleCsvUpload(e, 'B')}
+                  aria-label="Carica CSV traiettoria B"
+                  style={{ display: 'none' }}
+                />
+              </label>
+              <p style={{ marginTop: '10px', color: '#666' }}>{csvB?.name || 'Nessun CSV selezionato'}</p>
+            </div>
           </div>
 
           <div>
@@ -217,7 +266,7 @@ function OnboardComparisonSession() {
             <h2>Output analisi automatica</h2>
             <p><strong>Modalità:</strong> {analysis.analysis_mode}</p>
             <p><strong>Campioni analizzati:</strong> {analysis.sample_count}</p>
-            <p><strong>Sorgente mappa:</strong> GPS onboard (pallino rosso)</p>
+            <p><strong>Sorgente mappa:</strong> Traiettorie CSV allineate ai video</p>
           </div>
 
           <div className="card">

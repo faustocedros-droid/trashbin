@@ -34,6 +34,9 @@ class MapRegion:
     outline: np.ndarray
 
 
+_CSV_DATA_START_ROW = 18  # Row 19 in 1-indexed CSV files.
+
+
 def _parse_elapsed_seconds(value: str) -> Optional[float]:
     text = (value or "").strip()
     if not text:
@@ -107,7 +110,11 @@ def _moving_average(values: np.ndarray, window: int = 5) -> np.ndarray:
         return values
 
     pad = window // 2
-    padded = np.pad(values, ((pad, pad), (0, 0)), mode="edge")
+    if values.ndim == 1:
+        padded = np.pad(values, (pad, pad), mode="edge")
+    else:
+        pad_width = [(pad, pad)] + [(0, 0)] * (values.ndim - 1)
+        padded = np.pad(values, pad_width, mode="edge")
     output = np.zeros_like(values)
     for i in range(values.shape[0]):
         output[i] = np.mean(padded[i:i + window], axis=0)
@@ -243,14 +250,14 @@ def _load_csv_trajectory(
         delimiter = ","
 
     rows = list(csv.reader(raw_text.splitlines(), delimiter=delimiter))
-    if len(rows) <= 18:
+    if len(rows) <= _CSV_DATA_START_ROW:
         return None
 
     elapsed: List[float] = []
     latitudes: List[float] = []
     longitudes: List[float] = []
 
-    for row in rows[18:]:
+    for row in rows[_CSV_DATA_START_ROW:]:
         if len(row) < 3:
             continue
         t = _parse_elapsed_seconds(row[0])
@@ -295,14 +302,13 @@ def _load_csv_trajectory(
     y_range = max(1e-6, y_max - y_min)
 
     source_duration = float(elapsed_arr[-1] - elapsed_arr[0])
-    if source_duration <= 1e-3:
-        source_duration = max(1.0, video_duration_seconds)
-
-    target_duration = max(1.0, video_duration_seconds) if video_duration_seconds > 0 else source_duration
+    target_duration = max(1.0, video_duration_seconds) if video_duration_seconds > 0 else max(1.0, source_duration)
     target_times = np.linspace(0.0, target_duration, target_count, dtype=np.float32)
     source_times = elapsed_arr - elapsed_arr[0]
-    if source_duration > 0:
+    if source_duration > 1e-3:
         source_times = source_times * (target_duration / source_duration)
+    else:
+        source_times = np.linspace(0.0, target_duration, elapsed_arr.size, dtype=np.float32)
 
     interp_x = np.interp(target_times, source_times, points_meters[:, 0])
     interp_y = np.interp(target_times, source_times, points_meters[:, 1])

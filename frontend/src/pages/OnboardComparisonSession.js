@@ -1,7 +1,12 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+
+const createTrackPointId = () =>
+  typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `track-point-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
 const createEmptyTrackPoint = (index) => ({
-  id: `track-point-${index + 1}`,
+  id: createTrackPointId(),
   pointName: `Punto ${index + 1}`,
   brakingSpeedA: '',
   brakingSpeedB: '',
@@ -39,7 +44,6 @@ function OnboardComparisonSession() {
   const [videoB, setVideoB] = useState({ fileName: '', url: '', mimeType: '' });
   const [trackPoints, setTrackPoints] = useState([createEmptyTrackPoint(0)]);
   const [report, setReport] = useState('');
-  const trackPointIdCounterRef = useRef(2);
 
   const comparisonLabel = useMemo(() => `${driverAName} vs ${driverBName}`, [driverAName, driverBName]);
 
@@ -76,13 +80,7 @@ function OnboardComparisonSession() {
   };
 
   const addTrackPoint = () => {
-    setTrackPoints((current) => [
-      ...current,
-      {
-        ...createEmptyTrackPoint(current.length),
-        id: `track-point-${trackPointIdCounterRef.current++}`,
-      },
-    ]);
+    setTrackPoints((current) => [...current, createEmptyTrackPoint(current.length)]);
   };
 
   const removeTrackPoint = (id) => {
@@ -122,7 +120,7 @@ function OnboardComparisonSession() {
   };
 
   const generateReport = () => {
-    const epsilon = 0.05;
+    const epsilon = 0.5;
     const validPoints = trackPoints.filter((point) => point.pointName.trim());
 
     if (!videoA.url || !videoB.url) {
@@ -294,12 +292,14 @@ function OnboardComparisonSession() {
         <h2>Caricamento video onboard</h2>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
           <div>
-            <label className="btn btn-primary" style={{ display: 'inline-block' }}>
+            <label className="btn btn-primary" htmlFor="video-upload-a" style={{ display: 'inline-block' }}>
               Carica video A
               <input
+                id="video-upload-a"
                 type="file"
                 accept="video/*"
                 onChange={(e) => handleVideoUpload(e, 'A')}
+                aria-label="Carica video onboard A"
                 style={{ display: 'none' }}
               />
             </label>
@@ -312,12 +312,14 @@ function OnboardComparisonSession() {
           </div>
 
           <div>
-            <label className="btn btn-primary" style={{ display: 'inline-block' }}>
+            <label className="btn btn-primary" htmlFor="video-upload-b" style={{ display: 'inline-block' }}>
               Carica video B
               <input
+                id="video-upload-b"
                 type="file"
                 accept="video/*"
                 onChange={(e) => handleVideoUpload(e, 'B')}
+                aria-label="Carica video onboard B"
                 style={{ display: 'none' }}
               />
             </label>
@@ -410,7 +412,12 @@ function OnboardComparisonSession() {
       {report && (
         <div className="card">
           <h2>Report comparativo</h2>
-          <textarea value={report} readOnly style={{ minHeight: '420px', fontFamily: 'monospace' }} />
+          <textarea
+            value={report}
+            readOnly
+            aria-label="Report comparativo onboard"
+            style={{ minHeight: '420px', fontFamily: 'monospace' }}
+          />
         </div>
       )}
     </div>

@@ -392,7 +392,7 @@ def compare_onboard_videos():
         'video/x-m4v',
     }
     allowed_video_extensions = {'.mp4', '.mov', '.avi', '.mkv', '.webm', '.m4v'}
-    allowed_csv_mimes = {'text/csv', 'text/plain', 'application/vnd.ms-excel'}
+    allowed_csv_mimes = {'text/csv', 'text/plain', 'application/vnd.ms-excel', 'application/octet-stream'}
     allowed_csv_extensions = {'.csv'}
     allowed_map_mimes = {'image/png', 'image/jpeg', 'image/jpg', 'image/bmp', 'image/webp'}
     allowed_map_extensions = {'.png', '.jpg', '.jpeg', '.bmp', '.webp'}
@@ -507,7 +507,7 @@ def compare_onboard_videos():
         logger.warning('Onboard analysis validation error: %s', error)
         return jsonify({
             'status': 'error',
-            'message': 'I file caricati non consentono una analisi automatica valida. Verifica formato e durata.'
+            'message': str(error) or 'I file caricati non consentono una analisi automatica valida. Verifica formato e durata.'
         }), 400
     except Exception as error:
         logger.exception('Unexpected onboard analysis error: %s', error)

@@ -4,6 +4,7 @@ from datetime import datetime
 import os
 import tempfile
 import logging
+from typing import Set
 from werkzeug.exceptions import RequestEntityTooLarge
 
 # Initialize Flask app
@@ -252,11 +253,18 @@ def archive_event():
     }), 200
 
 
-def _is_allowed_upload(file_storage, allowed_mimes: set[str], allowed_extensions: set[str]) -> bool:
+def _is_allowed_upload(file_storage, allowed_mimes: Set[str], allowed_extensions: Set[str]) -> bool:
     filename = (file_storage.filename or '').lower()
     extension = os.path.splitext(filename)[1]
     mime = (file_storage.mimetype or '').lower()
     return extension in allowed_extensions and mime in allowed_mimes
+
+
+def _safe_extension(filename: str, allowed_extensions: Set[str], default_extension: str) -> str:
+    extension = os.path.splitext((filename or '').lower())[1]
+    if extension in allowed_extensions:
+        return extension
+    return default_extension
 
 
 @app.route('/api/onboard/compare', methods=['POST'])
@@ -310,11 +318,14 @@ def compare_onboard_videos():
     temp_video_a_path = None
     temp_video_b_path = None
     try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as temp_a:
+        video_a_extension = _safe_extension(video_a.filename, allowed_video_extensions, '.mp4')
+        video_b_extension = _safe_extension(video_b.filename, allowed_video_extensions, '.mp4')
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=video_a_extension) as temp_a:
             temp_video_a_path = temp_a.name
             video_a.save(temp_a)
 
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as temp_b:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=video_b_extension) as temp_b:
             temp_video_b_path = temp_b.name
             video_b.save(temp_b)
 

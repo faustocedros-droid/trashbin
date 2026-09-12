@@ -17,7 +17,6 @@ function OnboardComparisonSession() {
   const [videoA, setVideoA] = useState(buildVideoState());
   const [videoB, setVideoB] = useState(buildVideoState());
   const [trackMap, setTrackMap] = useState(null);
-  const [trackMapPreviewUrl, setTrackMapPreviewUrl] = useState('');
 
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -25,10 +24,6 @@ function OnboardComparisonSession() {
 
   const normalizedDriverA = useMemo(() => driverAName.trim() || 'Pilota A', [driverAName]);
   const normalizedDriverB = useMemo(() => driverBName.trim() || 'Pilota B', [driverBName]);
-  const safeTrackMapPreviewUrl = useMemo(
-    () => (trackMapPreviewUrl.startsWith('blob:') ? trackMapPreviewUrl : ''),
-    [trackMapPreviewUrl]
-  );
 
   useEffect(() => {
     const url = videoA.previewUrl;
@@ -43,13 +38,6 @@ function OnboardComparisonSession() {
       if (url) URL.revokeObjectURL(url);
     };
   }, [videoB.previewUrl]);
-
-  useEffect(() => {
-    const url = trackMapPreviewUrl;
-    return () => {
-      if (url) URL.revokeObjectURL(url);
-    };
-  }, [trackMapPreviewUrl]);
 
   const handleVideoUpload = (event, side) => {
     const file = event.target.files?.[0];
@@ -75,12 +63,6 @@ function OnboardComparisonSession() {
   const handleTrackMapUpload = (event) => {
     const file = event.target.files?.[0] || null;
     setTrackMap(file);
-
-    if (file) {
-      setTrackMapPreviewUrl(URL.createObjectURL(file));
-    } else {
-      setTrackMapPreviewUrl('');
-    }
 
     setAnalysis(null);
     setError('');
@@ -234,15 +216,6 @@ function OnboardComparisonSession() {
             <p style={{ color: '#666' }}>
               Marker numerati ricavati dalla traiettoria GPS del video. Ogni marker corrisponde a una curva del report.
             </p>
-            {safeTrackMapPreviewUrl && (
-              <div style={{ marginBottom: '15px' }}>
-                <img
-                  src={safeTrackMapPreviewUrl}
-                  alt="Mappa tracciato caricata"
-                  style={{ width: '100%', maxHeight: '400px', objectFit: 'contain', background: '#fff', borderRadius: '8px' }}
-                />
-              </div>
-            )}
             <div style={{ border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden', background: '#111' }}>
               <svg viewBox="0 0 1000 1000" width="100%" style={{ display: 'block' }}>
                 {mapPolyline && (

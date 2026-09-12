@@ -252,6 +252,13 @@ def archive_event():
     }), 200
 
 
+def _is_allowed_upload(file_storage, allowed_mimes: set[str], allowed_extensions: set[str]) -> bool:
+    filename = (file_storage.filename or '').lower()
+    extension = os.path.splitext(filename)[1]
+    mime = (file_storage.mimetype or '').lower()
+    return extension in allowed_extensions and mime in allowed_mimes
+
+
 @app.route('/api/onboard/compare', methods=['POST'])
 def compare_onboard_videos():
     """Automatic onboard comparison with optional track map"""
@@ -263,6 +270,36 @@ def compare_onboard_videos():
         return jsonify({
             'status': 'error',
             'message': 'Sono richiesti due video onboard (video_a e video_b)'
+        }), 400
+
+    allowed_video_mimes = {
+        'video/mp4',
+        'video/quicktime',
+        'video/x-msvideo',
+        'video/x-matroska',
+        'video/webm',
+        'video/x-m4v',
+    }
+    allowed_video_extensions = {'.mp4', '.mov', '.avi', '.mkv', '.webm', '.m4v'}
+    allowed_map_mimes = {'image/png', 'image/jpeg', 'image/jpg', 'image/bmp', 'image/webp'}
+    allowed_map_extensions = {'.png', '.jpg', '.jpeg', '.bmp', '.webp'}
+
+    if not _is_allowed_upload(video_a, allowed_video_mimes, allowed_video_extensions):
+        return jsonify({
+            'status': 'error',
+            'message': 'Formato video A non supportato'
+        }), 400
+
+    if not _is_allowed_upload(video_b, allowed_video_mimes, allowed_video_extensions):
+        return jsonify({
+            'status': 'error',
+            'message': 'Formato video B non supportato'
+        }), 400
+
+    if track_map and not _is_allowed_upload(track_map, allowed_map_mimes, allowed_map_extensions):
+        return jsonify({
+            'status': 'error',
+            'message': 'Formato mappa tracciato non supportato'
         }), 400
 
     session_name = request.form.get('session_name', 'Sessione confronto onboard automatica')

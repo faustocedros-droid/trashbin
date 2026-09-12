@@ -189,7 +189,7 @@ def analyze_video(video_path: str, sample_rate_hz: float = 8.0) -> VideoAnalysis
     return VideoAnalysisResult(
         speeds=speeds,
         steering=steering,
-        centers=smoothed_points[:, 0],
+        centers=smoothed_points,
         map_points=smoothed_points,
         duration_seconds=duration_seconds,
     )
@@ -238,11 +238,25 @@ def _segment_metrics(result: VideoAnalysisResult, start: int, end: int) -> Dict[
     turn_in_steering = float(np.mean(steering[:one_third]))
     exit_steering = float(np.mean(steering[-one_third:]))
 
-    center_deltas = np.diff(centers) if centers.size > 1 else np.array([0.0])
-    sign_changes = np.sum(np.diff(np.sign(center_deltas)) != 0) if center_deltas.size > 1 else 0
-    corrections = float(min(10.0, sign_changes * 1.8))
+    if centers.ndim == 2 and centers.shape[0] > 2:
+        vectors = np.diff(centers, axis=0)
+        step_norms = np.linalg.norm(vectors, axis=1)
+        headings = np.arctan2(vectors[:, 1], vectors[:, 0])
+        heading_deltas = np.diff(headings)
+        heading_deltas = (heading_deltas + np.pi) % (2 * np.pi) - np.pi
 
-    trajectory_consistency = float(np.clip(100.0 - np.std(centers) * 260.0, 35.0, 100.0))
+        valid_heading = np.where(np.abs(heading_deltas) > 0.12, np.sign(heading_deltas), 0.0)
+        sign_changes = int(np.sum((valid_heading[1:] * valid_heading[:-1]) < 0))
+        corrections = float(min(10.0, sign_changes * 1.7))
+
+        trajectory_consistency = float(
+            np.clip(100.0 - np.std(heading_deltas) * 130.0 - np.std(step_norms) * 120.0, 35.0, 100.0)
+        )
+    else:
+        center_deltas = np.diff(centers) if centers.size > 1 else np.array([0.0])
+        sign_changes = np.sum(np.diff(np.sign(center_deltas)) != 0) if center_deltas.size > 1 else 0
+        corrections = float(min(10.0, sign_changes * 1.8))
+        trajectory_consistency = float(np.clip(100.0 - np.std(centers) * 260.0, 35.0, 100.0))
 
     min_corner_speed = float(np.min(speeds))
     min_idx = int(np.argmin(speeds))

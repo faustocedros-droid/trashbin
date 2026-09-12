@@ -234,11 +234,17 @@ function OnboardComparisonSession() {
             <p style={{ color: '#666' }}>
               Marker numerati ricavati dalla traiettoria GPS del video. Ogni marker corrisponde a una curva del report.
             </p>
+            {safeTrackMapPreviewUrl && (
+              <div style={{ marginBottom: '15px' }}>
+                <img
+                  src={safeTrackMapPreviewUrl}
+                  alt="Mappa tracciato caricata"
+                  style={{ width: '100%', maxHeight: '400px', objectFit: 'contain', background: '#fff', borderRadius: '8px' }}
+                />
+              </div>
+            )}
             <div style={{ border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden', background: '#111' }}>
               <svg viewBox="0 0 1000 1000" width="100%" style={{ display: 'block' }}>
-                {safeTrackMapPreviewUrl && (
-                  <image href={safeTrackMapPreviewUrl} x="0" y="0" width="1000" height="1000" preserveAspectRatio="xMidYMid meet" opacity="0.65" />
-                )}
                 {mapPolyline && (
                   <polyline
                     points={mapPolyline}

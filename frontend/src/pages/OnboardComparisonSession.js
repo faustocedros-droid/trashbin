@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 const createEmptyTrackPoint = (index) => ({
   id: `track-point-${index + 1}`,
@@ -30,17 +30,16 @@ const parseNumber = (value) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
-let trackPointIdCounter = 2;
-
 function OnboardComparisonSession() {
   const [sessionName, setSessionName] = useState('Sessione confronto onboard');
   const [trackName, setTrackName] = useState('');
   const [driverAName, setDriverAName] = useState('Pilota A');
   const [driverBName, setDriverBName] = useState('Pilota B');
-  const [videoA, setVideoA] = useState({ fileName: '', url: '' });
-  const [videoB, setVideoB] = useState({ fileName: '', url: '' });
+  const [videoA, setVideoA] = useState({ fileName: '', url: '', mimeType: '' });
+  const [videoB, setVideoB] = useState({ fileName: '', url: '', mimeType: '' });
   const [trackPoints, setTrackPoints] = useState([createEmptyTrackPoint(0)]);
   const [report, setReport] = useState('');
+  const trackPointIdCounterRef = useRef(2);
 
   const comparisonLabel = useMemo(() => `${driverAName} vs ${driverBName}`, [driverAName, driverBName]);
 
@@ -57,11 +56,12 @@ function OnboardComparisonSession() {
     if (!file) return;
 
     const blobUrl = URL.createObjectURL(file);
+    const payload = { fileName: file.name, url: blobUrl, mimeType: file.type || 'video/mp4' };
 
     if (side === 'A') {
-      setVideoA({ fileName: file.name, url: blobUrl });
+      setVideoA(payload);
     } else {
-      setVideoB({ fileName: file.name, url: blobUrl });
+      setVideoB(payload);
     }
   };
 
@@ -74,7 +74,7 @@ function OnboardComparisonSession() {
       ...current,
       {
         ...createEmptyTrackPoint(current.length),
-        id: `track-point-${trackPointIdCounter++}`,
+        id: `track-point-${trackPointIdCounterRef.current++}`,
       },
     ]);
   };
@@ -113,6 +113,7 @@ function OnboardComparisonSession() {
   };
 
   const generateReport = () => {
+    const epsilon = 0.05;
     const validPoints = trackPoints.filter((point) => point.pointName.trim());
 
     if (!videoA.url || !videoB.url) {
@@ -160,7 +161,7 @@ function OnboardComparisonSession() {
         : null;
 
     if (avgBrakingDelta !== null) {
-      if (avgBrakingDelta === 0) {
+      if (Math.abs(avgBrakingDelta) < epsilon) {
         lines.push('- Velocità alla staccata media: livello equivalente tra i due piloti.');
       } else {
         const leader = avgBrakingDelta > 0 ? driverAName : driverBName;
@@ -173,7 +174,7 @@ function OnboardComparisonSession() {
     }
 
     if (avgMinSpeedDelta !== null) {
-      if (avgMinSpeedDelta === 0) {
+      if (Math.abs(avgMinSpeedDelta) < epsilon) {
         lines.push('- Velocità minima media in curva: livello equivalente tra i due piloti.');
       } else {
         const leader = avgMinSpeedDelta > 0 ? driverAName : driverBName;
@@ -209,14 +210,14 @@ function OnboardComparisonSession() {
     lines.push('Indicazioni coaching');
 
     if (avgBrakingDelta !== null) {
-      if (avgBrakingDelta > 0) {
+      if (avgBrakingDelta > epsilon) {
         lines.push(
           `- ${driverAName}: mantenere la staccata aggressiva ma con rilascio freno progressivo per stabilizzare l'anteriore.`
         );
         lines.push(
           `- ${driverBName}: anticipare la preparazione della frenata e lavorare sul picco di decelerazione in ingresso curva.`
         );
-      } else if (avgBrakingDelta < 0) {
+      } else if (avgBrakingDelta < -epsilon) {
         lines.push(
           `- ${driverBName}: mantenere la staccata aggressiva ma con rilascio freno progressivo per stabilizzare l'anteriore.`
         );
@@ -227,16 +228,21 @@ function OnboardComparisonSession() {
     }
 
     if (avgMinSpeedDelta !== null) {
-      if (avgMinSpeedDelta > 0) {
+      if (avgMinSpeedDelta > epsilon) {
         lines.push(`- ${driverAName}: sfrutta il vantaggio di centro curva senza allargare la traiettoria in uscita.`);
         lines.push(`- ${driverBName}: cerca più rotazione a centro curva per aumentare la velocità minima.`);
-      } else if (avgMinSpeedDelta < 0) {
+      } else if (avgMinSpeedDelta < -epsilon) {
         lines.push(`- ${driverBName}: sfrutta il vantaggio di centro curva senza allargare la traiettoria in uscita.`);
         lines.push(`- ${driverAName}: cerca più rotazione a centro curva per aumentare la velocità minima.`);
       }
     }
 
-    if (avgBrakingDelta === 0 && avgMinSpeedDelta === 0) {
+    if (
+      avgBrakingDelta !== null &&
+      avgMinSpeedDelta !== null &&
+      Math.abs(avgBrakingDelta) < epsilon &&
+      Math.abs(avgMinSpeedDelta) < epsilon
+    ) {
       lines.push('- Entrambi i piloti sono allineati sui KPI principali: cercare il delta nel dettaglio di linea e rilascio sterzo.');
     }
 
@@ -289,7 +295,7 @@ function OnboardComparisonSession() {
             <p style={{ marginTop: '10px', color: '#666' }}>{videoA.fileName || 'Nessun file selezionato'}</p>
             {videoA.url && (
               <video controls style={{ width: '100%', borderRadius: '8px' }}>
-                <source src={videoA.url} />
+                <source src={videoA.url} type={videoA.mimeType} />
               </video>
             )}
           </div>
@@ -307,7 +313,7 @@ function OnboardComparisonSession() {
             <p style={{ marginTop: '10px', color: '#666' }}>{videoB.fileName || 'Nessun file selezionato'}</p>
             {videoB.url && (
               <video controls style={{ width: '100%', borderRadius: '8px' }}>
-                <source src={videoB.url} />
+                <source src={videoB.url} type={videoB.mimeType} />
               </video>
             )}
           </div>

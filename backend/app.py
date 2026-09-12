@@ -261,6 +261,20 @@ def _is_allowed_upload(file_storage, allowed_mimes: Set[str], allowed_extensions
     return extension in allowed_extensions and mime in allowed_mimes
 
 
+def _is_allowed_csv_upload(file_storage, allowed_mimes: Set[str], allowed_extensions: Set[str]) -> bool:
+    filename = (file_storage.filename or '').lower()
+    extension = os.path.splitext(filename)[1]
+    if extension not in allowed_extensions:
+        return False
+
+    mime = (file_storage.mimetype or '').lower()
+    if mime in allowed_mimes:
+        return True
+
+    # Some browsers/OSes send CSV files as generic binary uploads.
+    return mime in {'application/octet-stream', ''}
+
+
 def _has_allowed_signature(file_storage, file_kind: str) -> bool:
     try:
         stream = file_storage.stream
@@ -345,11 +359,9 @@ def _has_csv_structure(file_storage) -> bool:
     if len(lines) <= 18:
         return False
 
-    delimiter_hits = sum(1 for line in lines[:8] if ',' in line or ';' in line or '\t' in line)
-    if delimiter_hits < 2:
-        return False
-
     data_line = lines[18]
+    if ',' not in data_line and ';' not in data_line and '\t' not in data_line:
+        return False
     delimiter = ';' if data_line.count(';') >= data_line.count(',') else ','
     if '\t' in data_line and data_line.count('\t') > max(data_line.count(';'), data_line.count(',')):
         delimiter = '\t'
@@ -408,7 +420,7 @@ def compare_onboard_videos():
         'video/x-m4v',
     }
     allowed_video_extensions = {'.mp4', '.mov', '.avi', '.mkv', '.webm', '.m4v'}
-    allowed_csv_mimes = {'text/csv', 'text/plain', 'application/vnd.ms-excel', 'application/octet-stream'}
+    allowed_csv_mimes = {'text/csv', 'text/plain', 'application/vnd.ms-excel'}
     allowed_csv_extensions = {'.csv'}
     allowed_map_mimes = {'image/png', 'image/jpeg', 'image/jpg', 'image/bmp', 'image/webp'}
     allowed_map_extensions = {'.png', '.jpg', '.jpeg', '.bmp', '.webp'}
@@ -435,7 +447,7 @@ def compare_onboard_videos():
             'message': 'Contenuto video B non valido'
         }), 400
 
-    if not _is_allowed_upload(csv_a, allowed_csv_mimes, allowed_csv_extensions):
+    if not _is_allowed_csv_upload(csv_a, allowed_csv_mimes, allowed_csv_extensions):
         return jsonify({
             'status': 'error',
             'message': 'Formato CSV A non supportato'
@@ -446,7 +458,7 @@ def compare_onboard_videos():
             'message': 'Contenuto CSV A non valido'
         }), 400
 
-    if not _is_allowed_upload(csv_b, allowed_csv_mimes, allowed_csv_extensions):
+    if not _is_allowed_csv_upload(csv_b, allowed_csv_mimes, allowed_csv_extensions):
         return jsonify({
             'status': 'error',
             'message': 'Formato CSV B non supportato'

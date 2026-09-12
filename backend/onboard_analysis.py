@@ -257,12 +257,16 @@ def _normalize_map_points_by_bbox(raw_points: np.ndarray, bbox: Tuple[int, int, 
 
 
 def _compute_steering_from_path(path_points: np.ndarray) -> np.ndarray:
-    if path_points.shape[0] < 2:
+    if path_points.shape[0] < 3:
         return np.zeros((path_points.shape[0],), dtype=np.float32)
 
     deltas = np.diff(path_points, axis=0)
-    distances = np.linalg.norm(deltas, axis=1) * 100.0
-    steering = np.concatenate(([0.0], distances))
+    headings = np.arctan2(deltas[:, 1], deltas[:, 0])
+    heading_delta = np.diff(headings)
+    heading_delta = (heading_delta + np.pi) % (2 * np.pi) - np.pi
+    steering = np.zeros((path_points.shape[0],), dtype=np.float32)
+    steering[2:] = np.abs(np.degrees(heading_delta))
+    steering = np.clip(steering * 0.9, 0.0, 100.0)
     return steering.astype(np.float32)
 
 

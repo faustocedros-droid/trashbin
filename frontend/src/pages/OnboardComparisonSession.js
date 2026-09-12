@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 const createTrackPointId = () =>
   typeof crypto !== 'undefined' && crypto.randomUUID
@@ -35,6 +35,8 @@ const parseNumber = (value) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
+const SPEED_DELTA_EPSILON = 0.5;
+
 function OnboardComparisonSession() {
   const [sessionName, setSessionName] = useState('Sessione confronto onboard');
   const [trackName, setTrackName] = useState('');
@@ -42,10 +44,16 @@ function OnboardComparisonSession() {
   const [driverBName, setDriverBName] = useState('Pilota B');
   const [videoA, setVideoA] = useState({ fileName: '', url: '', mimeType: '' });
   const [videoB, setVideoB] = useState({ fileName: '', url: '', mimeType: '' });
-  const [trackPoints, setTrackPoints] = useState([createEmptyTrackPoint(0)]);
+  const [trackPoints, setTrackPoints] = useState([createEmptyTrackPoint(1)]);
   const [report, setReport] = useState('');
+  const trackPointLabelCounterRef = useRef(2);
 
-  const comparisonLabel = useMemo(() => `${driverAName} vs ${driverBName}`, [driverAName, driverBName]);
+  const normalizedDriverAName = useMemo(() => driverAName.trim() || 'Pilota A', [driverAName]);
+  const normalizedDriverBName = useMemo(() => driverBName.trim() || 'Pilota B', [driverBName]);
+  const comparisonLabel = useMemo(
+    () => `${normalizedDriverAName} vs ${normalizedDriverBName}`,
+    [normalizedDriverAName, normalizedDriverBName]
+  );
 
   useEffect(() => {
     const url = videoA.url;
@@ -80,7 +88,8 @@ function OnboardComparisonSession() {
   };
 
   const addTrackPoint = () => {
-    setTrackPoints((current) => [...current, createEmptyTrackPoint(current.length)]);
+    const nextLabel = trackPointLabelCounterRef.current++;
+    setTrackPoints((current) => [...current, createEmptyTrackPoint(nextLabel)]);
   };
 
   const removeTrackPoint = (id) => {
@@ -103,7 +112,13 @@ function OnboardComparisonSession() {
       return `Valore equivalente (${a.toFixed(1)} ${unit})`;
     }
 
-    const fasterDriver = betterWhenHigher ? (delta > 0 ? driverAName : driverBName) : (delta < 0 ? driverAName : driverBName);
+    const fasterDriver = betterWhenHigher
+      ? delta > 0
+        ? normalizedDriverAName
+        : normalizedDriverBName
+      : delta < 0
+        ? normalizedDriverAName
+        : normalizedDriverBName;
     const absDelta = Math.abs(delta).toFixed(1);
     if (framing === 'neutral') {
       return `${fasterDriver} registra ${absDelta} ${unit} in più`;
@@ -116,11 +131,11 @@ function OnboardComparisonSession() {
     if (!a && !b) return `${metricName}: osservazione non inserita`;
     if (!a || !b) return `${metricName}: dato mancante su uno dei due video`;
     if (a.trim().toLowerCase() === b.trim().toLowerCase()) return `${metricName}: approccio simile`;
-    return `${metricName}: ${driverAName}="${a}", ${driverBName}="${b}"`;
+    return `${metricName}: ${normalizedDriverAName}="${a}", ${normalizedDriverBName}="${b}"`;
   };
 
   const generateReport = () => {
-    const epsilon = 0.5;
+    const epsilon = SPEED_DELTA_EPSILON;
     const validPoints = trackPoints.filter((point) => point.pointName.trim());
 
     if (!videoA.url || !videoB.url) {
@@ -171,7 +186,7 @@ function OnboardComparisonSession() {
       if (Math.abs(avgBrakingDelta) < epsilon) {
         lines.push('- Velocità alla staccata media: livello equivalente tra i due piloti.');
       } else {
-        const leader = avgBrakingDelta > 0 ? driverAName : driverBName;
+        const leader = avgBrakingDelta > 0 ? normalizedDriverAName : normalizedDriverBName;
         lines.push(
           `- Velocità alla staccata media: ${leader} arriva alla staccata con ${Math.abs(avgBrakingDelta).toFixed(1)} km/h in più.`
         );
@@ -184,7 +199,7 @@ function OnboardComparisonSession() {
       if (Math.abs(avgMinSpeedDelta) < epsilon) {
         lines.push('- Velocità minima media in curva: livello equivalente tra i due piloti.');
       } else {
-        const leader = avgMinSpeedDelta > 0 ? driverAName : driverBName;
+        const leader = avgMinSpeedDelta > 0 ? normalizedDriverAName : normalizedDriverBName;
         lines.push(
           `- Velocità minima media in curva: vantaggio ${leader} di ${Math.abs(avgMinSpeedDelta).toFixed(1)} km/h.`
         );
@@ -221,28 +236,28 @@ function OnboardComparisonSession() {
     if (avgBrakingDelta !== null) {
       if (avgBrakingDelta > epsilon) {
         lines.push(
-          `- ${driverAName}: mantenere la staccata aggressiva ma con rilascio freno progressivo per stabilizzare l'anteriore.`
+          `- ${normalizedDriverAName}: mantenere la staccata aggressiva ma con rilascio freno progressivo per stabilizzare l'anteriore.`
         );
         lines.push(
-          `- ${driverBName}: anticipare la preparazione della frenata e lavorare sul picco di decelerazione in ingresso curva.`
+          `- ${normalizedDriverBName}: anticipare la preparazione della frenata e lavorare sul picco di decelerazione in ingresso curva.`
         );
       } else if (avgBrakingDelta < -epsilon) {
         lines.push(
-          `- ${driverBName}: mantenere la staccata aggressiva ma con rilascio freno progressivo per stabilizzare l'anteriore.`
+          `- ${normalizedDriverBName}: mantenere la staccata aggressiva ma con rilascio freno progressivo per stabilizzare l'anteriore.`
         );
         lines.push(
-          `- ${driverAName}: anticipare la preparazione della frenata e lavorare sul picco di decelerazione in ingresso curva.`
+          `- ${normalizedDriverAName}: anticipare la preparazione della frenata e lavorare sul picco di decelerazione in ingresso curva.`
         );
       }
     }
 
     if (avgMinSpeedDelta !== null) {
       if (avgMinSpeedDelta > epsilon) {
-        lines.push(`- ${driverAName}: sfrutta il vantaggio di centro curva senza allargare la traiettoria in uscita.`);
-        lines.push(`- ${driverBName}: cerca più rotazione a centro curva per aumentare la velocità minima.`);
+        lines.push(`- ${normalizedDriverAName}: sfrutta il vantaggio di centro curva senza allargare la traiettoria in uscita.`);
+        lines.push(`- ${normalizedDriverBName}: cerca più rotazione a centro curva per aumentare la velocità minima.`);
       } else if (avgMinSpeedDelta < -epsilon) {
-        lines.push(`- ${driverBName}: sfrutta il vantaggio di centro curva senza allargare la traiettoria in uscita.`);
-        lines.push(`- ${driverAName}: cerca più rotazione a centro curva per aumentare la velocità minima.`);
+        lines.push(`- ${normalizedDriverBName}: sfrutta il vantaggio di centro curva senza allargare la traiettoria in uscita.`);
+        lines.push(`- ${normalizedDriverAName}: cerca più rotazione a centro curva per aumentare la velocità minima.`);
       }
     }
 
@@ -279,11 +294,11 @@ function OnboardComparisonSession() {
           </div>
           <div className="form-group">
             <label>Pilota video A</label>
-            <input value={driverAName} onChange={(e) => setDriverAName(e.target.value || 'Pilota A')} />
+            <input value={driverAName} onChange={(e) => setDriverAName(e.target.value)} />
           </div>
           <div className="form-group">
             <label>Pilota video B</label>
-            <input value={driverBName} onChange={(e) => setDriverBName(e.target.value || 'Pilota B')} />
+            <input value={driverBName} onChange={(e) => setDriverBName(e.target.value)} />
           </div>
         </div>
       </div>
@@ -363,8 +378,8 @@ function OnboardComparisonSession() {
                 <thead>
                   <tr>
                     <th>Parametro</th>
-                    <th>{driverAName}</th>
-                    <th>{driverBName}</th>
+                    <th>{normalizedDriverAName}</th>
+                    <th>{normalizedDriverBName}</th>
                   </tr>
                 </thead>
                 <tbody>

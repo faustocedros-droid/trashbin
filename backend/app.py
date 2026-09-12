@@ -260,11 +260,36 @@ def _is_allowed_upload(file_storage, allowed_mimes: Set[str], allowed_extensions
     return extension in allowed_extensions and mime in allowed_mimes
 
 
-def _safe_extension(filename: str, allowed_extensions: Set[str], default_extension: str) -> str:
-    extension = os.path.splitext((filename or '').lower())[1]
-    if extension in allowed_extensions:
-        return extension
-    return default_extension
+def _has_allowed_signature(file_storage, file_kind: str) -> bool:
+    try:
+        stream = file_storage.stream
+        current_position = stream.tell()
+        header = stream.read(64)
+        stream.seek(current_position)
+    except Exception:
+        return False
+
+    if file_kind == 'video':
+        if len(header) >= 12 and header[4:8] == b'ftyp':
+            return True  # mp4/mov/m4v family
+        if len(header) >= 12 and header[:4] == b'RIFF' and header[8:12] == b'AVI ':
+            return True
+        if len(header) >= 4 and header[:4] == b'\x1A\x45\xDF\xA3':
+            return True  # mkv/webm
+        return False
+
+    if file_kind == 'image':
+        if len(header) >= 8 and header[:8] == b'\x89PNG\r\n\x1a\n':
+            return True
+        if len(header) >= 3 and header[:3] == b'\xFF\xD8\xFF':
+            return True  # jpeg
+        if len(header) >= 2 and header[:2] == b'BM':
+            return True  # bmp
+        if len(header) >= 12 and header[:4] == b'RIFF' and header[8:12] == b'WEBP':
+            return True
+        return False
+
+    return False
 
 
 @app.route('/api/onboard/compare', methods=['POST'])
@@ -297,17 +322,32 @@ def compare_onboard_videos():
             'status': 'error',
             'message': 'Formato video A non supportato'
         }), 400
+    if not _has_allowed_signature(video_a, 'video'):
+        return jsonify({
+            'status': 'error',
+            'message': 'Contenuto video A non valido'
+        }), 400
 
     if not _is_allowed_upload(video_b, allowed_video_mimes, allowed_video_extensions):
         return jsonify({
             'status': 'error',
             'message': 'Formato video B non supportato'
         }), 400
+    if not _has_allowed_signature(video_b, 'video'):
+        return jsonify({
+            'status': 'error',
+            'message': 'Contenuto video B non valido'
+        }), 400
 
     if track_map and not _is_allowed_upload(track_map, allowed_map_mimes, allowed_map_extensions):
         return jsonify({
             'status': 'error',
             'message': 'Formato mappa tracciato non supportato'
+        }), 400
+    if track_map and not _has_allowed_signature(track_map, 'image'):
+        return jsonify({
+            'status': 'error',
+            'message': 'Contenuto mappa tracciato non valido'
         }), 400
 
     session_name = request.form.get('session_name', 'Sessione confronto onboard automatica')
@@ -317,17 +357,20 @@ def compare_onboard_videos():
 
     temp_video_a_path = None
     temp_video_b_path = None
+    temp_track_map_path = None
     try:
-        video_a_extension = _safe_extension(video_a.filename, allowed_video_extensions, '.mp4')
-        video_b_extension = _safe_extension(video_b.filename, allowed_video_extensions, '.mp4')
-
-        with tempfile.NamedTemporaryFile(delete=False, suffix=video_a_extension) as temp_a:
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as temp_a:
             temp_video_a_path = temp_a.name
             video_a.save(temp_a)
 
-        with tempfile.NamedTemporaryFile(delete=False, suffix=video_b_extension) as temp_b:
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as temp_b:
             temp_video_b_path = temp_b.name
             video_b.save(temp_b)
+
+        if track_map:
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as temp_map:
+                temp_track_map_path = temp_map.name
+                track_map.save(temp_map)
 
         analysis = analyze_onboard_pair(
             video_a_path=temp_video_a_path,
@@ -336,7 +379,8 @@ def compare_onboard_videos():
             track_name=track_name,
             driver_a_name=driver_a_name,
             driver_b_name=driver_b_name,
-            track_map_name=track_map.filename if track_map else None
+            track_map_name=track_map.filename if track_map else None,
+            track_map_path=temp_track_map_path
         )
 
         return jsonify({
@@ -356,7 +400,7 @@ def compare_onboard_videos():
             'message': 'Errore durante l’analisi automatica onboard'
         }), 500
     finally:
-        for path in [temp_video_a_path, temp_video_b_path]:
+        for path in [temp_video_a_path, temp_video_b_path, temp_track_map_path]:
             if path and os.path.exists(path):
                 os.remove(path)
 

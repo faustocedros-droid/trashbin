@@ -222,6 +222,22 @@ def _detect_map_region(frame: np.ndarray) -> Optional[MapRegion]:
     return MapRegion(bbox=(x, y, w, h), track_points=sampled_track_points, outline=outline_normalized)
 
 
+def _extract_outline_from_reference_map(track_map_path: Optional[str]) -> np.ndarray:
+    if not track_map_path:
+        return np.zeros((0, 2), dtype=np.float32)
+
+    image = cv2.imread(track_map_path)
+    if image is None:
+        return np.zeros((0, 2), dtype=np.float32)
+
+    resized = cv2.resize(image, (640, 360))
+    region = _detect_map_region(resized)
+    if region is None or region.outline.size == 0:
+        return np.zeros((0, 2), dtype=np.float32)
+
+    return region.outline
+
+
 def analyze_video(video_path: str, sample_rate_hz: float = 8.0) -> VideoAnalysisResult:
     capture = cv2.VideoCapture(video_path)
     if not capture.isOpened():
@@ -630,6 +646,7 @@ def analyze_onboard_pair(
     driver_a_name: str,
     driver_b_name: str,
     track_map_name: Optional[str] = None,
+    track_map_path: Optional[str] = None,
 ) -> Dict[str, object]:
     result_a = analyze_video(video_a_path)
     result_b = analyze_video(video_b_path)
@@ -656,7 +673,11 @@ def analyze_onboard_pair(
     )
 
     base_path = (truncated_a.map_points + truncated_b.map_points) / 2.0
-    if truncated_a.map_outline.size > 0 and truncated_b.map_outline.size > 0:
+    reference_outline = _extract_outline_from_reference_map(track_map_path)
+
+    if reference_outline.size > 0:
+        base_outline = reference_outline
+    elif truncated_a.map_outline.size > 0 and truncated_b.map_outline.size > 0:
         if truncated_a.map_outline.shape == truncated_b.map_outline.shape:
             base_outline = (truncated_a.map_outline + truncated_b.map_outline) / 2.0
         else:

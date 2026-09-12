@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 const createEmptyTrackPoint = (index) => ({
-  id: `${Date.now()}-${index}`,
+  id: `track-point-${index + 1}`,
   pointName: `Punto ${index + 1}`,
   brakingSpeedA: '',
   brakingSpeedB: '',
@@ -30,6 +30,8 @@ const parseNumber = (value) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
+let trackPointIdCounter = 2;
+
 function OnboardComparisonSession() {
   const [sessionName, setSessionName] = useState('Sessione confronto onboard');
   const [trackName, setTrackName] = useState('');
@@ -42,6 +44,14 @@ function OnboardComparisonSession() {
 
   const comparisonLabel = useMemo(() => `${driverAName} vs ${driverBName}`, [driverAName, driverBName]);
 
+  useEffect(() => () => {
+    if (videoA.url) URL.revokeObjectURL(videoA.url);
+  }, [videoA.url]);
+
+  useEffect(() => () => {
+    if (videoB.url) URL.revokeObjectURL(videoB.url);
+  }, [videoB.url]);
+
   const handleVideoUpload = (event, side) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -49,10 +59,8 @@ function OnboardComparisonSession() {
     const blobUrl = URL.createObjectURL(file);
 
     if (side === 'A') {
-      if (videoA.url) URL.revokeObjectURL(videoA.url);
       setVideoA({ fileName: file.name, url: blobUrl });
     } else {
-      if (videoB.url) URL.revokeObjectURL(videoB.url);
       setVideoB({ fileName: file.name, url: blobUrl });
     }
   };
@@ -62,7 +70,13 @@ function OnboardComparisonSession() {
   };
 
   const addTrackPoint = () => {
-    setTrackPoints((current) => [...current, createEmptyTrackPoint(current.length)]);
+    setTrackPoints((current) => [
+      ...current,
+      {
+        ...createEmptyTrackPoint(current.length),
+        id: `track-point-${trackPointIdCounter++}`,
+      },
+    ]);
   };
 
   const removeTrackPoint = (id) => {
@@ -146,17 +160,27 @@ function OnboardComparisonSession() {
         : null;
 
     if (avgBrakingDelta !== null) {
-      const leader = avgBrakingDelta > 0 ? driverAName : driverBName;
-      lines.push(
-        `- Velocità alla staccata media: vantaggio ${leader} di ${Math.abs(avgBrakingDelta).toFixed(1)} km/h.`
-      );
+      if (avgBrakingDelta === 0) {
+        lines.push('- Velocità alla staccata media: livello equivalente tra i due piloti.');
+      } else {
+        const leader = avgBrakingDelta > 0 ? driverAName : driverBName;
+        lines.push(
+          `- Velocità alla staccata media: vantaggio ${leader} di ${Math.abs(avgBrakingDelta).toFixed(1)} km/h.`
+        );
+      }
     } else {
       lines.push('- Velocità alla staccata media: dati non sufficienti.');
     }
 
     if (avgMinSpeedDelta !== null) {
-      const leader = avgMinSpeedDelta > 0 ? driverAName : driverBName;
-      lines.push(`- Velocità minima media in curva: vantaggio ${leader} di ${Math.abs(avgMinSpeedDelta).toFixed(1)} km/h.`);
+      if (avgMinSpeedDelta === 0) {
+        lines.push('- Velocità minima media in curva: livello equivalente tra i due piloti.');
+      } else {
+        const leader = avgMinSpeedDelta > 0 ? driverAName : driverBName;
+        lines.push(
+          `- Velocità minima media in curva: vantaggio ${leader} di ${Math.abs(avgMinSpeedDelta).toFixed(1)} km/h.`
+        );
+      }
     } else {
       lines.push('- Velocità minima media in curva: dati non sufficienti.');
     }
@@ -183,8 +207,39 @@ function OnboardComparisonSession() {
 
     lines.push('');
     lines.push('Indicazioni coaching');
-    lines.push(`- ${driverAName}: consolidare i punti di forza e ridurre le variazioni di input tra ingresso e uscita curva.`);
-    lines.push(`- ${driverBName}: lavorare sulla precisione del punto di frenata e sulla transizione freno-gas nelle curve lente.`);
+
+    if (avgBrakingDelta !== null) {
+      if (avgBrakingDelta > 0) {
+        lines.push(
+          `- ${driverAName}: mantenere la staccata aggressiva ma con rilascio freno progressivo per stabilizzare l'anteriore.`
+        );
+        lines.push(
+          `- ${driverBName}: anticipare la preparazione della frenata e lavorare sul picco di decelerazione in ingresso curva.`
+        );
+      } else if (avgBrakingDelta < 0) {
+        lines.push(
+          `- ${driverBName}: mantenere la staccata aggressiva ma con rilascio freno progressivo per stabilizzare l'anteriore.`
+        );
+        lines.push(
+          `- ${driverAName}: anticipare la preparazione della frenata e lavorare sul picco di decelerazione in ingresso curva.`
+        );
+      }
+    }
+
+    if (avgMinSpeedDelta !== null) {
+      if (avgMinSpeedDelta > 0) {
+        lines.push(`- ${driverAName}: sfrutta il vantaggio di centro curva senza allargare la traiettoria in uscita.`);
+        lines.push(`- ${driverBName}: cerca più rotazione a centro curva per aumentare la velocità minima.`);
+      } else if (avgMinSpeedDelta < 0) {
+        lines.push(`- ${driverBName}: sfrutta il vantaggio di centro curva senza allargare la traiettoria in uscita.`);
+        lines.push(`- ${driverAName}: cerca più rotazione a centro curva per aumentare la velocità minima.`);
+      }
+    }
+
+    if (avgBrakingDelta === 0 && avgMinSpeedDelta === 0) {
+      lines.push('- Entrambi i piloti sono allineati sui KPI principali: cercare il delta nel dettaglio di linea e rilascio sterzo.');
+    }
+
     lines.push('- Ripetere il confronto dopo una sessione dedicata per validare il guadagno settore per settore.');
 
     setReport(lines.join('\n'));

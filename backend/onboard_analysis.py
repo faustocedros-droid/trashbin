@@ -338,21 +338,26 @@ def analyze_onboard_pair(
     if analysis_length < 12:
         raise ValueError("I video sono troppo corti per una comparazione automatica affidabile")
 
-    result_a.speeds = result_a.speeds[:analysis_length]
-    result_a.steering = result_a.steering[:analysis_length]
-    result_a.centers = result_a.centers[:analysis_length]
-
-    result_b.speeds = result_b.speeds[:analysis_length]
-    result_b.steering = result_b.steering[:analysis_length]
-    result_b.centers = result_b.centers[:analysis_length]
+    truncated_a = VideoAnalysisResult(
+        speeds=result_a.speeds[:analysis_length],
+        steering=result_a.steering[:analysis_length],
+        centers=result_a.centers[:analysis_length],
+        duration_seconds=result_a.duration_seconds,
+    )
+    truncated_b = VideoAnalysisResult(
+        speeds=result_b.speeds[:analysis_length],
+        steering=result_b.steering[:analysis_length],
+        centers=result_b.centers[:analysis_length],
+        duration_seconds=result_b.duration_seconds,
+    )
 
     segment_count = max(6, min(12, analysis_length // 25 if analysis_length >= 25 else 6))
     bounds = _segment_bounds(analysis_length, segment_count)
 
     points: List[Dict[str, object]] = []
     for idx, (start, end) in enumerate(bounds, start=1):
-        a_metrics = _segment_metrics(result_a, start, end)
-        b_metrics = _segment_metrics(result_b, start, end)
+        a_metrics = _segment_metrics(truncated_a, start, end)
+        b_metrics = _segment_metrics(truncated_b, start, end)
 
         start_pct = int(round((start / analysis_length) * 100))
         end_pct = int(round((end / analysis_length) * 100))

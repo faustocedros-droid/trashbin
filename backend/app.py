@@ -4,12 +4,14 @@ from datetime import datetime
 import os
 import tempfile
 import logging
+from werkzeug.exceptions import RequestEntityTooLarge
 
 # Initialize Flask app
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///racing.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+app.config['MAX_CONTENT_LENGTH'] = 800 * 1024 * 1024  # 800 MB
 
 # Initialize extensions
 CORS(app)
@@ -250,12 +252,6 @@ def archive_event():
     }), 200
 
 
-def _safe_suffix(filename: str, default_suffix: str, allowed_suffixes: set[str]) -> str:
-    extension = os.path.splitext((filename or '').strip())[-1].lower()
-    if extension in allowed_suffixes:
-        return extension
-    return default_suffix
-
 @app.route('/api/onboard/compare', methods=['POST'])
 def compare_onboard_videos():
     """Automatic onboard comparison with optional track map"""
@@ -269,6 +265,13 @@ def compare_onboard_videos():
             'message': 'Sono richiesti due video onboard (video_a e video_b)'
         }), 400
 
+    content_length = request.content_length or 0
+    if content_length > app.config['MAX_CONTENT_LENGTH']:
+        return jsonify({
+            'status': 'error',
+            'message': 'File troppo grandi: ridurre la dimensione totale degli upload.'
+        }), 413
+
     session_name = request.form.get('session_name', 'Sessione confronto onboard automatica')
     track_name = request.form.get('track_name', '')
     driver_a_name = request.form.get('driver_a_name', 'Pilota A')
@@ -279,19 +282,16 @@ def compare_onboard_videos():
     temp_track_map_path = None
 
     try:
-        video_suffix = _safe_suffix(video_a.filename or '', '.mp4', {'.mp4', '.mov', '.avi', '.mkv', '.webm', '.m4v'})
-        with tempfile.NamedTemporaryFile(delete=False, suffix=video_suffix) as temp_a:
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as temp_a:
             temp_video_a_path = temp_a.name
             video_a.save(temp_a)
 
-        video_suffix_b = _safe_suffix(video_b.filename or '', '.mp4', {'.mp4', '.mov', '.avi', '.mkv', '.webm', '.m4v'})
-        with tempfile.NamedTemporaryFile(delete=False, suffix=video_suffix_b) as temp_b:
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as temp_b:
             temp_video_b_path = temp_b.name
             video_b.save(temp_b)
 
         if track_map:
-            map_suffix = _safe_suffix(track_map.filename or '', '.png', {'.png', '.jpg', '.jpeg', '.bmp', '.webp'})
-            with tempfile.NamedTemporaryFile(delete=False, suffix=map_suffix) as temp_map:
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as temp_map:
                 temp_track_map_path = temp_map.name
                 track_map.save(temp_map)
 
@@ -325,6 +325,14 @@ def compare_onboard_videos():
         for path in [temp_video_a_path, temp_video_b_path, temp_track_map_path]:
             if path and os.path.exists(path):
                 os.remove(path)
+
+
+@app.errorhandler(RequestEntityTooLarge)
+def handle_request_entity_too_large(_error):
+    return jsonify({
+        'status': 'error',
+        'message': 'Upload troppo grande: limite massimo 800 MB complessivi.'
+    }), 413
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

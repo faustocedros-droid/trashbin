@@ -25,6 +25,10 @@ function OnboardComparisonSession() {
 
   const normalizedDriverA = useMemo(() => driverAName.trim() || 'Pilota A', [driverAName]);
   const normalizedDriverB = useMemo(() => driverBName.trim() || 'Pilota B', [driverBName]);
+  const safeTrackMapPreviewUrl = useMemo(
+    () => (trackMapPreviewUrl.startsWith('blob:') ? trackMapPreviewUrl : ''),
+    [trackMapPreviewUrl]
+  );
 
   useEffect(() => {
     const url = videoA.previewUrl;
@@ -232,8 +236,8 @@ function OnboardComparisonSession() {
             </p>
             <div style={{ border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden', background: '#111' }}>
               <svg viewBox="0 0 1000 1000" width="100%" style={{ display: 'block' }}>
-                {trackMapPreviewUrl && (
-                  <image href={trackMapPreviewUrl} x="0" y="0" width="1000" height="1000" preserveAspectRatio="xMidYMid meet" opacity="0.65" />
+                {safeTrackMapPreviewUrl && (
+                  <image href={safeTrackMapPreviewUrl} x="0" y="0" width="1000" height="1000" preserveAspectRatio="xMidYMid meet" opacity="0.65" />
                 )}
                 {mapPolyline && (
                   <polyline

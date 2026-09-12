@@ -265,13 +265,6 @@ def compare_onboard_videos():
             'message': 'Sono richiesti due video onboard (video_a e video_b)'
         }), 400
 
-    content_length = request.content_length or 0
-    if content_length > app.config['MAX_CONTENT_LENGTH']:
-        return jsonify({
-            'status': 'error',
-            'message': 'File troppo grandi: ridurre la dimensione totale degli upload.'
-        }), 413
-
     session_name = request.form.get('session_name', 'Sessione confronto onboard automatica')
     track_name = request.form.get('track_name', '')
     driver_a_name = request.form.get('driver_a_name', 'Pilota A')
@@ -279,8 +272,6 @@ def compare_onboard_videos():
 
     temp_video_a_path = None
     temp_video_b_path = None
-    temp_track_map_path = None
-
     try:
         with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as temp_a:
             temp_video_a_path = temp_a.name
@@ -289,11 +280,6 @@ def compare_onboard_videos():
         with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as temp_b:
             temp_video_b_path = temp_b.name
             video_b.save(temp_b)
-
-        if track_map:
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as temp_map:
-                temp_track_map_path = temp_map.name
-                track_map.save(temp_map)
 
         analysis = analyze_onboard_pair(
             video_a_path=temp_video_a_path,
@@ -322,7 +308,7 @@ def compare_onboard_videos():
             'message': 'Errore durante l’analisi automatica onboard'
         }), 500
     finally:
-        for path in [temp_video_a_path, temp_video_b_path, temp_track_map_path]:
+        for path in [temp_video_a_path, temp_video_b_path]:
             if path and os.path.exists(path):
                 os.remove(path)
 

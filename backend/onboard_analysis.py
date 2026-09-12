@@ -746,7 +746,7 @@ def _build_report(
         f"REPORT COMPARATIVO ONBOARD AUTOMATICO - {session_name}",
         f"Circuito: {track_name or 'Non specificato'}",
         f"Confronto: {driver_a} vs {driver_b}",
-        "Metodo: analisi automatica con riferimento GPS (pallino rosso mappa onboard)",
+        "Metodo: analisi automatica con traiettorie GPS da CSV allineate ai video",
         "",
         "Sintesi ingegnere di pista",
     ]

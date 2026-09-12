@@ -5,9 +5,9 @@ const createTrackPointId = () =>
     ? crypto.randomUUID()
     : `track-point-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-const createEmptyTrackPoint = (index) => ({
+const createEmptyTrackPoint = (labelNumber) => ({
   id: createTrackPointId(),
-  pointName: `Punto ${index + 1}`,
+  pointName: `Punto ${labelNumber}`,
   brakingSpeedA: '',
   brakingSpeedB: '',
   brakingPointA: '',
@@ -99,7 +99,7 @@ function OnboardComparisonSession() {
     });
   };
 
-  const compareNumeric = (valueA, valueB, betterWhenHigher, unit, framing = 'advantage') => {
+  const compareNumericHigherValue = (valueA, valueB, unit, framing = 'advantage') => {
     const a = parseNumber(valueA);
     const b = parseNumber(valueB);
 
@@ -112,13 +112,7 @@ function OnboardComparisonSession() {
       return `Valore equivalente (${a.toFixed(1)} ${unit})`;
     }
 
-    const fasterDriver = betterWhenHigher
-      ? delta > 0
-        ? normalizedDriverAName
-        : normalizedDriverBName
-      : delta < 0
-        ? normalizedDriverAName
-        : normalizedDriverBName;
+    const fasterDriver = delta > 0 ? normalizedDriverAName : normalizedDriverBName;
     const absDelta = Math.abs(delta).toFixed(1);
     if (framing === 'neutral') {
       return `${fasterDriver} registra ${absDelta} ${unit} in più`;
@@ -214,9 +208,7 @@ function OnboardComparisonSession() {
     validPoints.forEach((point, index) => {
       lines.push('');
       lines.push(`${index + 1}) ${point.pointName}`);
-      lines.push(
-        `- Velocità alla staccata: ${compareNumeric(point.brakingSpeedA, point.brakingSpeedB, true, 'km/h', 'neutral')}`
-      );
+      lines.push(`- Velocità alla staccata: ${compareNumericHigherValue(point.brakingSpeedA, point.brakingSpeedB, 'km/h', 'neutral')}`);
       lines.push(`- Punto di staccata: ${compareText(point.brakingPointA, point.brakingPointB, 'Riferimento frenata')}`);
       lines.push(
         `- Modulazione staccata: ${compareText(point.brakingModulationA, point.brakingModulationB, 'Progressività rilascio freno')}`
@@ -225,7 +217,7 @@ function OnboardComparisonSession() {
       lines.push(`- Uso sterzo uscita: ${compareText(point.exitSteeringA, point.exitSteeringB, 'Uscita curva')}`);
       lines.push(`- Correzioni sotto/sovrasterzo: ${compareText(point.balanceCorrectionsA, point.balanceCorrectionsB, 'Bilanciamento')}`);
       lines.push(`- Traiettoria: ${compareText(point.trajectoryA, point.trajectoryB, 'Linea di percorrenza')}`);
-      lines.push(`- Velocità minima in curva: ${compareNumeric(point.minCornerSpeedA, point.minCornerSpeedB, true, 'km/h')}`);
+      lines.push(`- Velocità minima in curva: ${compareNumericHigherValue(point.minCornerSpeedA, point.minCornerSpeedB, 'km/h')}`);
       lines.push(`- Punto apertura gas: ${compareText(point.throttleOpenPointA, point.throttleOpenPointB, 'Apertura gas')}`);
       lines.push(`- Punto full gas: ${compareText(point.fullThrottlePointA, point.fullThrottlePointB, 'Full gas')}`);
     });

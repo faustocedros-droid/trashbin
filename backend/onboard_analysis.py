@@ -301,7 +301,6 @@ def _load_csv_trajectory(
         t = _parse_timestamp_seconds(row[_CSV_TIMESTAMP_INDEX])
         if t is None:
             t = _parse_timestamp_seconds(row[_CSV_GPS_UTC_INDEX])
-        _ = _parse_float(row[_CSV_ALTITUDE_INDEX])
         lat = _parse_float(row[_CSV_LATITUDE_INDEX])
         lon = _parse_float(row[_CSV_LONGITUDE_INDEX])
         heading = _parse_float(row[_CSV_HEADING_INDEX])

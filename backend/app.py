@@ -6,6 +6,7 @@ import tempfile
 import logging
 from typing import Set
 from werkzeug.exceptions import RequestEntityTooLarge
+from werkzeug.utils import secure_filename
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -368,6 +369,21 @@ def _has_csv_structure(file_storage) -> bool:
     return latitude is not None and longitude is not None
 
 
+def _build_onboard_validation_message(error: ValueError) -> str:
+    raw_message = (str(error) or "").lower()
+    if "aprire il video" in raw_message:
+        return "Impossibile aprire uno dei video caricati."
+    if "non contiene frame leggibili" in raw_message:
+        return "Uno dei video non contiene frame leggibili."
+    if "troppo corti" in raw_message:
+        return "I video caricati sono troppo corti per il confronto automatico."
+    if "nessun dato valido" in raw_message:
+        return "I dati CSV non contengono campioni GPS validi."
+    if "campioni insufficienti" in raw_message:
+        return "Dati insufficienti per costruire il confronto curva per curva."
+    return "I file caricati non consentono una analisi automatica valida. Verifica formato e durata."
+
+
 @app.route('/api/onboard/compare', methods=['POST'])
 def compare_onboard_videos():
     """Automatic onboard comparison with optional track map"""
@@ -497,7 +513,7 @@ def compare_onboard_videos():
         )
 
         analysis['track_map_provided'] = bool(track_map)
-        analysis['track_map_name'] = os.path.basename(track_map.filename) if track_map else None
+        analysis['track_map_name'] = secure_filename(track_map.filename) if track_map else None
 
         return jsonify({
             'status': 'success',
@@ -507,7 +523,7 @@ def compare_onboard_videos():
         logger.warning('Onboard analysis validation error: %s', error)
         return jsonify({
             'status': 'error',
-            'message': str(error) or 'I file caricati non consentono una analisi automatica valida. Verifica formato e durata.'
+            'message': _build_onboard_validation_message(error)
         }), 400
     except Exception as error:
         logger.exception('Unexpected onboard analysis error: %s', error)

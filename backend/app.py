@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from datetime import datetime
+import csv
 import os
 import tempfile
 import logging
@@ -308,10 +309,13 @@ def _has_allowed_signature(file_storage, file_kind: str) -> bool:
 
 
 def _detected_video_suffix(file_storage) -> str:
-    stream = file_storage.stream
-    current_position = stream.tell()
-    header = stream.read(64)
-    stream.seek(current_position)
+    try:
+        stream = file_storage.stream
+        current_position = stream.tell()
+        header = stream.read(64)
+        stream.seek(current_position)
+    except Exception:
+        return '.mp4'
 
     if len(header) >= 12 and header[4:8] == b'ftyp':
         brand = header[8:12].lower()
@@ -326,10 +330,13 @@ def _detected_video_suffix(file_storage) -> str:
 
 
 def _detected_image_suffix(file_storage) -> str:
-    stream = file_storage.stream
-    current_position = stream.tell()
-    header = stream.read(32)
-    stream.seek(current_position)
+    try:
+        stream = file_storage.stream
+        current_position = stream.tell()
+        header = stream.read(32)
+        stream.seek(current_position)
+    except Exception:
+        return '.png'
 
     if len(header) >= 8 and header[:8] == b'\x89PNG\r\n\x1a\n':
         return '.png'
@@ -355,19 +362,19 @@ def _has_csv_structure(file_storage) -> bool:
     if not text.strip():
         return False
 
-    lines = [line for line in text.splitlines() if line.strip()]
-    if len(lines) <= 18:
+    raw_lines = text.splitlines()
+    if len(raw_lines) <= 18:
         return False
 
-    data_line = lines[18]
-    if ',' not in data_line and ';' not in data_line and '\t' not in data_line:
-        return False
-    delimiter = ';' if data_line.count(';') >= data_line.count(',') else ','
-    if '\t' in data_line and data_line.count('\t') > max(data_line.count(';'), data_line.count(',')):
-        delimiter = '\t'
+    sample = "\n".join(raw_lines[:40])
+    try:
+        dialect = csv.Sniffer().sniff(sample, delimiters=",;\t")
+        delimiter = dialect.delimiter
+    except Exception:
+        delimiter = ","
 
-    columns = [value.strip() for value in data_line.split(delimiter)]
-    if len(columns) < 7:
+    rows = list(csv.reader(raw_lines, delimiter=delimiter))
+    if len(rows) <= 18:
         return False
 
     def _as_number(text: str):
@@ -376,9 +383,15 @@ def _has_csv_structure(file_storage) -> bool:
         except Exception:
             return None
 
-    latitude = _as_number(columns[3]) if len(columns) > 3 else None
-    longitude = _as_number(columns[4]) if len(columns) > 4 else None
-    return latitude is not None and longitude is not None
+    for row in rows[18:]:
+        if len(row) < 7:
+            continue
+        latitude = _as_number(row[3])
+        longitude = _as_number(row[4])
+        if latitude is not None and longitude is not None:
+            return True
+
+    return False
 
 
 def _build_onboard_validation_message(error: ValueError) -> str:

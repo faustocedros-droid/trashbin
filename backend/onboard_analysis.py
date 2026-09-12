@@ -265,7 +265,8 @@ def _compute_steering_from_path(path_points: np.ndarray) -> np.ndarray:
     heading_delta = np.diff(headings)
     heading_delta = (heading_delta + np.pi) % (2 * np.pi) - np.pi
     steering = np.zeros((path_points.shape[0],), dtype=np.float32)
-    steering[2:] = np.abs(np.degrees(heading_delta))
+    padded_delta = np.concatenate(([0.0], np.abs(np.degrees(heading_delta))))
+    steering[1:] = padded_delta
     steering = np.clip(steering * 0.9, 0.0, 100.0)
     return steering.astype(np.float32)
 
@@ -552,7 +553,7 @@ def analyze_video(video_path: str, csv_path: Optional[str] = None, sample_rate_h
         speeds=speeds,
         steering=steering,
         centers=smoothed_points.copy(),
-        map_points=smoothed_points,
+        map_points=smoothed_points.copy(),
         map_outline=map_outline,
         duration_seconds=duration_seconds,
     )

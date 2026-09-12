@@ -17,6 +17,7 @@ function OnboardComparisonSession() {
   const [videoA, setVideoA] = useState(buildVideoState());
   const [videoB, setVideoB] = useState(buildVideoState());
   const [trackMap, setTrackMap] = useState(null);
+  const [trackMapPreviewUrl, setTrackMapPreviewUrl] = useState('');
 
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -38,6 +39,13 @@ function OnboardComparisonSession() {
       if (url) URL.revokeObjectURL(url);
     };
   }, [videoB.previewUrl]);
+
+  useEffect(() => {
+    const url = trackMapPreviewUrl;
+    return () => {
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [trackMapPreviewUrl]);
 
   const handleVideoUpload = (event, side) => {
     const file = event.target.files?.[0];
@@ -63,6 +71,13 @@ function OnboardComparisonSession() {
   const handleTrackMapUpload = (event) => {
     const file = event.target.files?.[0] || null;
     setTrackMap(file);
+
+    if (file) {
+      setTrackMapPreviewUrl(URL.createObjectURL(file));
+    } else {
+      setTrackMapPreviewUrl('');
+    }
+
     setAnalysis(null);
     setError('');
   };
@@ -98,12 +113,21 @@ function OnboardComparisonSession() {
     }
   };
 
+  const mapPolyline = useMemo(() => {
+    if (!analysis?.track_overlay?.path || analysis.track_overlay.path.length === 0) {
+      return '';
+    }
+    return analysis.track_overlay.path
+      .map((point) => `${Math.round(point.x * 1000)},${Math.round(point.y * 1000)}`)
+      .join(' ');
+  }, [analysis]);
+
   return (
     <div className="container">
       <div className="card">
         <h1>Sessione confronto onboard (automatica)</h1>
         <p style={{ color: '#666' }}>
-          L’app confronta automaticamente i due onboard con analisi frame-by-frame campionata, senza inserimento manuale curve.
+          L’app rileva il pallino rosso GPS nella mappa onboard e produce automaticamente un confronto curva-per-curva.
         </p>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
@@ -198,14 +222,52 @@ function OnboardComparisonSession() {
             <h2>Output analisi automatica</h2>
             <p><strong>Modalità:</strong> {analysis.analysis_mode}</p>
             <p><strong>Campioni analizzati:</strong> {analysis.sample_count}</p>
-            <p><strong>Mappa tracciato:</strong> {analysis.track_map_provided ? analysis.track_map_name : 'Non fornita'}</p>
+            <p><strong>Sorgente mappa:</strong> GPS onboard (pallino rosso)</p>
           </div>
 
           <div className="card">
-            <h2>Confronto per segmento tracciato</h2>
-            {analysis.segments?.map((segment, index) => (
-              <div key={segment.point_name} style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '15px', marginBottom: '15px' }}>
-                <h3 style={{ marginTop: 0 }}>{index + 1}) {segment.point_name}</h3>
+            <h2>Mappa curva-per-curva</h2>
+            <p style={{ color: '#666' }}>
+              Marker numerati ricavati dalla traiettoria GPS del video. Ogni marker corrisponde a una curva del report.
+            </p>
+            <div style={{ border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden', background: '#111' }}>
+              <svg viewBox="0 0 1000 1000" width="100%" style={{ display: 'block' }}>
+                {trackMapPreviewUrl && (
+                  <image href={trackMapPreviewUrl} x="0" y="0" width="1000" height="1000" preserveAspectRatio="xMidYMid meet" opacity="0.65" />
+                )}
+                {mapPolyline && (
+                  <polyline
+                    points={mapPolyline}
+                    fill="none"
+                    stroke="#4fc3f7"
+                    strokeWidth="6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                )}
+                {analysis.track_overlay?.curve_markers?.map((marker, index) => (
+                  <g key={marker.name}>
+                    <circle cx={marker.x * 1000} cy={marker.y * 1000} r="13" fill="#ff3b30" stroke="#fff" strokeWidth="2" />
+                    <text
+                      x={marker.x * 1000 + 18}
+                      y={marker.y * 1000 - 10}
+                      fill="#fff"
+                      fontSize="20"
+                      fontWeight="700"
+                    >
+                      C{index + 1}
+                    </text>
+                  </g>
+                ))}
+              </svg>
+            </div>
+          </div>
+
+          <div className="card">
+            <h2>Confronto curva per curva</h2>
+            {analysis.curves?.map((curve, index) => (
+              <div key={curve.curve_name} style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '15px', marginBottom: '15px' }}>
+                <h3 style={{ marginTop: 0 }}>{index + 1}) {curve.curve_name}</h3>
                 <table className="table">
                   <thead>
                     <tr>
@@ -215,16 +277,16 @@ function OnboardComparisonSession() {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr><td>Velocità alla staccata</td><td>{segment.video_a.braking_speed_kmh} km/h</td><td>{segment.video_b.braking_speed_kmh} km/h</td></tr>
-                    <tr><td>Punto di staccata</td><td>{segment.video_a.braking_point_pct}%</td><td>{segment.video_b.braking_point_pct}%</td></tr>
-                    <tr><td>Modulazione staccata (0-10)</td><td>{segment.video_a.braking_modulation_score}</td><td>{segment.video_b.braking_modulation_score}</td></tr>
-                    <tr><td>Sterzo ingresso</td><td>{segment.video_a.turn_in_steering}</td><td>{segment.video_b.turn_in_steering}</td></tr>
-                    <tr><td>Sterzo uscita</td><td>{segment.video_a.exit_steering}</td><td>{segment.video_b.exit_steering}</td></tr>
-                    <tr><td>Correzioni sotto/sovrasterzo</td><td>{segment.video_a.balance_corrections}</td><td>{segment.video_b.balance_corrections}</td></tr>
-                    <tr><td>Traiettoria</td><td>{segment.video_a.trajectory}</td><td>{segment.video_b.trajectory}</td></tr>
-                    <tr><td>Velocità minima in curva</td><td>{segment.video_a.min_corner_speed_kmh} km/h</td><td>{segment.video_b.min_corner_speed_kmh} km/h</td></tr>
-                    <tr><td>Apertura gas</td><td>{segment.video_a.throttle_open_pct}%</td><td>{segment.video_b.throttle_open_pct}%</td></tr>
-                    <tr><td>Full gas</td><td>{segment.video_a.full_throttle_pct}%</td><td>{segment.video_b.full_throttle_pct}%</td></tr>
+                    <tr><td>Velocità alla staccata</td><td>{curve.video_a.braking_speed_kmh} km/h</td><td>{curve.video_b.braking_speed_kmh} km/h</td></tr>
+                    <tr><td>Punto di staccata</td><td>{curve.video_a.braking_point_reference}</td><td>{curve.video_b.braking_point_reference}</td></tr>
+                    <tr><td>Modulazione staccata (0-10)</td><td>{curve.video_a.braking_modulation_score}</td><td>{curve.video_b.braking_modulation_score}</td></tr>
+                    <tr><td>Sterzo ingresso</td><td>{curve.video_a.turn_in_steering}</td><td>{curve.video_b.turn_in_steering}</td></tr>
+                    <tr><td>Sterzo uscita</td><td>{curve.video_a.exit_steering}</td><td>{curve.video_b.exit_steering}</td></tr>
+                    <tr><td>Correzioni sotto/sovrasterzo</td><td>{curve.video_a.balance_corrections}</td><td>{curve.video_b.balance_corrections}</td></tr>
+                    <tr><td>Traiettoria</td><td>{curve.video_a.trajectory}</td><td>{curve.video_b.trajectory}</td></tr>
+                    <tr><td>Velocità minima in curva</td><td>{curve.video_a.min_corner_speed_kmh} km/h</td><td>{curve.video_b.min_corner_speed_kmh} km/h</td></tr>
+                    <tr><td>Apertura gas</td><td>{curve.video_a.throttle_open_reference}</td><td>{curve.video_b.throttle_open_reference}</td></tr>
+                    <tr><td>Full gas</td><td>{curve.video_a.full_throttle_reference}</td><td>{curve.video_b.full_throttle_reference}</td></tr>
                   </tbody>
                 </table>
               </div>

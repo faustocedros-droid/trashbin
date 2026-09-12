@@ -43,12 +43,18 @@ function OnboardComparisonSession() {
 
   const comparisonLabel = useMemo(() => `${driverAName} vs ${driverBName}`, [driverAName, driverBName]);
 
-  useEffect(() => () => {
-    if (videoA.url) URL.revokeObjectURL(videoA.url);
+  useEffect(() => {
+    const url = videoA.url;
+    return () => {
+      if (url) URL.revokeObjectURL(url);
+    };
   }, [videoA.url]);
 
-  useEffect(() => () => {
-    if (videoB.url) URL.revokeObjectURL(videoB.url);
+  useEffect(() => {
+    const url = videoB.url;
+    return () => {
+      if (url) URL.revokeObjectURL(url);
+    };
   }, [videoB.url]);
 
   const handleVideoUpload = (event, side) => {
@@ -86,7 +92,7 @@ function OnboardComparisonSession() {
     });
   };
 
-  const compareNumeric = (valueA, valueB, betterWhenHigher, unit) => {
+  const compareNumeric = (valueA, valueB, betterWhenHigher, unit, framing = 'advantage') => {
     const a = parseNumber(valueA);
     const b = parseNumber(valueB);
 
@@ -101,6 +107,9 @@ function OnboardComparisonSession() {
 
     const fasterDriver = betterWhenHigher ? (delta > 0 ? driverAName : driverBName) : (delta < 0 ? driverAName : driverBName);
     const absDelta = Math.abs(delta).toFixed(1);
+    if (framing === 'neutral') {
+      return `${fasterDriver} registra ${absDelta} ${unit} in più`;
+    }
 
     return `${fasterDriver} ha un vantaggio di ${absDelta} ${unit}`;
   };
@@ -166,7 +175,7 @@ function OnboardComparisonSession() {
       } else {
         const leader = avgBrakingDelta > 0 ? driverAName : driverBName;
         lines.push(
-          `- Velocità alla staccata media: vantaggio ${leader} di ${Math.abs(avgBrakingDelta).toFixed(1)} km/h.`
+          `- Velocità alla staccata media: ${leader} arriva alla staccata con ${Math.abs(avgBrakingDelta).toFixed(1)} km/h in più.`
         );
       }
     } else {
@@ -192,7 +201,9 @@ function OnboardComparisonSession() {
     validPoints.forEach((point, index) => {
       lines.push('');
       lines.push(`${index + 1}) ${point.pointName}`);
-      lines.push(`- Velocità alla staccata: ${compareNumeric(point.brakingSpeedA, point.brakingSpeedB, true, 'km/h')}`);
+      lines.push(
+        `- Velocità alla staccata: ${compareNumeric(point.brakingSpeedA, point.brakingSpeedB, true, 'km/h', 'neutral')}`
+      );
       lines.push(`- Punto di staccata: ${compareText(point.brakingPointA, point.brakingPointB, 'Riferimento frenata')}`);
       lines.push(
         `- Modulazione staccata: ${compareText(point.brakingModulationA, point.brakingModulationB, 'Progressività rilascio freno')}`
@@ -366,19 +377,19 @@ function OnboardComparisonSession() {
                     ['Velocità minima in curva (km/h)', 'minCornerSpeedA', 'minCornerSpeedB', 'number'],
                     ['Punto apertura gas', 'throttleOpenPointA', 'throttleOpenPointB', 'text'],
                     ['Punto full gas in uscita', 'fullThrottlePointA', 'fullThrottlePointB', 'text'],
-                  ].map(([label, fieldA, fieldB, type]) => (
+                  ].map(([label, fieldA, fieldB, inputType]) => (
                     <tr key={fieldA}>
                       <td>{label}</td>
                       <td>
                         <input
-                          type={type}
+                          type={inputType}
                           value={point[fieldA]}
                           onChange={(e) => updateTrackPoint(point.id, fieldA, e.target.value)}
                         />
                       </td>
                       <td>
                         <input
-                          type={type}
+                          type={inputType}
                           value={point[fieldB]}
                           onChange={(e) => updateTrackPoint(point.id, fieldB, e.target.value)}
                         />

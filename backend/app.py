@@ -487,13 +487,13 @@ def compare_onboard_videos():
         logger.warning('Onboard analysis validation error: %s', error)
         return jsonify({
             'status': 'error',
-            'message': 'I file caricati non consentono un’analisi automatica valida. Verifica formato e durata.'
+            'message': 'I file caricati non consentono una analisi automatica valida. Verifica formato e durata.'
         }), 400
     except Exception as error:
         logger.exception('Unexpected onboard analysis error: %s', error)
         return jsonify({
             'status': 'error',
-            'message': 'Errore durante l’analisi automatica onboard'
+            'message': 'Errore durante la analisi automatica onboard'
         }), 500
     finally:
         for path in [temp_video_a_path, temp_video_b_path, temp_csv_a_path, temp_csv_b_path, temp_track_map_path]:

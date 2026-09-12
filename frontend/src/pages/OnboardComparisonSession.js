@@ -83,7 +83,7 @@ function OnboardComparisonSession() {
 
   const runAutomaticAnalysis = async () => {
     if (!videoA.file || !videoB.file || !csvA || !csvB) {
-      setError('Carica entrambi i video e i due CSV traiettoria prima di avviare l’analisi automatica.');
+      setError('Carica entrambi i video e i due CSV traiettoria prima di avviare la analisi automatica.');
       return;
     }
 
@@ -107,7 +107,7 @@ function OnboardComparisonSession() {
       const response = await onboardAPI.compare(formData);
       setAnalysis(response.data.analysis);
     } catch (requestError) {
-      const message = requestError?.response?.data?.message || 'Errore durante l’analisi automatica onboard.';
+      const message = requestError?.response?.data?.message || 'Errore durante la analisi automatica onboard.';
       setError(message);
     } finally {
       setLoading(false);
